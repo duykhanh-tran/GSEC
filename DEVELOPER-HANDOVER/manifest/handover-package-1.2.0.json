@@ -1,0 +1,191 @@
+{
+  "packageVersion": "developer-handover-1.2.0",
+  "generatedAt": "2026-09-07T13:44:13.169Z",
+  "sourceBaseline": {
+    "baselineId": "react-foundation-2026-09-07-r3",
+    "totalFiles": 199,
+    "aggregateSha256": "DE01D5EDABC528764F3F7C4094730DC4F8824204718B3424B40D26F110148518"
+  },
+  "inventory": {
+    "handoverFiles": 34,
+    "taskCount": 32,
+    "archetypeCount": 11,
+    "componentCount": 42,
+    "assessmentPolicyExamples": 10,
+    "aiPolicyExamples": 4,
+    "permissionPolicyExamples": 2
+  },
+  "aggregateSha256": "7504CEA3236EE9AE346C891E39EBA04182EAFAB26B7E07DC9F45078C79204383",
+  "files": [
+    {
+      "path": "DEVELOPER-HANDOVER/01-REACT-BASELINE-INVENTORY.md",
+      "bytes": 5925,
+      "sha256": "EEBE4FA8080C5329F527C5E9F4D79B1A8D70C8491FB179C99112E77F411BC3B5"
+    },
+    {
+      "path": "DEVELOPER-HANDOVER/02-TASK-ARCHETYPE-CATALOG.md",
+      "bytes": 8161,
+      "sha256": "6F153221B963745CD84F444C0AE29F28C88153F023BBBD44590EA3DD23B41CC4"
+    },
+    {
+      "path": "DEVELOPER-HANDOVER/03-COMPONENT-CONTRACTS.md",
+      "bytes": 10671,
+      "sha256": "19973DD8BDD83C1E8B878AFC8070C2F43CFCCE1D9174C5BD15B465893220DFED"
+    },
+    {
+      "path": "DEVELOPER-HANDOVER/04-TASK-SCHEMA-AND-EXAMPLES.md",
+      "bytes": 8651,
+      "sha256": "403DE240817D9731AFB6CD8A2D6F8BCEF0946D9EFFD0AB3875C0A7D090EE8F63"
+    },
+    {
+      "path": "DEVELOPER-HANDOVER/05-ASSESSMENT-AI-PERMISSION-CONTRACTS.md",
+      "bytes": 10431,
+      "sha256": "BED868AD996A9D4B11616B4A57428FD6F4D6E8659EDEF3D0CA872ECA1E7E216A"
+    },
+    {
+      "path": "DEVELOPER-HANDOVER/06-DEVELOPER-HANDOVER-PACKAGE.md",
+      "bytes": 6820,
+      "sha256": "6B5B48FC15AAEB79D5A51A25ED0DF091CD239A38F251A25AAA2E04784174C2DD"
+    },
+    {
+      "path": "DEVELOPER-HANDOVER/archetypes/task-archetype-map.json",
+      "bytes": 13455,
+      "sha256": "FF7258E81CBF13F6C77E59515B539EB8180C02142B3E1CA988CCA7F265D3A768"
+    },
+    {
+      "path": "DEVELOPER-HANDOVER/BASELINE-CHANGE-POLICY.md",
+      "bytes": 2324,
+      "sha256": "0E5F2C91718EF370294A38BEBF2F4FA1692FCDC87F3142B33918D9C9A37AB4B7"
+    },
+    {
+      "path": "DEVELOPER-HANDOVER/baseline/react-foundation-2026-09-07-r2.json",
+      "bytes": 33935,
+      "sha256": "C23FBFEF7A6CA1CF2A222F85A15F95CC1B46AB3862B2EBD5B119A79C10942C85"
+    },
+    {
+      "path": "DEVELOPER-HANDOVER/baseline/react-foundation-2026-09-07-r3.json",
+      "bytes": 34280,
+      "sha256": "8BB9FA321A91263166261B73659A09E7F4AE94ADA19305C0DAB3B4426BB5FDDF"
+    },
+    {
+      "path": "DEVELOPER-HANDOVER/baseline/react-foundation-2026-09-07.json",
+      "bytes": 33933,
+      "sha256": "28D608A89AC0B6CAF024483D3C3624AE1B5952533010D27407B8BC2BBCDC1E1E"
+    },
+    {
+      "path": "DEVELOPER-HANDOVER/CHANGELOG.md",
+      "bytes": 1278,
+      "sha256": "A30F103676AEDC98803517898C29FEB8FDBF722E7C18267691FD5FC54586B12E"
+    },
+    {
+      "path": "DEVELOPER-HANDOVER/components/component-registry.json",
+      "bytes": 25593,
+      "sha256": "F62FF1265C3C8A7CC4A6A91905EB00B3B58265478EC32F1EA34FBA35E6373980"
+    },
+    {
+      "path": "DEVELOPER-HANDOVER/components/validate-component-registry.mjs",
+      "bytes": 2314,
+      "sha256": "4D6B096F152AA8634FA4F26C08DFA830E00ACE45E30C21D3537BA8C8D9F6815B"
+    },
+    {
+      "path": "DEVELOPER-HANDOVER/generate-handover-manifest.mjs",
+      "bytes": 2709,
+      "sha256": "AF7118EF51B799667850BBEB5E7E12AD72E495A88443C57D74629BE515904334"
+    },
+    {
+      "path": "DEVELOPER-HANDOVER/IMPLEMENTATION-ROADMAP.md",
+      "bytes": 4607,
+      "sha256": "D290F99BD54F26762FE6EF24A692060C37A6384CF7BDFBE1038FFB9CBB035F9D"
+    },
+    {
+      "path": "DEVELOPER-HANDOVER/KNOWN-GAPS-AND-DECISIONS.md",
+      "bytes": 2790,
+      "sha256": "87804162DB82B0890EDA531928E01D480DFACE061E0E0292097FABD4AD43D403"
+    },
+    {
+      "path": "DEVELOPER-HANDOVER/policies/examples/assessment-outcomes.json",
+      "bytes": 1584,
+      "sha256": "DACC040038216A9040FE947540ED3A703A4156034A4AACAA6FD8D9A53581A4E4"
+    },
+    {
+      "path": "DEVELOPER-HANDOVER/policies/examples/assessment-submissions.json",
+      "bytes": 1077,
+      "sha256": "9448A22C8C6976C8E7B7B7AA4A7E9A74AC21135363F8FCC05DDA7C6AEC4DE5F2"
+    },
+    {
+      "path": "DEVELOPER-HANDOVER/policies/examples/policy-catalog.json",
+      "bytes": 17306,
+      "sha256": "CF2A967FA4EAFEE7E8DC89E46DABA5790551C13D5DB99421E196BE3E444AD359"
+    },
+    {
+      "path": "DEVELOPER-HANDOVER/policies/fixtures/invalid-policy-fixtures.json",
+      "bytes": 2319,
+      "sha256": "ED908B264D02E343BEB079007A8395A7546D7090342AB2E7B102A3764B09EC55"
+    },
+    {
+      "path": "DEVELOPER-HANDOVER/policies/schemas/ai-policy.schema.json",
+      "bytes": 4540,
+      "sha256": "6D326BC028A1147D08C7599BB0BF86888B356AC59A163776AC64A1E7BDFA4B6A"
+    },
+    {
+      "path": "DEVELOPER-HANDOVER/policies/schemas/assessment-outcome.schema.json",
+      "bytes": 1476,
+      "sha256": "FCD19993020D603C8D98D0FBEA6A1807D84E1619A455C1F5B58C3B76357C6E4A"
+    },
+    {
+      "path": "DEVELOPER-HANDOVER/policies/schemas/assessment-policy.schema.json",
+      "bytes": 5467,
+      "sha256": "7375D6547ECD3895772A050B7CB60A2C73F9056684D16FF0D522DC1119AC2B5D"
+    },
+    {
+      "path": "DEVELOPER-HANDOVER/policies/schemas/assessment-submission.schema.json",
+      "bytes": 3522,
+      "sha256": "B87637E53702A7AD38699A01CB24C7547B8F04D7FB1382551157267A9CD20021"
+    },
+    {
+      "path": "DEVELOPER-HANDOVER/policies/schemas/permission-policy.schema.json",
+      "bytes": 4322,
+      "sha256": "EE45603CFFF918C829311C98C9A5EB94A5A010BB4F41E5B091A1183DFACC061C"
+    },
+    {
+      "path": "DEVELOPER-HANDOVER/policies/validate-policy-contracts.mjs",
+      "bytes": 10260,
+      "sha256": "6FF1E7B8F119E63A363B9FE33EF89D50D76D4399055AEB53A55F35DB708075FA"
+    },
+    {
+      "path": "DEVELOPER-HANDOVER/README.md",
+      "bytes": 4443,
+      "sha256": "3AE1003BA832BD2190E18C4E918AD5705DE28EDA7FD73EC43CDB8FCF1D55C472"
+    },
+    {
+      "path": "DEVELOPER-HANDOVER/task-schema/examples/archetype-examples.json",
+      "bytes": 15957,
+      "sha256": "277E97C2BDD9D9D010307B8273006E11519AE31E769E26EF1067B34BCB5F42D6"
+    },
+    {
+      "path": "DEVELOPER-HANDOVER/task-schema/fixtures/invalid-authoring-fixtures.json",
+      "bytes": 1609,
+      "sha256": "729D91E5350D6C9F411791DB0D3191288459E2C77697884707C4BC396F51E33C"
+    },
+    {
+      "path": "DEVELOPER-HANDOVER/task-schema/task-authoring.schema.json",
+      "bytes": 16302,
+      "sha256": "A93CE6EB8535E23A97D91D16A9F62FD8792A62877CDDCCA2FAF24C63D9FC7167"
+    },
+    {
+      "path": "DEVELOPER-HANDOVER/task-schema/validate-task-authoring.mjs",
+      "bytes": 9546,
+      "sha256": "A09F7F85A23425D7478B4A30E05ED8DAA6269C0DA7B9A3222C4EA397F7D5D472"
+    },
+    {
+      "path": "DEVELOPER-HANDOVER/TEST-AND-ACCEPTANCE.md",
+      "bytes": 4693,
+      "sha256": "5B91B0FB83AFAD4C86F8989CB1F72327BDD3D18BD03B4DAD8104F963DA963A46"
+    },
+    {
+      "path": "DEVELOPER-HANDOVER/verify-handover-package.mjs",
+      "bytes": 1015,
+      "sha256": "16E4E1033D3865342B73015E5CC82F57C4A8BFA5DFFDF3ACEA0094C927BF0F0C"
+    }
+  ]
+}

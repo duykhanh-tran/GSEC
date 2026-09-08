@@ -1,0 +1,219 @@
+[
+  {
+    "schemaVersion": "1.0.0",
+    "id": "example-structured-answer-retry",
+    "code": "99001",
+    "locale": "en",
+    "status": "draft",
+    "archetype": "structured-answer-retry",
+    "variant": "worksheet-gap-entry",
+    "bookReference": { "worksheet": "WS1", "page": 4, "exercise": "1A", "instruction": "Complete the answers in your book, then enter only the requested words." },
+    "presentation": { "title": "Check your answers", "tutorIntro": "Use your completed worksheet to enter the missing words.", "completionMessage": "Your checked answers are ready." },
+    "capabilities": ["text-entry", "retry-coaching", "evidence-summary"],
+    "blocks": [
+      { "id": "intro", "type": "tutor-message", "text": "Keep your book open while you work." },
+      { "id": "answers", "type": "short-text-input", "fields": [{ "id": "item-one", "label": "Item 1", "bookItem": "1" }, { "id": "item-two", "label": "Item 2", "bookItem": "2" }] },
+      { "id": "retry", "type": "retry-panel", "maxAttempts": 3, "hints": ["Check the word class in the sentence.", "Look again at the words around the gap."], "allowModel": false }
+    ],
+    "configuration": { "responseBlockIds": ["answers"], "retryBlockId": "retry", "completionMode": "evidence-summary" },
+    "services": { "assessmentPolicyRef": "worksheet-short-answer-v1" },
+    "metadata": { "contentVersion": 1, "owner": "content-team", "updatedAt": "2026-09-07T00:00:00Z", "tags": ["example", "book-first"] }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "example-guided-choice",
+    "code": "99002",
+    "locale": "en",
+    "status": "draft",
+    "archetype": "guided-choice",
+    "variant": "symbolic-multiple-choice",
+    "bookReference": { "worksheet": "WS2", "page": 8, "exercise": "2B", "instruction": "Read each question and its answers in the book." },
+    "presentation": { "title": "Choose from the book", "tutorIntro": "Select only the letter of your answer.", "completionMessage": "The activity is complete." },
+    "capabilities": ["choice-input", "retry-coaching", "guided-tracking", "evidence-summary"],
+    "blocks": [
+      { "id": "intro", "type": "tutor-message", "text": "Read the full options in your book. The app shows letters only." },
+      { "id": "question-one", "type": "choice-group", "prompt": "Choose the answer for question 1.", "bookItem": "1", "options": [{ "id": "q1-a", "label": "A" }, { "id": "q1-b", "label": "B" }, { "id": "q1-c", "label": "C" }] },
+      { "id": "retry", "type": "retry-panel", "maxAttempts": 3, "hints": ["Return to the relevant line in the book.", "Eliminate the choice that does not fit the context."], "allowModel": true }
+    ],
+    "configuration": { "choiceBlockIds": ["question-one"], "retryBlockId": "retry", "guidedTracking": true, "showAnswerPolicy": "after-final-attempt" },
+    "services": { "assessmentPolicyRef": "symbolic-choice-v1" },
+    "metadata": { "contentVersion": 1, "owner": "content-team", "updatedAt": "2026-09-07T00:00:00Z", "tags": ["example", "book-first"] }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "example-listen-classify-pronounce",
+    "code": "99003",
+    "locale": "en",
+    "status": "draft",
+    "archetype": "listen-classify-pronounce",
+    "variant": "sound-grouping",
+    "bookReference": { "worksheet": "WS2", "page": 10, "exercise": "3A" },
+    "presentation": { "title": "Listen and classify", "tutorIntro": "Listen, choose a group and then practise saying the item.", "completionMessage": "Listening and pronunciation practice complete." },
+    "capabilities": ["listening", "choice-input", "recording", "transcript-confirmation", "retry-coaching"],
+    "blocks": [
+      { "id": "audio", "type": "playback-sequence", "items": [{ "id": "audio-one", "audioAssetId": "ws2-sound-one" }] },
+      { "id": "classification", "type": "choice-group", "prompt": "Choose the matching group.", "options": [{ "id": "group-a", "label": "A" }, { "id": "group-b", "label": "B" }] },
+      { "id": "pronunciation", "type": "recording", "label": "Record your pronunciation", "range": "One item", "transcriptConfirmation": true, "maxDurationSeconds": 20 }
+    ],
+    "configuration": { "playbackBlockId": "audio", "classificationBlockId": "classification", "recordingBlockId": "pronunciation" },
+    "services": { "assessmentPolicyRef": "sound-classification-v1", "permissionPolicyRef": "learner-microphone-v1", "mediaCollectionRef": "ws2-audio-v1" },
+    "metadata": { "contentVersion": 1, "owner": "content-team", "updatedAt": "2026-09-07T00:00:00Z", "tags": ["example", "listening"] }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "example-recording-feedback",
+    "code": "99004",
+    "locale": "en",
+    "status": "draft",
+    "archetype": "recording-feedback",
+    "variant": "sentence-repair",
+    "bookReference": { "worksheet": "WS3", "page": 14, "exercise": "4C", "instruction": "Prepare the sentence in your book before recording." },
+    "presentation": { "title": "Record and review", "tutorIntro": "Say the sentence from your book, then confirm what the app heard.", "completionMessage": "Your recording review is complete." },
+    "capabilities": ["recording", "transcript-confirmation", "retry-coaching", "guided-tracking", "evidence-summary"],
+    "blocks": [
+      { "id": "recording", "type": "recording", "label": "Record the sentence from item 4", "range": "One sentence", "transcriptConfirmation": true, "maxDurationSeconds": 30 },
+      { "id": "repair", "type": "retry-panel", "maxAttempts": 2, "hints": ["Compare the transcript with the sentence in your book.", "Check the target phrase and record again."], "allowModel": true }
+    ],
+    "configuration": { "recordingBlockIds": ["recording"], "repairBlockId": "repair", "transcriptConfirmation": true },
+    "services": { "assessmentPolicyRef": "speech-repair-v1", "aiPolicyRef": "bounded-speech-feedback-v1", "permissionPolicyRef": "learner-microphone-v1" },
+    "metadata": { "contentVersion": 1, "owner": "content-team", "updatedAt": "2026-09-07T00:00:00Z", "tags": ["example", "recording"] }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "example-writing-capture-repair",
+    "code": "99005",
+    "locale": "en",
+    "status": "draft",
+    "archetype": "writing-capture-repair",
+    "variant": "fragment-preview",
+    "bookReference": { "worksheet": "WS1", "page": 6, "exercise": "5", "instruction": "Write the full paragraph in your book." },
+    "presentation": { "title": "Build and check", "tutorIntro": "Enter only the requested fragments from your handwritten paragraph.", "completionMessage": "Return to your book and apply the repair." },
+    "capabilities": ["text-entry", "writing-revision", "retry-coaching", "evidence-summary"],
+    "blocks": [
+      { "id": "fragments", "type": "short-text-input", "fields": [{ "id": "opening", "label": "Opening fragment" }, { "id": "detail", "label": "Detail fragment" }] },
+      { "id": "repair", "type": "retry-panel", "maxAttempts": 2, "hints": ["Check how the two fragments connect in your book."], "allowModel": false }
+    ],
+    "configuration": { "inputBlockIds": ["fragments"], "previewEnabled": true, "repairBlockId": "repair" },
+    "services": { "assessmentPolicyRef": "writing-fragment-v1", "aiPolicyRef": "bounded-writing-feedback-v1" },
+    "metadata": { "contentVersion": 1, "owner": "content-team", "updatedAt": "2026-09-07T00:00:00Z", "tags": ["example", "developer-extension"] }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "example-mastery-review",
+    "code": "99006",
+    "locale": "en",
+    "status": "draft",
+    "archetype": "mastery-review",
+    "variant": "priority-evidence-review",
+    "bookReference": { "worksheet": "WS2", "page": 12, "exercise": "Review" },
+    "presentation": { "title": "Review your priorities", "tutorIntro": "Use the marked work in your book for this short review.", "completionMessage": "Your review result is ready." },
+    "capabilities": ["choice-input", "recording", "guided-tracking", "mastery-gate", "evidence-summary"],
+    "blocks": [
+      { "id": "evidence", "type": "book-reference", "label": "Use the two items you marked for review in the book." },
+      { "id": "review-choice", "type": "choice-group", "prompt": "Choose the letter for your reviewed item.", "options": [{ "id": "review-a", "label": "A" }, { "id": "review-b", "label": "B" }] }
+    ],
+    "configuration": { "evidenceBlockIds": ["evidence"], "reviewBlockIds": ["review-choice"], "masteryResult": "trusted-service" },
+    "services": { "assessmentPolicyRef": "priority-mastery-v1" },
+    "metadata": { "contentVersion": 1, "owner": "content-team", "updatedAt": "2026-09-07T00:00:00Z", "tags": ["example", "mastery"] }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "example-readiness-checklist",
+    "code": "99007",
+    "locale": "en",
+    "status": "draft",
+    "archetype": "readiness-checklist",
+    "variant": "speaking-plan-readiness",
+    "bookReference": { "worksheet": "WS5", "page": 20, "exercise": "Plan" },
+    "presentation": { "title": "Ready to continue?", "tutorIntro": "Check that the required work is complete in your book.", "completionMessage": "You are ready for the next activity." },
+    "capabilities": ["readiness-check", "evidence-summary"],
+    "blocks": [
+      { "id": "intro", "type": "tutor-message", "text": "Tick each item only after checking your book." },
+      { "id": "readiness", "type": "readiness-checklist", "items": [{ "id": "notes", "label": "My notes are complete in the book." }, { "id": "example", "label": "I marked an example to use." }], "requireEvidence": false }
+    ],
+    "configuration": { "checklistBlockId": "readiness", "unlockWhen": "all-checked" },
+    "services": {},
+    "metadata": { "contentVersion": 1, "owner": "content-team", "updatedAt": "2026-09-07T00:00:00Z", "tags": ["example", "readiness"] }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "example-speaking-coach",
+    "code": "99008",
+    "locale": "en",
+    "status": "draft",
+    "archetype": "speaking-coach",
+    "variant": "guided-role-play",
+    "bookReference": { "worksheet": "WS4", "page": 18, "exercise": "Role-play", "instruction": "Prepare your role and notes in the book." },
+    "presentation": { "title": "Role-play coach", "tutorIntro": "Listen to the cue and respond using your notes.", "completionMessage": "Your speaking round is complete." },
+    "capabilities": ["role-play", "listening", "recording", "transcript-confirmation", "guided-tracking", "mastery-gate", "evidence-summary"],
+    "blocks": [
+      { "id": "round-one", "type": "listening-playback", "items": [{ "id": "cue-one", "audioAssetId": "role-play-cue-one" }] },
+      { "id": "response", "type": "recording", "label": "Record your response", "range": "One turn", "transcriptConfirmation": true, "maxDurationSeconds": 45 },
+      { "id": "progress", "type": "progress-steps", "steps": ["Listen", "Respond", "Review"] }
+    ],
+    "configuration": { "roundBlockIds": ["round-one"], "recordingBlockId": "response", "transcriptConfirmation": true, "completionResult": "trusted-service" },
+    "services": { "assessmentPolicyRef": "speaking-round-v1", "aiPolicyRef": "bounded-speaking-coach-v1", "permissionPolicyRef": "learner-microphone-v1", "mediaCollectionRef": "role-play-audio-v1" },
+    "metadata": { "contentVersion": 1, "owner": "content-team", "updatedAt": "2026-09-07T00:00:00Z", "tags": ["example", "speaking"] }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "example-listening-choice-assessment",
+    "code": "99009",
+    "locale": "en",
+    "status": "draft",
+    "archetype": "listening-choice-assessment",
+    "variant": "symbolic-listening-choice",
+    "bookReference": { "worksheet": "WS6", "page": 24, "exercise": "1" },
+    "presentation": { "title": "Listen and choose", "tutorIntro": "Listen before choosing the answer letter from your book.", "completionMessage": "Your listening check is complete." },
+    "capabilities": ["listening", "choice-input", "retry-coaching", "guided-tracking", "evidence-summary"],
+    "blocks": [
+      { "id": "audio", "type": "listening-playback", "items": [{ "id": "item-one-audio", "audioAssetId": "ws6-listening-one" }] },
+      { "id": "item-one", "type": "choice-group", "prompt": "Choose the answer for item 1.", "bookItem": "1", "options": [{ "id": "item-one-a", "label": "A" }, { "id": "item-one-b", "label": "B" }, { "id": "item-one-c", "label": "C" }] },
+      { "id": "retry", "type": "retry-panel", "maxAttempts": 2, "hints": ["Replay the relevant part and compare the choices in your book."], "allowModel": false }
+    ],
+    "configuration": { "playbackBlockId": "audio", "choiceBlockIds": ["item-one"], "retryBlockId": "retry", "requirePlaybackBeforeAnswer": true },
+    "services": { "assessmentPolicyRef": "listening-symbolic-choice-v1", "mediaCollectionRef": "ws6-audio-v1" },
+    "metadata": { "contentVersion": 1, "owner": "content-team", "updatedAt": "2026-09-07T00:00:00Z", "tags": ["example", "listening"] }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "example-sequence-ordering-repair",
+    "code": "99010",
+    "locale": "en",
+    "status": "draft",
+    "archetype": "sequence-ordering-repair",
+    "variant": "paragraph-symbol-order",
+    "bookReference": { "worksheet": "WS6", "page": 26, "exercise": "4", "instruction": "Read the complete paragraph parts in the book." },
+    "presentation": { "title": "Order the parts", "tutorIntro": "Enter only the letter sequence shown in your book.", "completionMessage": "Your sequence check is complete." },
+    "capabilities": ["ordering", "retry-coaching", "guided-tracking", "evidence-summary"],
+    "blocks": [
+      { "id": "book", "type": "book-reference", "label": "Use the paragraph parts printed in exercise 4." },
+      { "id": "sequence", "type": "sequence-order", "slots": 4, "symbols": ["A", "B", "C", "D"] },
+      { "id": "repair", "type": "retry-panel", "maxAttempts": 3, "hints": ["Find the opening idea first.", "Check how the linking words connect the parts."], "allowModel": true }
+    ],
+    "configuration": { "sequenceBlockId": "sequence", "repairBlockId": "repair", "guidedOnModel": true },
+    "services": { "assessmentPolicyRef": "sequence-order-v1" },
+    "metadata": { "contentVersion": 1, "owner": "content-team", "updatedAt": "2026-09-07T00:00:00Z", "tags": ["example", "book-first"] }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "example-writing-coach",
+    "code": "99011",
+    "locale": "en",
+    "status": "draft",
+    "archetype": "writing-coach",
+    "variant": "draft-feedback-revision",
+    "bookReference": { "worksheet": "WS6", "page": 28, "exercise": "Writing", "instruction": "Keep the complete draft in your book." },
+    "presentation": { "title": "Writing coach", "tutorIntro": "Enter the draft requested by your teacher, check your book and revise.", "completionMessage": "Your revised draft is ready for review." },
+    "capabilities": ["writing-revision", "mastery-gate", "evidence-summary"],
+    "blocks": [
+      { "id": "draft", "type": "draft-input", "label": "First draft", "minWords": 20, "maxWords": 180 },
+      { "id": "verification", "type": "writing-verification", "items": [{ "id": "book-draft", "label": "The complete draft is written in my book." }, { "id": "target-language", "label": "I checked the target language in the book." }], "requireEvidence": true },
+      { "id": "revision", "type": "revision-input", "label": "Revised draft", "minWords": 20, "maxWords": 180 },
+      { "id": "comparison", "type": "draft-comparison", "label": "Compare first and revised drafts" }
+    ],
+    "configuration": { "draftBlockId": "draft", "verificationBlockId": "verification", "revisionBlockId": "revision", "comparisonBlockId": "comparison", "masteryResult": "trusted-service" },
+    "services": { "assessmentPolicyRef": "writing-mastery-v1", "aiPolicyRef": "bounded-writing-coach-v1" },
+    "metadata": { "contentVersion": 1, "owner": "content-team", "updatedAt": "2026-09-07T00:00:00Z", "tags": ["example", "writing"] }
+  }
+]

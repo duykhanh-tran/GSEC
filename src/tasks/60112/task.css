@@ -1,0 +1,130 @@
+.task-60112 .chat {
+  padding-bottom: 118px;
+}
+
+.task-60112 .card,
+.task-60112 .summary {
+  margin: 2px 0 16px 43px;
+  overflow: hidden;
+  border: 1px solid #e9d8e0;
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.task-60112 .ch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px 9px;
+  border-bottom: 1px solid #f2e8ed;
+}
+
+.task-60112 .ch h2 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.task-60112 .ch span {
+  color: var(--color-muted);
+  font-size: 11px;
+}
+
+.task-60112 .cb {
+  padding: 14px;
+}
+
+.task-60112 .choices {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.task-60112 .choices .choice-group__option {
+  min-height: 42px;
+  padding: 8px 4px;
+}
+
+.task-60112 .msg {
+  min-height: 22px;
+  margin-top: 10px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.task-60112 .msg.ok {
+  color: var(--color-success);
+}
+
+.task-60112 .msg.bad {
+  color: var(--color-error);
+}
+
+.task-60112 #hint {
+  margin-top: 8px;
+  padding: 9px 10px;
+  border-radius: 11px;
+  color: #6f3b56;
+  background: var(--color-primary-soft);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.task-60112 .word {
+  margin: 8px 0 2px;
+  text-align: center;
+  font-size: 26px;
+  font-weight: 850;
+}
+
+.task-60112 .actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.task-60112 .feedback {
+  margin-top: 12px;
+  padding: 10px 11px;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+.task-60112 .feedback.ok {
+  color: var(--color-success);
+  background: var(--color-success-soft);
+}
+
+.task-60112 .summary {
+  border-color: #cde7d5;
+}
+
+.task-60112 .summary .ch {
+  border-bottom-color: #dfeee4;
+  background: var(--color-success-soft);
+}
+
+.task-60112 .summary .ch h2 {
+  color: var(--color-success);
+}
+
+.task-60112 .sr {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f1f3f5;
+  font-size: 13px;
+}
+
+.task-60112 .sr:last-child {
+  border-bottom: 0;
+}
+
+@media (max-width: 380px) {
+  .task-60112 .choices {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}

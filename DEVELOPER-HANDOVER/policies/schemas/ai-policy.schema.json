@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gsec.local/schemas/ai-policy/1.0.0",
+  "title": "GSEC Server-only AI Policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contractVersion", "id", "status", "useCase", "providerProfileRef", "promptTemplateRef", "input", "output", "guardrails", "review", "failure", "privacy", "security", "audit"],
+  "properties": {
+    "contractVersion": { "const": "1.0.0" },
+    "id": { "$ref": "#/$defs/slug" },
+    "status": { "enum": ["draft", "approved", "retired"] },
+    "useCase": { "enum": ["speech-feedback", "writing-feedback", "speaking-coach", "writing-coach"] },
+    "providerProfileRef": { "$ref": "#/$defs/slug" },
+    "promptTemplateRef": { "$ref": "#/$defs/slug" },
+    "input": {
+      "type": "object", "additionalProperties": false, "required": ["allowedFields", "maxCharacters", "acceptsAudio", "rejectUnknownFields"],
+      "properties": {
+        "allowedFields": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["taskInstruction", "bookReference", "learnerResponse", "transcript", "attemptNumber", "rubricRef", "locale"] } },
+        "maxCharacters": { "type": "integer", "minimum": 100, "maximum": 20000 },
+        "acceptsAudio": { "type": "boolean" },
+        "rejectUnknownFields": { "const": true }
+      }
+    },
+    "output": {
+      "type": "object", "additionalProperties": false, "required": ["schemaRef", "maxFeedbackItems", "allowedFeedbackCodes", "freeText"],
+      "properties": {
+        "schemaRef": { "$ref": "#/$defs/slug" },
+        "maxFeedbackItems": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "allowedFeedbackCodes": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/slug" } },
+        "freeText": { "enum": ["forbidden", "bounded"] }
+      }
+    },
+    "guardrails": {
+      "type": "object", "additionalProperties": false,
+      "required": ["bookFirst", "noAnswerDisclosure", "noOpenChat", "noPermissionDecision", "noIndependentMasteryDecision", "promptInjectionHandling"],
+      "properties": {
+        "bookFirst": { "const": true },
+        "noAnswerDisclosure": { "const": true },
+        "noOpenChat": { "const": true },
+        "noPermissionDecision": { "const": true },
+        "noIndependentMasteryDecision": { "const": true },
+        "promptInjectionHandling": { "const": "treat-learner-content-as-data" }
+      }
+    },
+    "review": {
+      "type": "object", "additionalProperties": false, "required": ["mode", "lowConfidenceAction"],
+      "properties": { "mode": { "enum": ["automatic-bounded", "teacher-review-required"] }, "lowConfidenceAction": { "enum": ["deterministic-fallback", "teacher-review"] }, "confidenceThreshold": { "type": "number", "minimum": 0, "maximum": 1 } }
+    },
+    "failure": {
+      "type": "object", "additionalProperties": false, "required": ["timeoutMs", "onTimeout", "onInvalidOutput", "maxRetries"],
+      "properties": { "timeoutMs": { "type": "integer", "minimum": 1000, "maximum": 30000 }, "onTimeout": { "enum": ["deterministic-fallback", "teacher-review", "unavailable"] }, "onInvalidOutput": { "enum": ["deterministic-fallback", "teacher-review", "unavailable"] }, "maxRetries": { "type": "integer", "minimum": 0, "maximum": 1 } }
+    },
+    "privacy": {
+      "type": "object", "additionalProperties": false, "required": ["storeRawInput", "storeRawOutput", "retentionDays", "redactDirectIdentifiers"],
+      "properties": { "storeRawInput": { "type": "boolean" }, "storeRawOutput": { "type": "boolean" }, "retentionDays": { "type": "integer", "minimum": 0, "maximum": 30 }, "redactDirectIdentifiers": { "const": true } }
+    },
+    "security": {
+      "type": "object", "additionalProperties": false, "required": ["classification", "exposeToLearnerClient", "credentialsInPolicy"],
+      "properties": { "classification": { "const": "server-confidential" }, "exposeToLearnerClient": { "const": false }, "credentialsInPolicy": { "const": false } }
+    },
+    "audit": { "$ref": "#/$defs/audit" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$", "maxLength": 120 },
+    "audit": { "type": "object", "additionalProperties": false, "required": ["version", "owner", "updatedAt", "changeReason"], "properties": { "version": { "type": "integer", "minimum": 1 }, "owner": { "$ref": "#/$defs/slug" }, "updatedAt": { "type": "string", "format": "date-time" }, "changeReason": { "type": "string", "minLength": 1, "maxLength": 240 } } }
+  }
+}

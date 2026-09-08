@@ -1,0 +1,2 @@
+export const LISTEN_60123=[{word:'study',key:'/ʌ/'},{word:'class',key:'/ɑː/'},{word:'art',key:'/ɑː/'},{word:'Monday',key:'/ʌ/'},{word:'smart',key:'/ɑː/'},{word:'subject',key:'/ʌ/'},{word:'start',key:'/ɑː/'},{word:'lunch',key:'/ʌ/'}] as const
+export const PRONUNCIATION_60123=[{label:'3B',sound:'/ɑː/',words:['art','class','start','smart']},{label:'3C',sound:'/ʌ/',words:['subject','study','Monday','lunch']}] as const

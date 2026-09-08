@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gsec.local/schemas/permission-policy/1.0.0",
+  "title": "GSEC Permission Policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contractVersion", "id", "status", "policyType", "defaultEffect", "configuration", "security", "audit"],
+  "properties": {
+    "contractVersion": { "const": "1.0.0" },
+    "id": { "$ref": "#/$defs/slug" },
+    "status": { "enum": ["draft", "approved", "retired"] },
+    "policyType": { "enum": ["role-access", "runtime-capability"] },
+    "defaultEffect": { "const": "deny" },
+    "configuration": { "type": "object" },
+    "security": {
+      "type": "object", "additionalProperties": false, "required": ["evaluateOnServer", "auditDeniedActions"],
+      "properties": { "evaluateOnServer": { "const": true }, "auditDeniedActions": { "const": true } }
+    },
+    "audit": { "$ref": "#/$defs/audit" }
+  },
+  "allOf": [
+    { "if": { "properties": { "policyType": { "const": "role-access" } } }, "then": { "properties": { "configuration": { "$ref": "#/$defs/roleAccess" } } } },
+    { "if": { "properties": { "policyType": { "const": "runtime-capability" } } }, "then": { "properties": { "configuration": { "$ref": "#/$defs/runtimeCapability" } } } }
+  ],
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$", "maxLength": 120 },
+    "role": { "enum": ["content-author", "content-reviewer", "platform-admin", "teacher", "learner", "assessment-service", "ai-service"] },
+    "resource": { "enum": ["task-draft", "task-published", "assessment-policy", "ai-policy", "permission-policy", "learner-attempt", "learner-result", "audio-recording", "audit-log", "class-assignment"] },
+    "action": { "enum": ["create", "read", "update", "submit-review", "approve", "publish", "archive", "assign", "attempt", "evaluate", "request-ai", "review-result", "delete", "export"] },
+    "audit": { "type": "object", "additionalProperties": false, "required": ["version", "owner", "updatedAt", "changeReason"], "properties": { "version": { "type": "integer", "minimum": 1 }, "owner": { "$ref": "#/$defs/slug" }, "updatedAt": { "type": "string", "format": "date-time" }, "changeReason": { "type": "string", "minLength": 1, "maxLength": 240 } } },
+    "roleAccess": {
+      "type": "object", "additionalProperties": false, "required": ["rules", "separationOfDuties"],
+      "properties": {
+        "rules": {
+          "type": "array", "minItems": 1,
+          "items": {
+            "type": "object", "additionalProperties": false, "required": ["role", "resource", "actions", "effect"],
+            "properties": { "role": { "$ref": "#/$defs/role" }, "resource": { "$ref": "#/$defs/resource" }, "actions": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/action" } }, "effect": { "const": "allow" }, "scope": { "enum": ["own", "assigned", "organization", "service"] } }
+          }
+        },
+        "separationOfDuties": { "type": "object", "additionalProperties": false, "required": ["authorCannotApproveOwnTask", "policyChangeRequiresReviewer", "publishedRevisionIsImmutable"], "properties": { "authorCannotApproveOwnTask": { "const": true }, "policyChangeRequiresReviewer": { "const": true }, "publishedRevisionIsImmutable": { "const": true } } }
+      }
+    },
+    "runtimeCapability": {
+      "type": "object", "additionalProperties": false,
+      "required": ["capability", "allowedRoles", "requiresUserGesture", "requiresConsent", "requiresSecureContext", "onDenied", "retention"],
+      "properties": {
+        "capability": { "enum": ["microphone", "audio-playback", "speech-recognition"] },
+        "allowedRoles": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/role" } },
+        "requiresUserGesture": { "type": "boolean" },
+        "requiresConsent": { "type": "boolean" },
+        "requiresSecureContext": { "type": "boolean" },
+        "onDenied": { "enum": ["show-retry-guidance", "offer-non-recording-fallback", "block-with-explanation"] },
+        "retention": { "type": "object", "additionalProperties": false, "required": ["storeRawMedia", "days"], "properties": { "storeRawMedia": { "type": "boolean" }, "days": { "type": "integer", "minimum": 0, "maximum": 30 } } }
+      }
+    }
+  }
+}

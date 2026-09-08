@@ -1,0 +1,12 @@
+[
+  { "name": "assessment-exposed-to-client", "collection": "assessmentPolicies", "baseId": "symbolic-choice-v1", "operation": "set", "path": "security.exposeToLearnerClient", "value": true, "expectedRule": "assessment policy must remain server-confidential" },
+  { "name": "assessment-allows-guided-mastery", "collection": "assessmentPolicies", "baseId": "symbolic-choice-v1", "operation": "set", "path": "mastery.independentOnly", "value": false, "expectedRule": "mastery must remain independent-only" },
+  { "name": "ai-can-disclose-answer", "collection": "aiPolicies", "baseId": "bounded-writing-coach-v1", "operation": "set", "path": "guardrails.noAnswerDisclosure", "value": false, "expectedRule": "AI guardrail disabled" },
+  { "name": "raw-system-prompt-in-policy-catalog", "collection": "aiPolicies", "baseId": "bounded-speech-feedback-v1", "operation": "set", "path": "systemPrompt", "value": "Hidden prompt text", "expectedRule": "raw prompt or credential field" },
+  { "name": "permission-default-allow", "collection": "permissionPolicies", "baseId": "platform-role-access-v1", "operation": "set", "path": "defaultEffect", "value": "allow", "expectedRule": "permission default must be deny" },
+  { "name": "learner-can-publish", "collection": "permissionPolicies", "baseId": "platform-role-access-v1", "operation": "set", "path": "configuration.rules.7.actions.1", "value": "publish", "expectedRule": "learner has forbidden action" },
+  { "name": "microphone-without-consent", "collection": "permissionPolicies", "baseId": "learner-microphone-v1", "operation": "set", "path": "configuration.requiresConsent", "value": false, "expectedRule": "microphone requires consent" },
+  { "name": "answer-shown-but-independent", "collection": "outcomes", "baseId": "attempt-003", "operation": "set", "path": "supportMode", "value": "independent", "expectedRule": "answer shown must be guided" },
+  { "name": "guided-attempt-awards-independent-mastery", "collection": "outcomes", "baseId": "attempt-003", "operation": "set", "path": "independentMastery", "value": true, "expectedRule": "guided outcome cannot award independent mastery" },
+  { "name": "score-above-maximum", "collection": "outcomes", "baseId": "attempt-001", "operation": "set", "path": "score", "value": 2, "expectedRule": "score exceeds maxScore" }
+]

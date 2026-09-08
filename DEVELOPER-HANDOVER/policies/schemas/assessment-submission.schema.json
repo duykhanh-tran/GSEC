@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gsec.local/schemas/assessment-submission/1.0.0",
+  "title": "GSEC Learner Assessment Submission",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contractVersion", "submissionId", "taskId", "taskContentVersion", "policyRef", "actorSessionRef", "responses", "clientContext", "submittedAt"],
+  "properties": {
+    "contractVersion": { "const": "1.0.0" },
+    "submissionId": { "$ref": "#/$defs/id" },
+    "taskId": { "$ref": "#/$defs/id" },
+    "taskContentVersion": { "type": "integer", "minimum": 1 },
+    "policyRef": { "$ref": "#/$defs/slug" },
+    "actorSessionRef": { "$ref": "#/$defs/id" },
+    "responses": { "type": "array", "minItems": 1, "maxItems": 40, "items": { "$ref": "#/$defs/response" } },
+    "clientContext": {
+      "type": "object", "additionalProperties": false, "required": ["locale", "clientVersion", "supportEvents"],
+      "properties": {
+        "locale": { "enum": ["en", "vi", "en-VN"] },
+        "clientVersion": { "$ref": "#/$defs/slug" },
+        "playbackCompleted": { "type": "boolean" },
+        "supportEvents": {
+          "type": "array", "maxItems": 20,
+          "items": {
+            "type": "object", "additionalProperties": false, "required": ["type", "at"],
+            "properties": { "type": { "enum": ["hint-shown", "deep-hint-shown", "model-shown", "answer-shown", "replay-used"] }, "at": { "type": "string", "format": "date-time" } }
+          }
+        }
+      }
+    },
+    "submittedAt": { "type": "string", "format": "date-time" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$", "maxLength": 120 },
+    "id": { "type": "string", "pattern": "^[a-zA-Z0-9]+(?:[-_:][a-zA-Z0-9]+)*$", "maxLength": 120 },
+    "response": {
+      "oneOf": [
+        { "type": "object", "additionalProperties": false, "required": ["itemId", "type", "value"], "properties": { "itemId": { "$ref": "#/$defs/slug" }, "type": { "const": "short-text" }, "value": { "type": "string", "maxLength": 1000 } } },
+        { "type": "object", "additionalProperties": false, "required": ["itemId", "type", "optionId"], "properties": { "itemId": { "$ref": "#/$defs/slug" }, "type": { "const": "symbolic-choice" }, "optionId": { "$ref": "#/$defs/slug" } } },
+        { "type": "object", "additionalProperties": false, "required": ["itemId", "type", "values"], "properties": { "itemId": { "$ref": "#/$defs/slug" }, "type": { "const": "sequence" }, "values": { "type": "array", "minItems": 2, "maxItems": 12, "items": { "type": "string", "pattern": "^[A-L]$" } } } },
+        { "type": "object", "additionalProperties": false, "required": ["itemId", "type", "transcript", "transcriptConfirmed"], "properties": { "itemId": { "$ref": "#/$defs/slug" }, "type": { "const": "speech" }, "transcript": { "type": "string", "maxLength": 4000 }, "transcriptConfirmed": { "type": "boolean" }, "mediaUploadRef": { "$ref": "#/$defs/id" } } },
+        { "type": "object", "additionalProperties": false, "required": ["itemId", "type", "text"], "properties": { "itemId": { "$ref": "#/$defs/slug" }, "type": { "const": "writing" }, "text": { "type": "string", "maxLength": 12000 } } },
+        { "type": "object", "additionalProperties": false, "required": ["itemId", "type", "confirmed"], "properties": { "itemId": { "$ref": "#/$defs/slug" }, "type": { "const": "evidence" }, "confirmed": { "type": "boolean" }, "note": { "type": "string", "maxLength": 600 } } }
+      ]
+    }
+  }
+}

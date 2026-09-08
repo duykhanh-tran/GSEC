@@ -1,0 +1,24 @@
+[
+  {
+    "contractVersion": "1.0.0",
+    "submissionId": "submission-001",
+    "taskId": "example-guided-choice",
+    "taskContentVersion": 1,
+    "policyRef": "symbolic-choice-v1",
+    "actorSessionRef": "session-opaque-001",
+    "responses": [{ "itemId": "question-one", "type": "symbolic-choice", "optionId": "q1-b" }],
+    "clientContext": { "locale": "en", "clientVersion": "react-client-v1", "supportEvents": [] },
+    "submittedAt": "2026-09-07T00:00:00Z"
+  },
+  {
+    "contractVersion": "1.0.0",
+    "submissionId": "submission-002",
+    "taskId": "example-recording-feedback",
+    "taskContentVersion": 1,
+    "policyRef": "speech-repair-v1",
+    "actorSessionRef": "session-opaque-002",
+    "responses": [{ "itemId": "recording", "type": "speech", "transcript": "Synthetic learner transcript.", "transcriptConfirmed": true, "mediaUploadRef": "upload-opaque-001" }],
+    "clientContext": { "locale": "en", "clientVersion": "react-client-v1", "supportEvents": [{ "type": "hint-shown", "at": "2026-09-07T00:00:00Z" }] },
+    "submittedAt": "2026-09-07T00:00:01Z"
+  }
+]

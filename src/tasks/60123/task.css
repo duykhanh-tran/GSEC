@@ -1,0 +1,8 @@
+.task-60123 .chat { padding-bottom: 190px; scroll-padding-bottom: 140px; }
+.task-60123 .sub { margin: 10px 0; text-align: center; }
+.task-60123 [data-play-count] { margin-top: 8px; color: var(--color-muted); text-align: center; font-size: 12px; }
+.task-60123 [data-enter-answers] { width: 100%; margin-top: 10px; }
+.task-60123 .hint { margin: 8px 0; padding: 9px 10px; border-radius: 11px; color: #6f3b56; background: var(--color-primary-soft); }
+.task-60123 .micro { min-height: 18px; margin-top: 8px; text-align: center; font-size: 12px; font-weight: 800; }
+.task-60123 .word { margin: 8px 0 2px; text-align: center; font-size: 27px; font-weight: 850; }
+.task-60123 .target { margin-bottom: 12px; text-align: center; }

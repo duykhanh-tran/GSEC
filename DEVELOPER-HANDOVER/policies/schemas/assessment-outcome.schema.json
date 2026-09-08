@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gsec.local/schemas/assessment-outcome/1.0.0",
+  "title": "GSEC Learner-safe Assessment Outcome",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contractVersion", "attemptId", "taskId", "status", "score", "maxScore", "supportMode", "answerShown", "independentMastery", "feedbackCodes", "incorrectItemIds", "nextAction", "evaluatedAt"],
+  "properties": {
+    "contractVersion": { "const": "1.0.0" },
+    "attemptId": { "$ref": "#/$defs/id" },
+    "taskId": { "$ref": "#/$defs/id" },
+    "status": { "enum": ["correct", "incorrect", "partial", "pending-review", "unavailable"] },
+    "score": { "type": "number", "minimum": 0 },
+    "maxScore": { "type": "number", "exclusiveMinimum": 0 },
+    "supportMode": { "enum": ["independent", "guided"] },
+    "answerShown": { "type": "boolean" },
+    "independentMastery": { "type": "boolean" },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "feedbackCodes": { "type": "array", "maxItems": 12, "items": { "$ref": "#/$defs/id" } },
+    "incorrectItemIds": { "type": "array", "maxItems": 40, "items": { "$ref": "#/$defs/id" } },
+    "nextAction": { "enum": ["retry", "show-hint", "request-review", "complete", "unavailable"] },
+    "evaluatedAt": { "type": "string", "format": "date-time" }
+  },
+  "$defs": { "id": { "type": "string", "pattern": "^[a-zA-Z0-9]+(?:[-_:][a-zA-Z0-9]+)*$", "maxLength": 120 } }
+}

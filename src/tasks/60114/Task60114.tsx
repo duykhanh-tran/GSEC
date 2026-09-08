@@ -1,0 +1,1 @@
+import type { TaskComponentProps } from '../../app/task-types'; import { GuidedChoiceTask } from '../../components/assessment/GuidedChoiceTask'; import { TASK_60114_CONFIG } from './data'; export function Task60114(props:TaskComponentProps){return <GuidedChoiceTask {...props} config={TASK_60114_CONFIG}/>}

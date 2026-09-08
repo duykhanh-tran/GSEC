@@ -1,0 +1,160 @@
+.task-60115 .chat {
+  padding-bottom: 120px;
+}
+
+.task-60115 .card,
+.task-60115 .summary {
+  margin: 2px 0 16px 43px;
+  overflow: hidden;
+  border: 1px solid #e9d8e0;
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.task-60115 .ch {
+  padding: 12px 14px 9px;
+  border-bottom: 1px solid #f2e8ed;
+}
+
+.task-60115 .ch h2 {
+  margin: 0 0 2px;
+  font-size: 14px;
+}
+
+.task-60115 .ch p {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.task-60115 .cb {
+  padding: 14px;
+}
+
+.task-60115 .capture-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 9px;
+}
+
+.task-60115 .capture-row > span {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 9px;
+  color: #4b5563;
+  background: #f4f6f8;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.task-60115 .capture-row input,
+.task-60115 .repair input {
+  width: 100%;
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid #d9dde4;
+  border-radius: 12px;
+  outline: none;
+  background: var(--color-surface);
+  font: inherit;
+  font-size: 14px;
+}
+
+.task-60115 .capture-row input:focus,
+.task-60115 .repair input:focus {
+  border-color: #c982a7;
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
+}
+
+.task-60115 .actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.task-60115 .paragraph {
+  padding: 12px;
+  border: 1px solid #e9d8e0;
+  border-radius: 12px;
+  background: var(--color-surface-soft);
+  font-size: 14px;
+  line-height: 1.62;
+}
+
+.task-60115 .repair {
+  margin: 2px 0 16px 43px;
+  padding: 12px;
+  border: 1px solid var(--color-primary-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface-soft);
+  box-shadow: var(--shadow-card);
+}
+
+.task-60115 .repair > strong {
+  display: inline-grid;
+  width: 30px;
+  height: 30px;
+  margin-bottom: 8px;
+  place-items: center;
+  border-radius: 9px;
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.task-60115 .hint {
+  margin-bottom: 10px;
+  padding: 9px 10px;
+  border-radius: 11px;
+  color: #6f3b56;
+  background: var(--color-primary-soft);
+  font-size: 12px;
+  line-height: 1.42;
+}
+
+.task-60115 .repair .action-button {
+  width: 100%;
+  margin-top: 9px;
+}
+
+.task-60115 .summary {
+  border-color: #cde7d5;
+}
+
+.task-60115 .summary .ch {
+  border-bottom-color: #dfeee4;
+  background: var(--color-success-soft);
+}
+
+.task-60115 .summary .ch h2 {
+  color: var(--color-success);
+}
+
+.task-60115 .sr {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f1f3f5;
+  font-size: 13px;
+}
+
+.task-60115 .reuse {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.task-60115 .reuse > div {
+  padding: 9px;
+  border: 1px solid #e9d8e0;
+  border-radius: 11px;
+  background: var(--color-surface-soft);
+  font-size: 12px;
+}

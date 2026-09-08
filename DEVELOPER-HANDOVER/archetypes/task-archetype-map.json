@@ -1,0 +1,148 @@
+{
+  "catalogVersion": "handover-archetypes-1",
+  "architectureContract": "architecture-3",
+  "classificationRule": {
+    "primaryArchetype": "The complete authoring template that owns the task state flow and completion contract.",
+    "variant": "A bounded variation that does not change the primary completion contract.",
+    "capability": "A reusable interaction or service used by one or more archetypes."
+  },
+  "capabilityVocabulary": [
+    "text-entry",
+    "choice-input",
+    "listening",
+    "recording",
+    "transcript-confirmation",
+    "retry-coaching",
+    "guided-tracking",
+    "mastery-gate",
+    "ordering",
+    "writing-revision",
+    "readiness-check",
+    "role-play",
+    "evidence-summary"
+  ],
+  "archetypes": [
+    {
+      "id": "structured-answer-retry",
+      "label": "Structured answer entry and retry",
+      "purpose": "Capture several worksheet answers, identify errors, coach a focused retry queue and complete with evidence.",
+      "referenceTasks": ["60131", "60111"],
+      "taskCodes": ["60111", "60121", "60131"],
+      "authoringLevel": "guarded-template"
+    },
+    {
+      "id": "guided-choice",
+      "label": "Guided symbolic choice",
+      "purpose": "Check symbol-only choices, provide Book-first hints and track Guided versus Independent completion.",
+      "referenceTasks": ["60152", "60142"],
+      "taskCodes": ["60113", "60114", "60122", "60132", "60133", "60134", "60141", "60142", "60151", "60152", "60153"],
+      "authoringLevel": "form-ready"
+    },
+    {
+      "id": "listen-classify-pronounce",
+      "label": "Listen, classify and pronounce",
+      "purpose": "Run an app-provided listening sequence, collect a classification and continue to pronunciation practice.",
+      "referenceTasks": ["60123", "60112"],
+      "taskCodes": ["60112", "60123"],
+      "authoringLevel": "guarded-template"
+    },
+    {
+      "id": "recording-feedback",
+      "label": "Recording, transcript and repair",
+      "purpose": "Capture learner speech, confirm or inspect a transcript, provide bounded repair and record support use.",
+      "referenceTasks": ["60163", "60125"],
+      "taskCodes": ["60116", "60124", "60125", "60135", "60143", "60163"],
+      "authoringLevel": "guarded-template"
+    },
+    {
+      "id": "writing-capture-repair",
+      "label": "Writing capture and targeted repair",
+      "purpose": "Capture learner-written fragments, build a preview and return a targeted correction to the worksheet.",
+      "referenceTasks": ["60115"],
+      "taskCodes": ["60115"],
+      "authoringLevel": "developer-extension"
+    },
+    {
+      "id": "mastery-review",
+      "label": "Priority review and mastery",
+      "purpose": "Review selected evidence, run a mastery check and route unmet criteria to targeted practice.",
+      "referenceTasks": ["60126"],
+      "taskCodes": ["60126"],
+      "authoringLevel": "guarded-template"
+    },
+    {
+      "id": "readiness-checklist",
+      "label": "Readiness checklist",
+      "purpose": "Verify that required work remains in the worksheet before unlocking the next speaking or writing task.",
+      "referenceTasks": ["60165", "60154"],
+      "taskCodes": ["60154", "60165"],
+      "authoringLevel": "form-ready"
+    },
+    {
+      "id": "speaking-coach",
+      "label": "Speaking and role-play coach",
+      "purpose": "Coordinate speaking rounds, app prompts, recording feedback, revision and mastery or Guided completion.",
+      "referenceTasks": ["60155", "60144"],
+      "taskCodes": ["60144", "60155"],
+      "authoringLevel": "guarded-template"
+    },
+    {
+      "id": "listening-choice-assessment",
+      "label": "Listening choice assessment",
+      "purpose": "Require app-provided playback before symbolic choice assessment, targeted replay and evidence summary.",
+      "referenceTasks": ["60162", "60161"],
+      "taskCodes": ["60161", "60162"],
+      "authoringLevel": "form-ready"
+    },
+    {
+      "id": "sequence-ordering-repair",
+      "label": "Sequence ordering and repair",
+      "purpose": "Capture a symbolic sequence, repair one position at a time and gate model-supported completion as Guided.",
+      "referenceTasks": ["60164"],
+      "taskCodes": ["60164"],
+      "authoringLevel": "guarded-template"
+    },
+    {
+      "id": "writing-coach",
+      "label": "Writing feedback and revision coach",
+      "purpose": "Capture a learner draft, verify book-only mechanics, provide bounded feedback, compare revision and evaluate mastery.",
+      "referenceTasks": ["60166"],
+      "taskCodes": ["60166"],
+      "authoringLevel": "guarded-template"
+    }
+  ],
+  "taskMappings": [
+    { "code": "60111", "primaryArchetype": "structured-answer-retry", "variant": "vocabulary-gap-entry", "capabilities": ["text-entry", "retry-coaching", "evidence-summary"], "contentSources": ["worksheet", "learner"], "implementation": "composed-tsx" },
+    { "code": "60112", "primaryArchetype": "listen-classify-pronounce", "variant": "word-letter-matching", "capabilities": ["listening", "choice-input", "recording", "retry-coaching"], "contentSources": ["app", "learner"], "implementation": "composed-tsx" },
+    { "code": "60113", "primaryArchetype": "guided-choice", "variant": "listening-supported-multiple-choice", "capabilities": ["choice-input", "listening", "retry-coaching", "evidence-summary"], "contentSources": ["worksheet", "app"], "implementation": "config-wrapper" },
+    { "code": "60114", "primaryArchetype": "guided-choice", "variant": "listening-supported-true-false", "capabilities": ["choice-input", "listening", "retry-coaching", "evidence-summary"], "contentSources": ["worksheet", "app"], "implementation": "config-wrapper" },
+    { "code": "60115", "primaryArchetype": "writing-capture-repair", "variant": "fragment-to-paragraph", "capabilities": ["text-entry", "writing-revision", "retry-coaching", "evidence-summary"], "contentSources": ["worksheet", "learner"], "implementation": "composed-tsx", "exception": "The paragraph composer is currently a task-local composition." },
+    { "code": "60116", "primaryArchetype": "recording-feedback", "variant": "free-speaking-practice", "capabilities": ["recording", "retry-coaching", "evidence-summary"], "contentSources": ["worksheet", "learner"], "implementation": "composed-tsx" },
+    { "code": "60121", "primaryArchetype": "structured-answer-retry", "variant": "collocation-matrix", "capabilities": ["text-entry", "choice-input", "retry-coaching", "evidence-summary"], "contentSources": ["worksheet", "learner"], "implementation": "composed-tsx" },
+    { "code": "60122", "primaryArchetype": "guided-choice", "variant": "meaning-choice", "capabilities": ["choice-input", "retry-coaching", "evidence-summary"], "contentSources": ["worksheet"], "implementation": "config-wrapper" },
+    { "code": "60123", "primaryArchetype": "listen-classify-pronounce", "variant": "sound-classification", "capabilities": ["listening", "choice-input", "recording", "retry-coaching"], "contentSources": ["app", "learner"], "implementation": "composed-tsx" },
+    { "code": "60124", "primaryArchetype": "recording-feedback", "variant": "sentence-fluency-sequence", "capabilities": ["recording", "transcript-confirmation", "retry-coaching", "evidence-summary"], "contentSources": ["worksheet", "learner"], "implementation": "composed-tsx" },
+    { "code": "60125", "primaryArchetype": "recording-feedback", "variant": "asr-versus-writing-repair", "capabilities": ["recording", "transcript-confirmation", "retry-coaching", "evidence-summary"], "contentSources": ["worksheet", "learner"], "implementation": "composed-tsx" },
+    { "code": "60126", "primaryArchetype": "mastery-review", "variant": "priority-review", "capabilities": ["choice-input", "retry-coaching", "guided-tracking", "mastery-gate", "evidence-summary"], "contentSources": ["worksheet"], "implementation": "composed-tsx" },
+    { "code": "60131", "primaryArchetype": "structured-answer-retry", "variant": "grammar-form-entry", "capabilities": ["text-entry", "retry-coaching", "guided-tracking", "evidence-summary"], "contentSources": ["worksheet", "learner"], "implementation": "composed-tsx" },
+    { "code": "60132", "primaryArchetype": "guided-choice", "variant": "form-and-meaning-choice", "capabilities": ["choice-input", "retry-coaching", "evidence-summary"], "contentSources": ["worksheet"], "implementation": "config-wrapper" },
+    { "code": "60133", "primaryArchetype": "guided-choice", "variant": "frequency-position-choice", "capabilities": ["choice-input", "retry-coaching", "evidence-summary"], "contentSources": ["worksheet"], "implementation": "config-wrapper" },
+    { "code": "60134", "primaryArchetype": "guided-choice", "variant": "frequency-meaning-choice", "capabilities": ["choice-input", "retry-coaching", "evidence-summary"], "contentSources": ["worksheet"], "implementation": "config-wrapper", "exception": "The weekday strip remains a task-local presentation block." },
+    { "code": "60135", "primaryArchetype": "recording-feedback", "variant": "personal-writing-stt-check", "capabilities": ["recording", "transcript-confirmation", "writing-revision", "retry-coaching", "evidence-summary"], "contentSources": ["worksheet", "learner"], "implementation": "composed-tsx" },
+    { "code": "60141", "primaryArchetype": "guided-choice", "variant": "functional-phrase-labels", "capabilities": ["choice-input", "retry-coaching", "evidence-summary"], "contentSources": ["worksheet"], "implementation": "config-wrapper" },
+    { "code": "60142", "primaryArchetype": "guided-choice", "variant": "appropriacy-choice", "capabilities": ["choice-input", "retry-coaching", "evidence-summary"], "contentSources": ["worksheet"], "implementation": "config-wrapper" },
+    { "code": "60143", "primaryArchetype": "recording-feedback", "variant": "supported-dialogue-sequence", "capabilities": ["recording", "transcript-confirmation", "retry-coaching", "guided-tracking", "evidence-summary"], "contentSources": ["worksheet", "learner"], "implementation": "composed-tsx" },
+    { "code": "60144", "primaryArchetype": "speaking-coach", "variant": "multi-turn-role-play", "capabilities": ["role-play", "listening", "recording", "transcript-confirmation", "retry-coaching", "guided-tracking", "mastery-gate", "evidence-summary"], "contentSources": ["app", "learner"], "implementation": "composed-tsx", "exception": "The current role-play stage machine remains task-local." },
+    { "code": "60151", "primaryArchetype": "guided-choice", "variant": "reading-main-idea", "capabilities": ["choice-input", "retry-coaching", "guided-tracking", "evidence-summary"], "contentSources": ["worksheet"], "implementation": "config-wrapper" },
+    { "code": "60152", "primaryArchetype": "guided-choice", "variant": "reading-detail", "capabilities": ["choice-input", "retry-coaching", "guided-tracking", "evidence-summary"], "contentSources": ["worksheet"], "implementation": "config-wrapper" },
+    { "code": "60153", "primaryArchetype": "guided-choice", "variant": "conversation-cohesion-labels", "capabilities": ["choice-input", "retry-coaching", "guided-tracking", "evidence-summary"], "contentSources": ["worksheet"], "implementation": "config-wrapper" },
+    { "code": "60154", "primaryArchetype": "readiness-checklist", "variant": "speaking-plan-readiness", "capabilities": ["readiness-check", "evidence-summary"], "contentSources": ["worksheet", "learner"], "implementation": "composed-tsx" },
+    { "code": "60155", "primaryArchetype": "speaking-coach", "variant": "extended-response-follow-up-revision", "capabilities": ["role-play", "listening", "recording", "transcript-confirmation", "writing-revision", "mastery-gate", "evidence-summary"], "contentSources": ["app", "learner"], "implementation": "composed-tsx" },
+    { "code": "60161", "primaryArchetype": "listening-choice-assessment", "variant": "true-false", "capabilities": ["listening", "choice-input", "retry-coaching", "guided-tracking", "evidence-summary"], "contentSources": ["app", "worksheet"], "implementation": "config-wrapper" },
+    { "code": "60162", "primaryArchetype": "listening-choice-assessment", "variant": "multiple-choice", "capabilities": ["listening", "choice-input", "retry-coaching", "guided-tracking", "evidence-summary"], "contentSources": ["app", "worksheet"], "implementation": "config-wrapper" },
+    { "code": "60163", "primaryArchetype": "recording-feedback", "variant": "sentence-structure-stt", "capabilities": ["recording", "transcript-confirmation", "writing-revision", "retry-coaching", "guided-tracking", "evidence-summary"], "contentSources": ["worksheet", "learner"], "implementation": "composed-tsx" },
+    { "code": "60164", "primaryArchetype": "sequence-ordering-repair", "variant": "paragraph-cohesion", "capabilities": ["ordering", "retry-coaching", "guided-tracking", "evidence-summary"], "contentSources": ["worksheet"], "implementation": "composed-tsx" },
+    { "code": "60165", "primaryArchetype": "readiness-checklist", "variant": "writing-readiness", "capabilities": ["readiness-check", "writing-revision", "evidence-summary"], "contentSources": ["worksheet", "learner"], "implementation": "composed-tsx" },
+    { "code": "60166", "primaryArchetype": "writing-coach", "variant": "draft-feedback-verification-revision", "capabilities": ["recording", "transcript-confirmation", "writing-revision", "mastery-gate", "evidence-summary"], "contentSources": ["worksheet", "learner"], "implementation": "composed-tsx" }
+  ]
+}

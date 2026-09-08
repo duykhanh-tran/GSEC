@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gsec.local/schemas/assessment-policy/1.0.0",
+  "title": "GSEC Server-only Assessment Policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contractVersion", "id", "status", "scope", "evaluation", "retry", "mastery", "security", "audit"],
+  "properties": {
+    "contractVersion": { "const": "1.0.0" },
+    "id": { "$ref": "#/$defs/slug" },
+    "status": { "enum": ["draft", "approved", "retired"] },
+    "scope": {
+      "type": "object", "additionalProperties": false, "required": ["archetypes", "responseTypes"],
+      "properties": {
+        "archetypes": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/archetype" } },
+        "responseTypes": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["short-text", "symbolic-choice", "matrix", "sequence", "speech", "writing", "evidence"] } }
+      }
+    },
+    "evaluation": { "$ref": "#/$defs/evaluation" },
+    "retry": {
+      "type": "object", "additionalProperties": false,
+      "required": ["maxAttempts", "incorrectQueue", "hintSequence", "revealPolicy"],
+      "properties": {
+        "maxAttempts": { "type": "integer", "minimum": 1, "maximum": 3 },
+        "incorrectQueue": { "enum": ["none", "next-incorrect-item", "all-incorrect-items"] },
+        "hintSequence": { "type": "array", "maxItems": 3, "uniqueItems": true, "items": { "enum": ["hint", "deep-hint", "guided-model"] } },
+        "revealPolicy": { "enum": ["never", "after-final-attempt"] }
+      }
+    },
+    "mastery": {
+      "type": "object", "additionalProperties": false,
+      "required": ["enabled", "awardMode", "independentOnly"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "awardMode": { "enum": ["none", "all-correct", "minimum-score", "rubric-gate"] },
+        "minimumScore": { "type": "number", "minimum": 0, "maximum": 1 },
+        "independentOnly": { "type": "boolean" }
+      }
+    },
+    "security": {
+      "type": "object", "additionalProperties": false,
+      "required": ["classification", "exposeToLearnerClient", "cacheOnClient"],
+      "properties": {
+        "classification": { "const": "server-confidential" },
+        "exposeToLearnerClient": { "const": false },
+        "cacheOnClient": { "const": false }
+      }
+    },
+    "audit": { "$ref": "#/$defs/audit" }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$", "maxLength": 100 },
+    "archetype": { "enum": ["structured-answer-retry", "guided-choice", "listen-classify-pronounce", "recording-feedback", "writing-capture-repair", "mastery-review", "readiness-checklist", "speaking-coach", "listening-choice-assessment", "sequence-ordering-repair", "writing-coach"] },
+    "audit": {
+      "type": "object", "additionalProperties": false, "required": ["version", "owner", "updatedAt", "changeReason"],
+      "properties": { "version": { "type": "integer", "minimum": 1 }, "owner": { "$ref": "#/$defs/slug" }, "updatedAt": { "type": "string", "format": "date-time" }, "changeReason": { "type": "string", "minLength": 1, "maxLength": 240 } }
+    },
+    "evaluation": {
+      "oneOf": [
+        {
+          "type": "object", "additionalProperties": false, "required": ["mode", "normalization", "items"],
+          "properties": {
+            "mode": { "const": "exact-match" },
+            "normalization": { "type": "array", "uniqueItems": true, "items": { "enum": ["trim", "lowercase", "collapse-space", "unicode-normalize"] } },
+            "items": {
+              "type": "array", "minItems": 1,
+              "items": {
+                "type": "object", "additionalProperties": false, "required": ["itemId", "acceptedValues"],
+                "properties": { "itemId": { "$ref": "#/$defs/slug" }, "acceptedValues": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 160 } } }
+              }
+            }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false, "required": ["mode", "items"],
+          "properties": {
+            "mode": { "const": "symbolic-choice" },
+            "items": {
+              "type": "array", "minItems": 1,
+              "items": { "type": "object", "additionalProperties": false, "required": ["itemId", "correctOptionId"], "properties": { "itemId": { "$ref": "#/$defs/slug" }, "correctOptionId": { "$ref": "#/$defs/slug" } } }
+            }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false, "required": ["mode", "itemId", "correctOrder"],
+          "properties": { "mode": { "const": "sequence" }, "itemId": { "$ref": "#/$defs/slug" }, "correctOrder": { "type": "array", "minItems": 2, "maxItems": 12, "uniqueItems": true, "items": { "type": "string", "pattern": "^[A-L]$" } } }
+        },
+        {
+          "type": "object", "additionalProperties": false, "required": ["mode", "rubricRef"],
+          "properties": { "mode": { "const": "rubric" }, "rubricRef": { "$ref": "#/$defs/slug" } }
+        },
+        {
+          "type": "object", "additionalProperties": false, "required": ["mode", "aiPolicyRef", "rubricRef"],
+          "properties": { "mode": { "const": "ai-assisted" }, "aiPolicyRef": { "$ref": "#/$defs/slug" }, "rubricRef": { "$ref": "#/$defs/slug" }, "humanReviewOnLowConfidence": { "type": "boolean" } }
+        }
+      ]
+    }
+  }
+}

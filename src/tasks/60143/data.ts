@@ -1,0 +1,6 @@
+export const DIALOGUE_TURNS_60143 = [
+  { role: 'Trang', function: 'Introduce Nam', tag: 'FUNCTION-INTRODUCE', first: 'Minh, this is Nam, my new classmate.', correct: true, cue: 'You are introducing Nam to Minh. Make sure your sentence introduces Nam clearly.', retry: 'Minh, this is Nam, my new classmate.', model: 'Minh, this is Nam, my new classmate.' },
+  { role: 'Minh', function: 'Greet Nam', tag: 'FUNCTION-RESPOND', first: 'Hello, Nam. Nice to meet you.', correct: true, cue: 'You are meeting Nam for the first time. Use a short greeting and a polite first-meeting phrase.', retry: 'Hello, Nam. Nice to meet you.', model: 'Hello, Nam. Nice to meet you.' },
+  { role: 'Nam', function: 'Respond to greeting', tag: 'FUNCTION-RESPOND', first: 'See you tomorrow.', correct: false, cue: 'Minh has just greeted you and said it is nice to meet you. Respond to that greeting.', retry: 'Hi, Minh. Nice to meet you, too.', model: 'Hi, Minh. Nice to meet you, too.' },
+  { role: 'Minh', function: 'Ask a suitable school question', tag: 'QUESTION-SUITABILITY', first: 'How old is your brother?', correct: false, cue: 'Ask Nam one short, polite question about school or a school activity.', retry: 'Do you like our school?', model: 'Do you like our school?' },
+] as const

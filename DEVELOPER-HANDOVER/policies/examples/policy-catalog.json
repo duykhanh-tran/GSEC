@@ -1,0 +1,170 @@
+{
+  "catalogVersion": "policy-contracts-1.0.0",
+  "assessmentPolicies": [
+    {
+      "contractVersion": "1.0.0", "id": "worksheet-short-answer-v1", "status": "approved",
+      "scope": { "archetypes": ["structured-answer-retry"], "responseTypes": ["short-text"] },
+      "evaluation": { "mode": "exact-match", "normalization": ["trim", "lowercase", "collapse-space", "unicode-normalize"], "items": [{ "itemId": "item-one", "acceptedValues": ["sample"] }, { "itemId": "item-two", "acceptedValues": ["response"] }] },
+      "retry": { "maxAttempts": 3, "incorrectQueue": "next-incorrect-item", "hintSequence": ["hint", "deep-hint"], "revealPolicy": "never" },
+      "mastery": { "enabled": false, "awardMode": "none", "independentOnly": true },
+      "security": { "classification": "server-confidential", "exposeToLearnerClient": false, "cacheOnClient": false },
+      "audit": { "version": 1, "owner": "assessment-team", "updatedAt": "2026-09-07T00:00:00Z", "changeReason": "Synthetic handover example." }
+    },
+    {
+      "contractVersion": "1.0.0", "id": "symbolic-choice-v1", "status": "approved",
+      "scope": { "archetypes": ["guided-choice"], "responseTypes": ["symbolic-choice"] },
+      "evaluation": { "mode": "symbolic-choice", "items": [{ "itemId": "question-one", "correctOptionId": "q1-b" }] },
+      "retry": { "maxAttempts": 3, "incorrectQueue": "next-incorrect-item", "hintSequence": ["hint", "deep-hint", "guided-model"], "revealPolicy": "after-final-attempt" },
+      "mastery": { "enabled": true, "awardMode": "all-correct", "independentOnly": true },
+      "security": { "classification": "server-confidential", "exposeToLearnerClient": false, "cacheOnClient": false },
+      "audit": { "version": 1, "owner": "assessment-team", "updatedAt": "2026-09-07T00:00:00Z", "changeReason": "Synthetic handover example." }
+    },
+    {
+      "contractVersion": "1.0.0", "id": "sound-classification-v1", "status": "approved",
+      "scope": { "archetypes": ["listen-classify-pronounce"], "responseTypes": ["symbolic-choice", "speech"] },
+      "evaluation": { "mode": "symbolic-choice", "items": [{ "itemId": "classification", "correctOptionId": "group-a" }] },
+      "retry": { "maxAttempts": 2, "incorrectQueue": "next-incorrect-item", "hintSequence": ["hint"], "revealPolicy": "never" },
+      "mastery": { "enabled": false, "awardMode": "none", "independentOnly": true },
+      "security": { "classification": "server-confidential", "exposeToLearnerClient": false, "cacheOnClient": false },
+      "audit": { "version": 1, "owner": "assessment-team", "updatedAt": "2026-09-07T00:00:00Z", "changeReason": "Synthetic handover example." }
+    },
+    {
+      "contractVersion": "1.0.0", "id": "speech-repair-v1", "status": "approved",
+      "scope": { "archetypes": ["recording-feedback"], "responseTypes": ["speech"] },
+      "evaluation": { "mode": "ai-assisted", "aiPolicyRef": "bounded-speech-feedback-v1", "rubricRef": "speech-repair-rubric-v1", "humanReviewOnLowConfidence": true },
+      "retry": { "maxAttempts": 2, "incorrectQueue": "none", "hintSequence": ["hint", "guided-model"], "revealPolicy": "after-final-attempt" },
+      "mastery": { "enabled": false, "awardMode": "none", "independentOnly": true },
+      "security": { "classification": "server-confidential", "exposeToLearnerClient": false, "cacheOnClient": false },
+      "audit": { "version": 1, "owner": "assessment-team", "updatedAt": "2026-09-07T00:00:00Z", "changeReason": "Synthetic handover example." }
+    },
+    {
+      "contractVersion": "1.0.0", "id": "writing-fragment-v1", "status": "approved",
+      "scope": { "archetypes": ["writing-capture-repair"], "responseTypes": ["writing"] },
+      "evaluation": { "mode": "ai-assisted", "aiPolicyRef": "bounded-writing-feedback-v1", "rubricRef": "fragment-linking-rubric-v1", "humanReviewOnLowConfidence": true },
+      "retry": { "maxAttempts": 2, "incorrectQueue": "none", "hintSequence": ["hint", "deep-hint"], "revealPolicy": "never" },
+      "mastery": { "enabled": false, "awardMode": "none", "independentOnly": true },
+      "security": { "classification": "server-confidential", "exposeToLearnerClient": false, "cacheOnClient": false },
+      "audit": { "version": 1, "owner": "assessment-team", "updatedAt": "2026-09-07T00:00:00Z", "changeReason": "Synthetic handover example." }
+    },
+    {
+      "contractVersion": "1.0.0", "id": "priority-mastery-v1", "status": "approved",
+      "scope": { "archetypes": ["mastery-review"], "responseTypes": ["symbolic-choice", "evidence"] },
+      "evaluation": { "mode": "rubric", "rubricRef": "priority-review-rubric-v1" },
+      "retry": { "maxAttempts": 2, "incorrectQueue": "all-incorrect-items", "hintSequence": ["hint", "guided-model"], "revealPolicy": "after-final-attempt" },
+      "mastery": { "enabled": true, "awardMode": "rubric-gate", "independentOnly": true },
+      "security": { "classification": "server-confidential", "exposeToLearnerClient": false, "cacheOnClient": false },
+      "audit": { "version": 1, "owner": "assessment-team", "updatedAt": "2026-09-07T00:00:00Z", "changeReason": "Synthetic handover example." }
+    },
+    {
+      "contractVersion": "1.0.0", "id": "speaking-round-v1", "status": "approved",
+      "scope": { "archetypes": ["speaking-coach"], "responseTypes": ["speech"] },
+      "evaluation": { "mode": "ai-assisted", "aiPolicyRef": "bounded-speaking-coach-v1", "rubricRef": "speaking-round-rubric-v1", "humanReviewOnLowConfidence": true },
+      "retry": { "maxAttempts": 2, "incorrectQueue": "none", "hintSequence": ["hint", "guided-model"], "revealPolicy": "after-final-attempt" },
+      "mastery": { "enabled": true, "awardMode": "rubric-gate", "independentOnly": true },
+      "security": { "classification": "server-confidential", "exposeToLearnerClient": false, "cacheOnClient": false },
+      "audit": { "version": 1, "owner": "assessment-team", "updatedAt": "2026-09-07T00:00:00Z", "changeReason": "Synthetic handover example." }
+    },
+    {
+      "contractVersion": "1.0.0", "id": "listening-symbolic-choice-v1", "status": "approved",
+      "scope": { "archetypes": ["listening-choice-assessment"], "responseTypes": ["symbolic-choice"] },
+      "evaluation": { "mode": "symbolic-choice", "items": [{ "itemId": "item-one", "correctOptionId": "item-one-c" }] },
+      "retry": { "maxAttempts": 2, "incorrectQueue": "next-incorrect-item", "hintSequence": ["hint"], "revealPolicy": "never" },
+      "mastery": { "enabled": true, "awardMode": "all-correct", "independentOnly": true },
+      "security": { "classification": "server-confidential", "exposeToLearnerClient": false, "cacheOnClient": false },
+      "audit": { "version": 1, "owner": "assessment-team", "updatedAt": "2026-09-07T00:00:00Z", "changeReason": "Synthetic handover example." }
+    },
+    {
+      "contractVersion": "1.0.0", "id": "sequence-order-v1", "status": "approved",
+      "scope": { "archetypes": ["sequence-ordering-repair"], "responseTypes": ["sequence"] },
+      "evaluation": { "mode": "sequence", "itemId": "sequence", "correctOrder": ["B", "A", "D", "C"] },
+      "retry": { "maxAttempts": 3, "incorrectQueue": "next-incorrect-item", "hintSequence": ["hint", "deep-hint", "guided-model"], "revealPolicy": "after-final-attempt" },
+      "mastery": { "enabled": true, "awardMode": "all-correct", "independentOnly": true },
+      "security": { "classification": "server-confidential", "exposeToLearnerClient": false, "cacheOnClient": false },
+      "audit": { "version": 1, "owner": "assessment-team", "updatedAt": "2026-09-07T00:00:00Z", "changeReason": "Synthetic handover example." }
+    },
+    {
+      "contractVersion": "1.0.0", "id": "writing-mastery-v1", "status": "approved",
+      "scope": { "archetypes": ["writing-coach"], "responseTypes": ["writing", "evidence"] },
+      "evaluation": { "mode": "ai-assisted", "aiPolicyRef": "bounded-writing-coach-v1", "rubricRef": "writing-mastery-rubric-v1", "humanReviewOnLowConfidence": true },
+      "retry": { "maxAttempts": 2, "incorrectQueue": "none", "hintSequence": ["hint", "deep-hint"], "revealPolicy": "never" },
+      "mastery": { "enabled": true, "awardMode": "rubric-gate", "independentOnly": true },
+      "security": { "classification": "server-confidential", "exposeToLearnerClient": false, "cacheOnClient": false },
+      "audit": { "version": 1, "owner": "assessment-team", "updatedAt": "2026-09-07T00:00:00Z", "changeReason": "Synthetic handover example." }
+    }
+  ],
+  "aiPolicies": [
+    {
+      "contractVersion": "1.0.0", "id": "bounded-speech-feedback-v1", "status": "approved", "useCase": "speech-feedback", "providerProfileRef": "approved-language-model-v1", "promptTemplateRef": "speech-feedback-template-v1",
+      "input": { "allowedFields": ["taskInstruction", "bookReference", "transcript", "attemptNumber", "rubricRef", "locale"], "maxCharacters": 4000, "acceptsAudio": false, "rejectUnknownFields": true },
+      "output": { "schemaRef": "speech-feedback-output-v1", "maxFeedbackItems": 2, "allowedFeedbackCodes": ["retry-target-word", "check-word-order", "teacher-review"], "freeText": "bounded" },
+      "guardrails": { "bookFirst": true, "noAnswerDisclosure": true, "noOpenChat": true, "noPermissionDecision": true, "noIndependentMasteryDecision": true, "promptInjectionHandling": "treat-learner-content-as-data" },
+      "review": { "mode": "automatic-bounded", "lowConfidenceAction": "teacher-review", "confidenceThreshold": 0.75 },
+      "failure": { "timeoutMs": 12000, "onTimeout": "deterministic-fallback", "onInvalidOutput": "teacher-review", "maxRetries": 1 },
+      "privacy": { "storeRawInput": false, "storeRawOutput": false, "retentionDays": 0, "redactDirectIdentifiers": true },
+      "security": { "classification": "server-confidential", "exposeToLearnerClient": false, "credentialsInPolicy": false },
+      "audit": { "version": 1, "owner": "ai-governance", "updatedAt": "2026-09-07T00:00:00Z", "changeReason": "Synthetic handover example." }
+    },
+    {
+      "contractVersion": "1.0.0", "id": "bounded-writing-feedback-v1", "status": "approved", "useCase": "writing-feedback", "providerProfileRef": "approved-language-model-v1", "promptTemplateRef": "writing-feedback-template-v1",
+      "input": { "allowedFields": ["taskInstruction", "bookReference", "learnerResponse", "attemptNumber", "rubricRef", "locale"], "maxCharacters": 8000, "acceptsAudio": false, "rejectUnknownFields": true },
+      "output": { "schemaRef": "writing-feedback-output-v1", "maxFeedbackItems": 2, "allowedFeedbackCodes": ["check-linking", "check-target-language", "teacher-review"], "freeText": "bounded" },
+      "guardrails": { "bookFirst": true, "noAnswerDisclosure": true, "noOpenChat": true, "noPermissionDecision": true, "noIndependentMasteryDecision": true, "promptInjectionHandling": "treat-learner-content-as-data" },
+      "review": { "mode": "automatic-bounded", "lowConfidenceAction": "teacher-review", "confidenceThreshold": 0.75 },
+      "failure": { "timeoutMs": 12000, "onTimeout": "deterministic-fallback", "onInvalidOutput": "teacher-review", "maxRetries": 1 },
+      "privacy": { "storeRawInput": false, "storeRawOutput": false, "retentionDays": 0, "redactDirectIdentifiers": true },
+      "security": { "classification": "server-confidential", "exposeToLearnerClient": false, "credentialsInPolicy": false },
+      "audit": { "version": 1, "owner": "ai-governance", "updatedAt": "2026-09-07T00:00:00Z", "changeReason": "Synthetic handover example." }
+    },
+    {
+      "contractVersion": "1.0.0", "id": "bounded-speaking-coach-v1", "status": "approved", "useCase": "speaking-coach", "providerProfileRef": "approved-language-model-v1", "promptTemplateRef": "speaking-coach-template-v1",
+      "input": { "allowedFields": ["taskInstruction", "bookReference", "transcript", "attemptNumber", "rubricRef", "locale"], "maxCharacters": 6000, "acceptsAudio": false, "rejectUnknownFields": true },
+      "output": { "schemaRef": "speaking-coach-output-v1", "maxFeedbackItems": 3, "allowedFeedbackCodes": ["continue-round", "retry-with-hint", "teacher-review"], "freeText": "bounded" },
+      "guardrails": { "bookFirst": true, "noAnswerDisclosure": true, "noOpenChat": true, "noPermissionDecision": true, "noIndependentMasteryDecision": true, "promptInjectionHandling": "treat-learner-content-as-data" },
+      "review": { "mode": "automatic-bounded", "lowConfidenceAction": "teacher-review", "confidenceThreshold": 0.8 },
+      "failure": { "timeoutMs": 15000, "onTimeout": "deterministic-fallback", "onInvalidOutput": "teacher-review", "maxRetries": 1 },
+      "privacy": { "storeRawInput": false, "storeRawOutput": false, "retentionDays": 0, "redactDirectIdentifiers": true },
+      "security": { "classification": "server-confidential", "exposeToLearnerClient": false, "credentialsInPolicy": false },
+      "audit": { "version": 1, "owner": "ai-governance", "updatedAt": "2026-09-07T00:00:00Z", "changeReason": "Synthetic handover example." }
+    },
+    {
+      "contractVersion": "1.0.0", "id": "bounded-writing-coach-v1", "status": "approved", "useCase": "writing-coach", "providerProfileRef": "approved-language-model-v1", "promptTemplateRef": "writing-coach-template-v1",
+      "input": { "allowedFields": ["taskInstruction", "bookReference", "learnerResponse", "attemptNumber", "rubricRef", "locale"], "maxCharacters": 12000, "acceptsAudio": false, "rejectUnknownFields": true },
+      "output": { "schemaRef": "writing-coach-output-v1", "maxFeedbackItems": 3, "allowedFeedbackCodes": ["revise-mechanics", "revise-organization", "teacher-review"], "freeText": "bounded" },
+      "guardrails": { "bookFirst": true, "noAnswerDisclosure": true, "noOpenChat": true, "noPermissionDecision": true, "noIndependentMasteryDecision": true, "promptInjectionHandling": "treat-learner-content-as-data" },
+      "review": { "mode": "automatic-bounded", "lowConfidenceAction": "teacher-review", "confidenceThreshold": 0.8 },
+      "failure": { "timeoutMs": 15000, "onTimeout": "teacher-review", "onInvalidOutput": "teacher-review", "maxRetries": 1 },
+      "privacy": { "storeRawInput": false, "storeRawOutput": false, "retentionDays": 0, "redactDirectIdentifiers": true },
+      "security": { "classification": "server-confidential", "exposeToLearnerClient": false, "credentialsInPolicy": false },
+      "audit": { "version": 1, "owner": "ai-governance", "updatedAt": "2026-09-07T00:00:00Z", "changeReason": "Synthetic handover example." }
+    }
+  ],
+  "permissionPolicies": [
+    {
+      "contractVersion": "1.0.0", "id": "platform-role-access-v1", "status": "approved", "policyType": "role-access", "defaultEffect": "deny",
+      "configuration": {
+        "rules": [
+          { "role": "content-author", "resource": "task-draft", "actions": ["create", "read", "update", "submit-review"], "effect": "allow", "scope": "own" },
+          { "role": "content-reviewer", "resource": "task-draft", "actions": ["read", "approve"], "effect": "allow", "scope": "organization" },
+          { "role": "platform-admin", "resource": "task-published", "actions": ["read", "publish", "archive"], "effect": "allow", "scope": "organization" },
+          { "role": "platform-admin", "resource": "assessment-policy", "actions": ["read", "update"], "effect": "allow", "scope": "organization" },
+          { "role": "platform-admin", "resource": "ai-policy", "actions": ["read", "update"], "effect": "allow", "scope": "organization" },
+          { "role": "teacher", "resource": "task-published", "actions": ["read", "assign"], "effect": "allow", "scope": "organization" },
+          { "role": "teacher", "resource": "learner-result", "actions": ["read", "review-result"], "effect": "allow", "scope": "assigned" },
+          { "role": "learner", "resource": "task-published", "actions": ["read", "attempt"], "effect": "allow", "scope": "assigned" },
+          { "role": "learner", "resource": "learner-result", "actions": ["read"], "effect": "allow", "scope": "own" },
+          { "role": "assessment-service", "resource": "learner-attempt", "actions": ["read", "evaluate"], "effect": "allow", "scope": "service" },
+          { "role": "ai-service", "resource": "learner-attempt", "actions": ["read", "request-ai"], "effect": "allow", "scope": "service" }
+        ],
+        "separationOfDuties": { "authorCannotApproveOwnTask": true, "policyChangeRequiresReviewer": true, "publishedRevisionIsImmutable": true }
+      },
+      "security": { "evaluateOnServer": true, "auditDeniedActions": true },
+      "audit": { "version": 1, "owner": "platform-security", "updatedAt": "2026-09-07T00:00:00Z", "changeReason": "Initial handover RBAC baseline." }
+    },
+    {
+      "contractVersion": "1.0.0", "id": "learner-microphone-v1", "status": "approved", "policyType": "runtime-capability", "defaultEffect": "deny",
+      "configuration": { "capability": "microphone", "allowedRoles": ["learner"], "requiresUserGesture": true, "requiresConsent": true, "requiresSecureContext": true, "onDenied": "offer-non-recording-fallback", "retention": { "storeRawMedia": false, "days": 0 } },
+      "security": { "evaluateOnServer": true, "auditDeniedActions": true },
+      "audit": { "version": 1, "owner": "platform-security", "updatedAt": "2026-09-07T00:00:00Z", "changeReason": "Initial learner microphone policy." }
+    }
+  ]
+}

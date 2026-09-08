@@ -1,0 +1,2744 @@
+{
+  "createdAt": "2026-09-07T06:27:16.402Z",
+  "htmlBaseUrl": "http://127.0.0.1:4173",
+  "reactBaseUrl": "http://127.0.0.1:4176",
+  "profiles": {
+    "mobile": {
+      "width": 390,
+      "height": 844
+    },
+    "desktop": {
+      "width": 1024,
+      "height": 900
+    }
+  },
+  "intentionalContentExceptions": {
+    "60141": "React omits the legacy phrase-answer bank to comply with BOOK-FIRST-CONTENT-STANDARD.md."
+  },
+  "taskCount": 26,
+  "screenshotCount": 54,
+  "errors": [],
+  "parityIssues": [],
+  "results": [
+    {
+      "profile": "mobile",
+      "code": "60111",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "contentTokenRecall": 0.9615,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 1 - Task 1 · PoC",
+        "heading": "AI Tutor • WS 1 - Task 1",
+        "subtitle": "Unit 1 · My New School",
+        "text": "‹ AI Tutor • WS 1 - Task 1 Unit 1 · My New School Check Task 1. Enter your answers from the worksheet. Your answers Enter your answers below. 1 2 3 4 Demo Check Task progress 0% Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 1 - Task 1 · React",
+        "heading": "AI Tutor • WS 1 - Task 1",
+        "subtitle": "Unit 1 · My New School",
+        "text": "‹ AI Tutor • WS 1 - Task 1 Unit 1 · My New School Check Task 1. Enter your answers from the worksheet. Your answers Enter your answers below. 1 2 3 4 Demo Check Task 1 0% Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "mobile",
+      "code": "60112",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "contentTokenRecall": 0.7273,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 1 - Task 2 · PoC",
+        "heading": "AI Tutor • WS 1 - Task 2",
+        "subtitle": "Unit 1 · My New School",
+        "text": "‹ AI Tutor • WS 1 - Task 2 Unit 1 · My New School 2A · Listen & choose 1 / 7 🔊 Which picture? A B C D E F G Listening check 0% Task 2A Keep your worksheet open. Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": null
+      },
+      "react": {
+        "title": "AI Tutor • WS 1 - Task 2 · React",
+        "heading": "AI Tutor • WS 1 - Task 2",
+        "subtitle": "Unit 1 · My New School",
+        "text": "‹ AI Tutor • WS 1 - Task 2 Unit 1 · My New School Task 2. Listen and match seven school things, then practise saying them. 2A · Listening 1 / 7 🔊 Listen A B C D E F G Task 2A 1 / 7 Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "mobile",
+      "code": "60113",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "contentTokenRecall": 0.7941,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 1 - Task 3 · PoC",
+        "heading": "AI Tutor • WS 1- Task 3",
+        "subtitle": "Unit 1 · My New School",
+        "text": "‹ AI Tutor • WS 1- Task 3 Unit 1 · My New School Check Task 3. Enter your answers from the worksheet. Your answers Tap one answer for each question. A B C 1 2 3 4 5 6 Demo Check Task 3 Check your 6 answers. Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 1 - Task 3 · React",
+        "heading": "AI Tutor • WS 1 - Task 3",
+        "subtitle": "Unit 1 · My New School",
+        "text": "‹ AI Tutor • WS 1 - Task 3 Unit 1 · My New School Check Task 3. Enter your A, B or C answers. Your answers 6 items A B C 1 2 3 4 5 6 Demo Check Use the worksheet questions while entering your choices. Task 3 Check 6 answers. Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "mobile",
+      "code": "60114",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "contentTokenRecall": 0.7667,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 1 - Task 4 · PoC",
+        "heading": "AI Tutor • WS 1 - Task 4",
+        "subtitle": "Unit 1 · My New School",
+        "text": "‹ AI Tutor • WS 1 - Task 4 Unit 1 · My New School Check Task 4. Enter your True/False answers. Your answers Use your worksheet. Tap one answer for each question. True False 1 2 3 4 Demo Check Task 4 Check your 4 answers. Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": null,
+        "tutorBubble": null
+      },
+      "react": {
+        "title": "AI Tutor • WS 1 - Task 4 · React",
+        "heading": "AI Tutor • WS 1 - Task 4",
+        "subtitle": "Unit 1 · My New School",
+        "text": "‹ AI Tutor • WS 1 - Task 4 Unit 1 · My New School Check Task 4. Enter your True or False answers. Your answers 4 items T F 1 2 3 4 Demo Check Use evidence from the reading passage. Task 4 Check 4 answers. Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "mobile",
+      "code": "60115",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "contentTokenRecall": 1,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 1 - Task 5 · PoC",
+        "heading": "AI Tutor • WS 1 - Task 5",
+        "subtitle": "Writing",
+        "text": "‹ AI Tutor • WS 1 - Task 5 Writing Check Task 5. Enter only what you wrote in 1-4. Quick capture Use your book. The sentence frames stay hidden here. 1 2 3 4 Demo Build my writing Task 5 Book → capture → coach. Task 6",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": null,
+        "tutorBubble": null
+      },
+      "react": {
+        "title": "AI Tutor • WS 1 - Task 5 · React",
+        "heading": "AI Tutor • WS 1 - Task 5",
+        "subtitle": "Writing",
+        "text": "‹ AI Tutor • WS 1 - Task 5 Writing Check Task 5. Enter only what you wrote in 1-4. Quick capture Use your book. The sentence frames stay hidden here. 1 2 3 4 Demo Build my writing Task 5 Book → capture → coach. Task 6",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "mobile",
+      "code": "60116",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "contentTokenRecall": 0.8,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 1 - Task 6 · PoC",
+        "heading": "AI Tutor • WS 1 - Task 6",
+        "subtitle": "Study with AI",
+        "text": "‹ AI Tutor • WS 1 - Task 6 Study with AI Check Task 6 Talk about your school for 20–30 seconds. Task 6B Speak for 20–30 seconds. Finish",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": null,
+        "tutorBubble": null
+      },
+      "react": {
+        "title": "AI Tutor • WS 1 - Task 6 · React",
+        "heading": "AI Tutor • WS 1 - Task 6",
+        "subtitle": "Study with AI",
+        "text": "‹ AI Tutor • WS 1 - Task 6 Study with AI Task 6. Use your Task 5 ideas to speak about your school. 6B · Speaking 20–30 sec 🎙 Start speaking I need help Task 6 Speaking practice Finish",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "mobile",
+      "code": "60121",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "contentTokenRecall": 0.8,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 2 - Task 1 · PoC",
+        "heading": "AI Tutor • WS 2 - Task 1",
+        "subtitle": "Unit 1 · My New School",
+        "text": "‹ AI Tutor • WS 2 - Task 1 Unit 1 · My New School Check Task 1. Use your worksheet. Tap one verb for each sentence. Your answers play · do · have · study play do have study 1 2 3 4 5 6 7 8 Demo Check Task 1 Check your 8 answers. Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 2 - Task 1 · React",
+        "heading": "AI Tutor • WS 2 - Task 1",
+        "subtitle": "Unit 1 · My New School",
+        "text": "‹ AI Tutor • WS 2 - Task 1 Unit 1 · My New School Check Task 1. Enter the collocation verbs from your worksheet. Your worksheet answers 8 items play do have study 1 2 3 4 5 6 7 8 Demo Check Task 1 Check 8 answers. Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "mobile",
+      "code": "60122",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "contentTokenRecall": 0.875,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 2 - Task 2 · PoC",
+        "heading": "AI Tutor • WS 2 - Task 2",
+        "subtitle": "Unit 1 · My New School",
+        "text": "‹ AI Tutor • WS 2 - Task 2 Unit 1 · My New School Check Task 2. Enter your answers from the worksheet. Your answers Tap A, B or C for each question. A B C 1 2 3 4 5 Demo Check Task 2 Check your 5 answers. Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 2 - Task 2 · React",
+        "heading": "AI Tutor • WS 2 - Task 2",
+        "subtitle": "Unit 1 · My New School",
+        "text": "‹ AI Tutor • WS 2 - Task 2 Unit 1 · My New School Check Task 2. Enter your A, B or C answers from the worksheet. Your answers 5 items A B C 1 2 3 4 5 Demo Check The worksheet remains the main task. The app captures your choices and gives targeted clues only when needed. Task 2 Check 5 answers. Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "mobile",
+      "code": "60123",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "contentTokenRecall": 0.8108,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 2 - Task 3 · PoC",
+        "heading": "AI Tutor • WS 2 - Task 3",
+        "subtitle": "Listening & Pronunciation",
+        "text": "‹ AI Tutor • WS 2 - Task 3 Listening & Pronunciation Task 3. First, listen and tick the sounds in your book. 3A · Listen 8 items Listen to the whole audio. Tick /ɑː/ or /ʌ/ in your book. 0:00 0:12 Play again Enter answers Played 0 / 2 Task 3A Listen and use your worksheet. Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 2 - Task 3 · React",
+        "heading": "AI Tutor • WS 2 - Task 3",
+        "subtitle": "Listening & Pronunciation",
+        "text": "‹ AI Tutor • WS 2 - Task 3 Listening & Pronunciation Task 3. Listen twice, classify the sounds, then practise all eight words. 3A · Listen 8 items Play audio Listen to the whole audio. Tick /ɑː/ or /ʌ/ in your book. Enter answers Played 0 / 2 Task 3 Listening Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "mobile",
+      "code": "60124",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "contentTokenRecall": 0.9714,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 2 - Task 4 · PoC",
+        "heading": "AI Tutor • WS 2 - Task 4",
+        "subtitle": "Sentence Fluency",
+        "text": "‹ AI Tutor • WS 2 - Task 4 Sentence Fluency Task 4. Read each sentence clearly and smoothly. Sentence 1 1 / 4 Our art class starts at nine. Listen if you need help. Then read the whole sentence. 🔊 Listen 🎙 Record 0.0 sec Task 4 Sentence 1 of 4 Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 2 - Task 4 · React",
+        "heading": "AI Tutor • WS 2 - Task 4",
+        "subtitle": "Sentence Fluency",
+        "text": "‹ AI Tutor • WS 2 - Task 4 Sentence Fluency Task 4. Read four full sentences clearly and smoothly. Sentence 1 1 / 4 1 2 3 4 Our art class starts at nine. Listen if you need help. Then read the whole sentence. 0.0 sec 🔊 Listen 🎙 Record Task 4 Sentence 1 of 4 Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "mobile",
+      "code": "60125",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "contentTokenRecall": 0.9565,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 2 - Task 5 · PoC",
+        "heading": "AI Tutor • WS 2 - Task 5",
+        "subtitle": "Read from your book · AI checks your sentences",
+        "text": "‹ AI Tutor • WS 2 - Task 5 Read from your book · AI checks your sentences Task 5. Read the three sentences you wrote in your book. I’ll turn them into text and check them with you. Read sentence 1 1 / 3 Look at your book and read sentence 1. Keep your eyes on the book. You do not need to type anything. 0.0 sec Demo 🎙 Record Task 5 Sentence 1 of 3 Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 2 - Task 5 · React",
+        "heading": "AI Tutor • WS 2 - Task 5",
+        "subtitle": "Read from your book · AI checks your sentences",
+        "text": "‹ AI Tutor • WS 2 - Task 5 Read from your book · AI checks your sentences Task 5. Read the three sentences you wrote in your book. I’ll turn them into text and check them with you. Read sentence 1 1 / 3 1 2 3 Keep your eyes on the book. You do not need to type anything. 0.0 sec Demo 🎙 Record Task 5 Sentence 1 of 3 Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "mobile",
+      "code": "60126",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "contentTokenRecall": 0.9636,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 2 - Task 6 · PoC",
+        "heading": "AI Tutor • WS 2 - Task 6",
+        "subtitle": "Priority Review · Mastery Check",
+        "text": "‹ AI Tutor • WS 2 - Task 6 Priority Review · Mastery Check Task 6. First, let’s review a few collocations that needed extra help. Then you’ll do a short mastery check with new items. Priority review 3 targets These are the collocations that were not correct on the first attempt earlier in WS2. The system prioritises higher retry counts first. 1. do homework 2. do exercise 3. study history Why these? Start review Task 6 Priority review Worksheet finished",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 2 - Task 6 · React",
+        "heading": "AI Tutor • WS 2 - Task 6",
+        "subtitle": "Priority Review · Mastery Check",
+        "text": "‹ AI Tutor • WS 2 - Task 6 Priority Review · Mastery Check Task 6. First, let’s review a few collocations that needed extra help. Then you’ll do a short mastery check with new items. Priority review 3 targets These are the collocations that were not correct on the first attempt earlier in WS2. The system prioritises higher retry counts first. 1. do homework2. do exercise3. study history Why these? Start review Task 6 Priority review Worksheet finished",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "mobile",
+      "code": "60131",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "contentTokenRecall": 1,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 3 - Task 1 · PoC",
+        "heading": "AI Tutor • WS 3 - Task 1",
+        "subtitle": "Present Simple · Form First",
+        "text": "‹ AI Tutor • WS 3 - Task 1 Present Simple · Form First Check Task 1. Use your worksheet. Enter only the words you wrote in the blanks. Your answers 8 items 1 2 3 4 5 6 7 8 Demo Check Enter only the verb form(s), not the full sentence. Task 1 Check 8 answers. Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 3 - Task 1 · React",
+        "heading": "AI Tutor • WS 3 - Task 1",
+        "subtitle": "Present Simple · Form First",
+        "text": "‹ AI Tutor • WS 3 - Task 1 Present Simple · Form First Check Task 1. Use your worksheet. Enter only the words you wrote in the blanks. Your answers 8 items 1 2 3 4 5 6 7 8 Demo Check Enter only the verb form(s), not the full sentence. Task 1 Check 8 answers. Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "mobile",
+      "code": "60132",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "contentTokenRecall": 1,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 3 - Task 2 · PoC",
+        "heading": "AI Tutor • WS 3 - Task 2",
+        "subtitle": "Form & Meaning in Context",
+        "text": "‹ AI Tutor • WS 3 - Task 2 Form & Meaning in Context Check Task 2. Enter your A, B or C answers from the worksheet. Your answers 6 items A B C 1 2 3 4 5 6 Demo Check The worksheet remains the main task. The app only captures your choices and gives targeted help if needed. Task 2 Check 6 answers. Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 3 - Task 2 · React",
+        "heading": "AI Tutor • WS 3 - Task 2",
+        "subtitle": "Form & Meaning in Context",
+        "text": "‹ AI Tutor • WS 3 - Task 2 Form & Meaning in Context Check Task 2. Enter your A, B or C answers from the worksheet. Your answers 6 items A B C 1 2 3 4 5 6 Demo Check The worksheet remains the main task. The app only captures your choices and gives targeted help if needed. Task 2 Check 6 answers. Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "mobile",
+      "code": "60133",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "contentTokenRecall": 0.9111,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 3 - Task 3 · PoC",
+        "heading": "AI Tutor • WS 3 - Task 3",
+        "subtitle": "Frequency Words · Position",
+        "text": "‹ AI Tutor • WS 3 - Task 3 Frequency Words · Position Check Task 3. Look at the A, B or C position you circled in your worksheet. Enter only the letter. Your worksheet choices 4 items A B C 1 2 3 4 Demo Check The thinking happens on the worksheet. The app only records A/B/C and gives help if the position is wrong. Task 3 Check 4 answers. Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 3 - Task 3 · React",
+        "heading": "AI Tutor • WS 3 - Task 3",
+        "subtitle": "Frequency Words · Position",
+        "text": "‹ AI Tutor • WS 3 - Task 3 Frequency Words · Position Check Task 3. Enter the A, B or C positions you chose in the worksheet. Your worksheet choices 4 items A B C 1 2 3 4 Demo Check The thinking happens on the worksheet. The app only records A/B/C and gives help if the position is wrong. Task 3 Check 4 answers. Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "mobile",
+      "code": "60134",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "contentTokenRecall": 0.8367,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 3 - Task 4 · PoC",
+        "heading": "AI Tutor • WS 3 - Task 4",
+        "subtitle": "Frequency Meaning · School Week",
+        "text": "‹ AI Tutor • WS 3 - Task 4 Frequency Meaning · School Week Check Task 4. Look at the sentences you completed in your worksheet. Choose the frequency word you used for each one. Your worksheet answers 5 items No. Always Usually Sometimes Never 1 2 3 4 5 Demo Check Do the thinking and full-sentence writing in the worksheet. The app only records the frequency word for each sentence. Task 4 Check 5 answers. Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 3 - Task 4 · React",
+        "heading": "AI Tutor • WS 3 - Task 4",
+        "subtitle": "Frequency Meaning · School Week",
+        "text": "‹ AI Tutor • WS 3 - Task 4 Frequency Meaning · School Week Check Task 4. Enter the frequency words you chose from the school-week chart. Your worksheet answers 5 items Always Usually Sometimes Never 1 2 3 4 5 Demo Check Do the thinking and full-sentence writing in the worksheet. The app only records the frequency word for each sentence. Task 4 Check 5 answers. Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "mobile",
+      "code": "60135",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "contentTokenRecall": 0.8913,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 3 - Task 5 · PoC",
+        "heading": "AI Tutor • WS 3 - Task 5",
+        "subtitle": "Personal Writing · STT Grammar Check",
+        "text": "‹ AI Tutor • WS 3 - Task 5 Personal Writing · STT Grammar Check Task 5. Read the four sentences you wrote in your worksheet. I’ll turn them into text and check the grammar with you. Read sentence 1 1 / 4 Look at your worksheet and read sentence 1. This sentence should be about yourself. 0.0 sec Demo 🎙 Record Task 5 Sentence 1 of 4 Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 3 - Task 5 · React",
+        "heading": "AI Tutor • WS 3 - Task 5",
+        "subtitle": "Personal Writing · STT Grammar Check",
+        "text": "‹ AI Tutor • WS 3 - Task 5 Personal Writing · STT Grammar Check Task 5. Read the four sentences you wrote in your worksheet. I’ll help you check the language. Read sentence 1 1 / 4 Sentence 1 Sentence 2 Sentence 3 Sentence 4 Look at your worksheet and read sentence 1. This sentence should be about yourself. 0.0 sec Demo 🎙 Record Task 5 Sentence 1 of 4 Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "mobile",
+      "code": "60141",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "contentTokenRecall": 0.6739,
+      "contentTokenRecallThreshold": 0.65,
+      "html": {
+        "title": "AI Tutor • WS 4 - Task 1 · PoC",
+        "heading": "AI Tutor • WS 4 - Task 1",
+        "subtitle": "Everyday English · Functional Phrases",
+        "text": "‹ AI Tutor • WS 4 - Task 1 Everyday English · Functional Phrases Check Task 1. Look at the phrases you wrote in the worksheet. Choose the phrase for each blank. Your worksheet answers 4 blanks No. this is Hello Nice to meet you Nice to meet you, too 1 2 3 4 Demo Check The worksheet remains the main task. The app only records which functional phrase you used in each blank. Task 1 Check 4 answers. Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 4 - Task 1 · React",
+        "heading": "AI Tutor • WS 4 - Task 1",
+        "subtitle": "Everyday English · Functional Phrases",
+        "text": "‹ AI Tutor • WS 4 - Task 1 Everyday English · Functional Phrases Check Task 1. Use the phrase bank in your worksheet. Enter its A, B, C or D label for each blank. Your worksheet answers 4 blanks A B C D 1 2 3 4 Demo Check The phrases stay in the worksheet. The app only records their A–D labels and guides you back to the dialogue. Task 1 Check 4 answers. Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "mobile",
+      "code": "60142",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "contentTokenRecall": 1,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 4 - Task 2 · PoC",
+        "heading": "AI Tutor • WS 4 - Task 2",
+        "subtitle": "Meaning & Appropriacy",
+        "text": "‹ AI Tutor • WS 4 - Task 2 Meaning & Appropriacy Check Task 2. Enter your A, B or C answers from the worksheet. Your answers 5 items A B C 1 2 3 4 5 Demo Check All question content stays in the worksheet. The app only records your choices and gives targeted clues when needed. Task 2 Check 5 answers. Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 4 - Task 2 · React",
+        "heading": "AI Tutor • WS 4 - Task 2",
+        "subtitle": "Meaning & Appropriacy",
+        "text": "‹ AI Tutor • WS 4 - Task 2 Meaning & Appropriacy Check Task 2. Enter your A, B or C answers from the worksheet. Your answers 5 items A B C 1 2 3 4 5 Demo Check All question content stays in the worksheet. The app only records your choices and gives targeted clues when needed. Task 2 Check 5 answers. Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "mobile",
+      "code": "60143",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "contentTokenRecall": 1,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 4 - Task 3 · PoC",
+        "heading": "AI Tutor • WS 4 - Task 3",
+        "subtitle": "Supported Dialogue · STT Check",
+        "text": "‹ AI Tutor • WS 4 - Task 3 Supported Dialogue · STT Check Task 3. Keep your worksheet open. Read each line of the dialogue you wrote. I’ll check whether each turn does the right job. Trang • Turn 1 1/4 Introduce Nam Read the line you wrote in your worksheet. Do not type it again. Just read your own sentence. 0.0 sec Demo 🎙 Record Task 3 Turn 1 of 4 Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 4 - Task 3 · React",
+        "heading": "AI Tutor • WS 4 - Task 3",
+        "subtitle": "Supported Dialogue · STT Check",
+        "text": "‹ AI Tutor • WS 4 - Task 3 Supported Dialogue · STT Check Task 3. Keep your worksheet open. Read each line of the dialogue you wrote. I’ll check whether each turn does the right job. Trang • Turn 1 1/4 Turn 1 Turn 2 Turn 3 Turn 4 Introduce Nam Read the line you wrote in your worksheet. Do not type it again. Just read your own sentence. 0.0 sec Demo 🎙 Record Task 3 Turn 1 of 4 Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "mobile",
+      "code": "60144",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "contentTokenRecall": 1,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 4 - Task 4 · PoC",
+        "heading": "AI Tutor • WS 4 - Task 4",
+        "subtitle": "AI Role-play · Communication",
+        "text": "‹ AI Tutor • WS 4 - Task 4 AI Role-play · Communication Task 4. Two short speaking rounds. Read my messages, listen if you want, then answer by speaking. Round 1 • Respond 1 / 2 RESPOND + ASK Greet Sam after the AI introduces Sam to you. Then ask Sam one suitable question. Task 4 Round 1 of 2 Finish",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 4 - Task 4 · React",
+        "heading": "AI Tutor • WS 4 - Task 4",
+        "subtitle": "AI Role-play · Communication",
+        "text": "‹ AI Tutor • WS 4 - Task 4 AI Role-play · Communication Task 4. Two short speaking rounds. Read my messages, listen if you want, then answer by speaking. Round 1 • Respond 1 / 2 RESPOND + ASK Greet Sam after the AI introduces Sam to you. Then ask Sam one suitable question. Hi! This is Sam, my new classmate. 🔊 Listen Your turn Greet Sam 0.0 sec Demo 🎙 Record Task 4 Round 1 of 2 Finish",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "mobile",
+      "code": "60151",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "contentTokenRecall": 1,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 5 - Task 1 · PoC",
+        "heading": "AI Tutor • WS 5 - Task 1",
+        "subtitle": "Read for the Big Idea",
+        "text": "‹ AI Tutor • WS 5 - Task 1 Read for the Big Idea Check Task 1. Use the summaries you matched in the worksheet. Enter A, B or C for each school. Your answers 3 schools A B C 1 2 3 Demo Check The school profiles and summaries stay in the worksheet. The app only checks your choices and guides you back to the right evidence. Task 1 Check 3 answers. Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 5 - Task 1 · React",
+        "heading": "AI Tutor • WS 5 - Task 1",
+        "subtitle": "Read for the Big Idea",
+        "text": "‹ AI Tutor • WS 5 - Task 1 Read for the Big Idea Check Task 1. Use the summaries you matched in the worksheet. Enter A, B or C for each school. Your answers 3 schools A B C 1 2 3 Demo Check The school profiles and summaries stay in the worksheet. The app only checks your choices and guides you back to the right evidence. Task 1 Check 3 answers. Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "mobile",
+      "code": "60152",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "contentTokenRecall": 1,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 5 - Task 2 · PoC",
+        "heading": "AI Tutor • WS 5 - Task 2",
+        "subtitle": "Reading Comprehension · Details & Meaning",
+        "text": "‹ AI Tutor • WS 5 - Task 2 Reading Comprehension · Details & Meaning Check Task 2. Enter your A, B or C answers from the worksheet. Your answers 6 questions A B C 1 2 3 4 5 6 Demo Check All questions and answer choices stay in the worksheet. The app only checks your choices and guides you back to the right reading evidence. Task 2 Check 6 answers. Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 5 - Task 2 · React",
+        "heading": "AI Tutor • WS 5 - Task 2",
+        "subtitle": "Reading Comprehension · Details & Meaning",
+        "text": "‹ AI Tutor • WS 5 - Task 2 Reading Comprehension · Details & Meaning Check Task 2. Enter your A, B or C answers from the worksheet. Your answers 6 questions A B C 1 2 3 4 5 6 Demo Check All questions and answer choices stay in the worksheet. The app only checks your choices and guides you back to the right reading evidence. Task 2 Check 6 answers. Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "mobile",
+      "code": "60153",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "contentTokenRecall": 1,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 5 - Task 3 · PoC",
+        "heading": "AI Tutor • WS 5 - Task 3",
+        "subtitle": "Conversation · Discourse Cohesion",
+        "text": "‹ AI Tutor • WS 5 - Task 3 Conversation · Discourse Cohesion Check Task 3. Enter the letters you used for blanks 1–5 in the worksheet. Your answers 5 blanks a b c d e f 1 2 3 4 5 Demo Check The full conversation and responses a–f stay in the worksheet. The app only records your letters and helps you follow the conversation when a blank is wrong. Task 3 Check 5 answers. Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 5 - Task 3 · React",
+        "heading": "AI Tutor • WS 5 - Task 3",
+        "subtitle": "Conversation · Discourse Cohesion",
+        "text": "‹ AI Tutor • WS 5 - Task 3 Conversation · Discourse Cohesion Check Task 3. Enter the letters you used for blanks 1–5 in the worksheet. Your answers 5 blanks a b c d e f 1 2 3 4 5 Demo Check The full conversation and responses a–f stay in the worksheet. The app only records your letters and helps you follow the conversation when a blank is wrong. Task 3 Check 5 answers. Back to book",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "mobile",
+      "code": "60154",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "contentTokenRecall": 1,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 5 - Task 4 · PoC",
+        "heading": "AI Tutor • WS 5 - Task 4",
+        "subtitle": "Speaking Plan · Readiness Check",
+        "text": "‹ AI Tutor • WS 5 - Task 4 Speaking Plan · Readiness Check Task 4. Keep your speaking plan open in the worksheet. Check that you have all four parts before you start speaking. Speaking plan check 4 parts School chosen You chose one school from the reading. One fact from the text You noted one true fact about that school. Why it is good for you You wrote one personal reason. One activity you would like to do You noted one activity for your talk. Demo Check my plan Do not type your notes into the app. Keep the short notes in your worksheet and use them in Task 5. Task 4 Prepare for speaking. Continue",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 5 - Task 4 · React",
+        "heading": "AI Tutor • WS 5 - Task 4",
+        "subtitle": "Speaking Plan · Readiness Check",
+        "text": "‹ AI Tutor • WS 5 - Task 4 Speaking Plan · Readiness Check Task 4. Keep your speaking plan open in the worksheet. Check that you have all four parts before you start speaking. Speaking plan check 4 parts School chosen You chose one school from the reading. One fact from the text You noted one true fact about that school. Why it is good for you You wrote one personal reason. One activity you would like to do You noted one activity for your talk. Demo Check my plan Do not type your notes into the app. Keep the short notes in your worksheet and use them in Task 5. Task 4 Prepare for speaking. Continue",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "mobile",
+      "code": "60155",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "contentTokenRecall": 1,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 5 - Task 5 · PoC",
+        "heading": "AI Tutor • WS 5 - Task 5",
+        "subtitle": "AI Speaking · My School Choice",
+        "text": "‹ AI Tutor • WS 5 - Task 5 AI Speaking · My School Choice Task 5. Use your notes from Task 4. First, tell me which school you would like to go to and why. Round 1 • My Choice Speaking 30–45 seconds Your talk should include: the school name two reasons one activity you would like to do Keep your worksheet open. Use your notes as prompts, not as a script. Task 5 Round 1 • My Choice Finish WS5",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 5 - Task 5 · React",
+        "heading": "AI Tutor • WS 5 - Task 5",
+        "subtitle": "AI Speaking · My School Choice",
+        "text": "‹ AI Tutor • WS 5 - Task 5 AI Speaking · My School Choice Task 5. Use your notes from Task 4. First, tell me which school you would like to go to and why. Round 1 • My Choice Speaking 30–45 seconds Your talk should include: the school name two reasons one activity you would like to do Keep your worksheet open. Use your notes as prompts, not as a script. Which school would you like to go to? 🔊 Listen Your first recording 30–45s 0.0 sec Demo 🎙 Record Task 5 Round 1 • My Choice Finish WS5",
+        "overflow": false,
+        "appWidth": 390,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "desktop",
+      "code": "60111",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "contentTokenRecall": 0.9615,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 1 - Task 1 · PoC",
+        "heading": "AI Tutor • WS 1 - Task 1",
+        "subtitle": "Unit 1 · My New School",
+        "text": "‹ AI Tutor • WS 1 - Task 1 Unit 1 · My New School Check Task 1. Enter your answers from the worksheet. Your answers Enter your answers below. 1 2 3 4 Demo Check Task progress 0% Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 1 - Task 1 · React",
+        "heading": "AI Tutor • WS 1 - Task 1",
+        "subtitle": "Unit 1 · My New School",
+        "text": "‹ AI Tutor • WS 1 - Task 1 Unit 1 · My New School Check Task 1. Enter your answers from the worksheet. Your answers Enter your answers below. 1 2 3 4 Demo Check Task 1 0% Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "desktop",
+      "code": "60112",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "contentTokenRecall": 0.7273,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 1 - Task 2 · PoC",
+        "heading": "AI Tutor • WS 1 - Task 2",
+        "subtitle": "Unit 1 · My New School",
+        "text": "‹ AI Tutor • WS 1 - Task 2 Unit 1 · My New School 2A · Listen & choose 1 / 7 🔊 Which picture? A B C D E F G Listening check 0% Task 2A Keep your worksheet open. Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": null
+      },
+      "react": {
+        "title": "AI Tutor • WS 1 - Task 2 · React",
+        "heading": "AI Tutor • WS 1 - Task 2",
+        "subtitle": "Unit 1 · My New School",
+        "text": "‹ AI Tutor • WS 1 - Task 2 Unit 1 · My New School Task 2. Listen and match seven school things, then practise saying them. 2A · Listening 1 / 7 🔊 Listen A B C D E F G Task 2A 1 / 7 Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "desktop",
+      "code": "60113",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "contentTokenRecall": 0.7941,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 1 - Task 3 · PoC",
+        "heading": "AI Tutor • WS 1- Task 3",
+        "subtitle": "Unit 1 · My New School",
+        "text": "‹ AI Tutor • WS 1- Task 3 Unit 1 · My New School Check Task 3. Enter your answers from the worksheet. Your answers Tap one answer for each question. A B C 1 2 3 4 5 6 Demo Check Task 3 Check your 6 answers. Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 1 - Task 3 · React",
+        "heading": "AI Tutor • WS 1 - Task 3",
+        "subtitle": "Unit 1 · My New School",
+        "text": "‹ AI Tutor • WS 1 - Task 3 Unit 1 · My New School Check Task 3. Enter your A, B or C answers. Your answers 6 items A B C 1 2 3 4 5 6 Demo Check Use the worksheet questions while entering your choices. Task 3 Check 6 answers. Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "desktop",
+      "code": "60114",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "contentTokenRecall": 0.7667,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 1 - Task 4 · PoC",
+        "heading": "AI Tutor • WS 1 - Task 4",
+        "subtitle": "Unit 1 · My New School",
+        "text": "‹ AI Tutor • WS 1 - Task 4 Unit 1 · My New School Check Task 4. Enter your True/False answers. Your answers Use your worksheet. Tap one answer for each question. True False 1 2 3 4 Demo Check Task 4 Check your 4 answers. Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": null,
+        "tutorBubble": null
+      },
+      "react": {
+        "title": "AI Tutor • WS 1 - Task 4 · React",
+        "heading": "AI Tutor • WS 1 - Task 4",
+        "subtitle": "Unit 1 · My New School",
+        "text": "‹ AI Tutor • WS 1 - Task 4 Unit 1 · My New School Check Task 4. Enter your True or False answers. Your answers 4 items T F 1 2 3 4 Demo Check Use evidence from the reading passage. Task 4 Check 4 answers. Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "desktop",
+      "code": "60115",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "contentTokenRecall": 1,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 1 - Task 5 · PoC",
+        "heading": "AI Tutor • WS 1 - Task 5",
+        "subtitle": "Writing",
+        "text": "‹ AI Tutor • WS 1 - Task 5 Writing Check Task 5. Enter only what you wrote in 1-4. Quick capture Use your book. The sentence frames stay hidden here. 1 2 3 4 Demo Build my writing Task 5 Book → capture → coach. Task 6",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": null,
+        "tutorBubble": null
+      },
+      "react": {
+        "title": "AI Tutor • WS 1 - Task 5 · React",
+        "heading": "AI Tutor • WS 1 - Task 5",
+        "subtitle": "Writing",
+        "text": "‹ AI Tutor • WS 1 - Task 5 Writing Check Task 5. Enter only what you wrote in 1-4. Quick capture Use your book. The sentence frames stay hidden here. 1 2 3 4 Demo Build my writing Task 5 Book → capture → coach. Task 6",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "desktop",
+      "code": "60116",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "contentTokenRecall": 0.8,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 1 - Task 6 · PoC",
+        "heading": "AI Tutor • WS 1 - Task 6",
+        "subtitle": "Study with AI",
+        "text": "‹ AI Tutor • WS 1 - Task 6 Study with AI Check Task 6 Talk about your school for 20–30 seconds. Task 6B Speak for 20–30 seconds. Finish",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": null,
+        "tutorBubble": null
+      },
+      "react": {
+        "title": "AI Tutor • WS 1 - Task 6 · React",
+        "heading": "AI Tutor • WS 1 - Task 6",
+        "subtitle": "Study with AI",
+        "text": "‹ AI Tutor • WS 1 - Task 6 Study with AI Task 6. Use your Task 5 ideas to speak about your school. 6B · Speaking 20–30 sec 🎙 Start speaking I need help Task 6 Speaking practice Finish",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "desktop",
+      "code": "60121",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "contentTokenRecall": 0.8,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 2 - Task 1 · PoC",
+        "heading": "AI Tutor • WS 2 - Task 1",
+        "subtitle": "Unit 1 · My New School",
+        "text": "‹ AI Tutor • WS 2 - Task 1 Unit 1 · My New School Check Task 1. Use your worksheet. Tap one verb for each sentence. Your answers play · do · have · study play do have study 1 2 3 4 5 6 7 8 Demo Check Task 1 Check your 8 answers. Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 2 - Task 1 · React",
+        "heading": "AI Tutor • WS 2 - Task 1",
+        "subtitle": "Unit 1 · My New School",
+        "text": "‹ AI Tutor • WS 2 - Task 1 Unit 1 · My New School Check Task 1. Enter the collocation verbs from your worksheet. Your worksheet answers 8 items play do have study 1 2 3 4 5 6 7 8 Demo Check Task 1 Check 8 answers. Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "desktop",
+      "code": "60122",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "contentTokenRecall": 0.875,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 2 - Task 2 · PoC",
+        "heading": "AI Tutor • WS 2 - Task 2",
+        "subtitle": "Unit 1 · My New School",
+        "text": "‹ AI Tutor • WS 2 - Task 2 Unit 1 · My New School Check Task 2. Enter your answers from the worksheet. Your answers Tap A, B or C for each question. A B C 1 2 3 4 5 Demo Check Task 2 Check your 5 answers. Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 2 - Task 2 · React",
+        "heading": "AI Tutor • WS 2 - Task 2",
+        "subtitle": "Unit 1 · My New School",
+        "text": "‹ AI Tutor • WS 2 - Task 2 Unit 1 · My New School Check Task 2. Enter your A, B or C answers from the worksheet. Your answers 5 items A B C 1 2 3 4 5 Demo Check The worksheet remains the main task. The app captures your choices and gives targeted clues only when needed. Task 2 Check 5 answers. Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "desktop",
+      "code": "60123",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "contentTokenRecall": 0.8108,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 2 - Task 3 · PoC",
+        "heading": "AI Tutor • WS 2 - Task 3",
+        "subtitle": "Listening & Pronunciation",
+        "text": "‹ AI Tutor • WS 2 - Task 3 Listening & Pronunciation Task 3. First, listen and tick the sounds in your book. 3A · Listen 8 items Listen to the whole audio. Tick /ɑː/ or /ʌ/ in your book. 0:00 0:12 Play again Enter answers Played 0 / 2 Task 3A Listen and use your worksheet. Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 2 - Task 3 · React",
+        "heading": "AI Tutor • WS 2 - Task 3",
+        "subtitle": "Listening & Pronunciation",
+        "text": "‹ AI Tutor • WS 2 - Task 3 Listening & Pronunciation Task 3. Listen twice, classify the sounds, then practise all eight words. 3A · Listen 8 items Play audio Listen to the whole audio. Tick /ɑː/ or /ʌ/ in your book. Enter answers Played 0 / 2 Task 3 Listening Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "desktop",
+      "code": "60124",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "contentTokenRecall": 0.9714,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 2 - Task 4 · PoC",
+        "heading": "AI Tutor • WS 2 - Task 4",
+        "subtitle": "Sentence Fluency",
+        "text": "‹ AI Tutor • WS 2 - Task 4 Sentence Fluency Task 4. Read each sentence clearly and smoothly. Sentence 1 1 / 4 Our art class starts at nine. Listen if you need help. Then read the whole sentence. 🔊 Listen 🎙 Record 0.0 sec Task 4 Sentence 1 of 4 Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 2 - Task 4 · React",
+        "heading": "AI Tutor • WS 2 - Task 4",
+        "subtitle": "Sentence Fluency",
+        "text": "‹ AI Tutor • WS 2 - Task 4 Sentence Fluency Task 4. Read four full sentences clearly and smoothly. Sentence 1 1 / 4 1 2 3 4 Our art class starts at nine. Listen if you need help. Then read the whole sentence. 0.0 sec 🔊 Listen 🎙 Record Task 4 Sentence 1 of 4 Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "desktop",
+      "code": "60125",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "contentTokenRecall": 0.9565,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 2 - Task 5 · PoC",
+        "heading": "AI Tutor • WS 2 - Task 5",
+        "subtitle": "Read from your book · AI checks your sentences",
+        "text": "‹ AI Tutor • WS 2 - Task 5 Read from your book · AI checks your sentences Task 5. Read the three sentences you wrote in your book. I’ll turn them into text and check them with you. Read sentence 1 1 / 3 Look at your book and read sentence 1. Keep your eyes on the book. You do not need to type anything. 0.0 sec Demo 🎙 Record Task 5 Sentence 1 of 3 Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 2 - Task 5 · React",
+        "heading": "AI Tutor • WS 2 - Task 5",
+        "subtitle": "Read from your book · AI checks your sentences",
+        "text": "‹ AI Tutor • WS 2 - Task 5 Read from your book · AI checks your sentences Task 5. Read the three sentences you wrote in your book. I’ll turn them into text and check them with you. Read sentence 1 1 / 3 1 2 3 Keep your eyes on the book. You do not need to type anything. 0.0 sec Demo 🎙 Record Task 5 Sentence 1 of 3 Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "desktop",
+      "code": "60126",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "contentTokenRecall": 0.9636,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 2 - Task 6 · PoC",
+        "heading": "AI Tutor • WS 2 - Task 6",
+        "subtitle": "Priority Review · Mastery Check",
+        "text": "‹ AI Tutor • WS 2 - Task 6 Priority Review · Mastery Check Task 6. First, let’s review a few collocations that needed extra help. Then you’ll do a short mastery check with new items. Priority review 3 targets These are the collocations that were not correct on the first attempt earlier in WS2. The system prioritises higher retry counts first. 1. do homework 2. do exercise 3. study history Why these? Start review Task 6 Priority review Worksheet finished",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 2 - Task 6 · React",
+        "heading": "AI Tutor • WS 2 - Task 6",
+        "subtitle": "Priority Review · Mastery Check",
+        "text": "‹ AI Tutor • WS 2 - Task 6 Priority Review · Mastery Check Task 6. First, let’s review a few collocations that needed extra help. Then you’ll do a short mastery check with new items. Priority review 3 targets These are the collocations that were not correct on the first attempt earlier in WS2. The system prioritises higher retry counts first. 1. do homework2. do exercise3. study history Why these? Start review Task 6 Priority review Worksheet finished",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "desktop",
+      "code": "60131",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "contentTokenRecall": 1,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 3 - Task 1 · PoC",
+        "heading": "AI Tutor • WS 3 - Task 1",
+        "subtitle": "Present Simple · Form First",
+        "text": "‹ AI Tutor • WS 3 - Task 1 Present Simple · Form First Check Task 1. Use your worksheet. Enter only the words you wrote in the blanks. Your answers 8 items 1 2 3 4 5 6 7 8 Demo Check Enter only the verb form(s), not the full sentence. Task 1 Check 8 answers. Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 3 - Task 1 · React",
+        "heading": "AI Tutor • WS 3 - Task 1",
+        "subtitle": "Present Simple · Form First",
+        "text": "‹ AI Tutor • WS 3 - Task 1 Present Simple · Form First Check Task 1. Use your worksheet. Enter only the words you wrote in the blanks. Your answers 8 items 1 2 3 4 5 6 7 8 Demo Check Enter only the verb form(s), not the full sentence. Task 1 Check 8 answers. Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "desktop",
+      "code": "60132",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "contentTokenRecall": 1,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 3 - Task 2 · PoC",
+        "heading": "AI Tutor • WS 3 - Task 2",
+        "subtitle": "Form & Meaning in Context",
+        "text": "‹ AI Tutor • WS 3 - Task 2 Form & Meaning in Context Check Task 2. Enter your A, B or C answers from the worksheet. Your answers 6 items A B C 1 2 3 4 5 6 Demo Check The worksheet remains the main task. The app only captures your choices and gives targeted help if needed. Task 2 Check 6 answers. Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 3 - Task 2 · React",
+        "heading": "AI Tutor • WS 3 - Task 2",
+        "subtitle": "Form & Meaning in Context",
+        "text": "‹ AI Tutor • WS 3 - Task 2 Form & Meaning in Context Check Task 2. Enter your A, B or C answers from the worksheet. Your answers 6 items A B C 1 2 3 4 5 6 Demo Check The worksheet remains the main task. The app only captures your choices and gives targeted help if needed. Task 2 Check 6 answers. Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "desktop",
+      "code": "60133",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "contentTokenRecall": 0.9111,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 3 - Task 3 · PoC",
+        "heading": "AI Tutor • WS 3 - Task 3",
+        "subtitle": "Frequency Words · Position",
+        "text": "‹ AI Tutor • WS 3 - Task 3 Frequency Words · Position Check Task 3. Look at the A, B or C position you circled in your worksheet. Enter only the letter. Your worksheet choices 4 items A B C 1 2 3 4 Demo Check The thinking happens on the worksheet. The app only records A/B/C and gives help if the position is wrong. Task 3 Check 4 answers. Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 3 - Task 3 · React",
+        "heading": "AI Tutor • WS 3 - Task 3",
+        "subtitle": "Frequency Words · Position",
+        "text": "‹ AI Tutor • WS 3 - Task 3 Frequency Words · Position Check Task 3. Enter the A, B or C positions you chose in the worksheet. Your worksheet choices 4 items A B C 1 2 3 4 Demo Check The thinking happens on the worksheet. The app only records A/B/C and gives help if the position is wrong. Task 3 Check 4 answers. Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "desktop",
+      "code": "60134",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "contentTokenRecall": 0.8367,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 3 - Task 4 · PoC",
+        "heading": "AI Tutor • WS 3 - Task 4",
+        "subtitle": "Frequency Meaning · School Week",
+        "text": "‹ AI Tutor • WS 3 - Task 4 Frequency Meaning · School Week Check Task 4. Look at the sentences you completed in your worksheet. Choose the frequency word you used for each one. Your worksheet answers 5 items No. Always Usually Sometimes Never 1 2 3 4 5 Demo Check Do the thinking and full-sentence writing in the worksheet. The app only records the frequency word for each sentence. Task 4 Check 5 answers. Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 3 - Task 4 · React",
+        "heading": "AI Tutor • WS 3 - Task 4",
+        "subtitle": "Frequency Meaning · School Week",
+        "text": "‹ AI Tutor • WS 3 - Task 4 Frequency Meaning · School Week Check Task 4. Enter the frequency words you chose from the school-week chart. Your worksheet answers 5 items Always Usually Sometimes Never 1 2 3 4 5 Demo Check Do the thinking and full-sentence writing in the worksheet. The app only records the frequency word for each sentence. Task 4 Check 5 answers. Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "desktop",
+      "code": "60135",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "contentTokenRecall": 0.8913,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 3 - Task 5 · PoC",
+        "heading": "AI Tutor • WS 3 - Task 5",
+        "subtitle": "Personal Writing · STT Grammar Check",
+        "text": "‹ AI Tutor • WS 3 - Task 5 Personal Writing · STT Grammar Check Task 5. Read the four sentences you wrote in your worksheet. I’ll turn them into text and check the grammar with you. Read sentence 1 1 / 4 Look at your worksheet and read sentence 1. This sentence should be about yourself. 0.0 sec Demo 🎙 Record Task 5 Sentence 1 of 4 Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 3 - Task 5 · React",
+        "heading": "AI Tutor • WS 3 - Task 5",
+        "subtitle": "Personal Writing · STT Grammar Check",
+        "text": "‹ AI Tutor • WS 3 - Task 5 Personal Writing · STT Grammar Check Task 5. Read the four sentences you wrote in your worksheet. I’ll help you check the language. Read sentence 1 1 / 4 Sentence 1 Sentence 2 Sentence 3 Sentence 4 Look at your worksheet and read sentence 1. This sentence should be about yourself. 0.0 sec Demo 🎙 Record Task 5 Sentence 1 of 4 Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "desktop",
+      "code": "60141",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "contentTokenRecall": 0.6739,
+      "contentTokenRecallThreshold": 0.65,
+      "html": {
+        "title": "AI Tutor • WS 4 - Task 1 · PoC",
+        "heading": "AI Tutor • WS 4 - Task 1",
+        "subtitle": "Everyday English · Functional Phrases",
+        "text": "‹ AI Tutor • WS 4 - Task 1 Everyday English · Functional Phrases Check Task 1. Look at the phrases you wrote in the worksheet. Choose the phrase for each blank. Your worksheet answers 4 blanks No. this is Hello Nice to meet you Nice to meet you, too 1 2 3 4 Demo Check The worksheet remains the main task. The app only records which functional phrase you used in each blank. Task 1 Check 4 answers. Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 4 - Task 1 · React",
+        "heading": "AI Tutor • WS 4 - Task 1",
+        "subtitle": "Everyday English · Functional Phrases",
+        "text": "‹ AI Tutor • WS 4 - Task 1 Everyday English · Functional Phrases Check Task 1. Use the phrase bank in your worksheet. Enter its A, B, C or D label for each blank. Your worksheet answers 4 blanks A B C D 1 2 3 4 Demo Check The phrases stay in the worksheet. The app only records their A–D labels and guides you back to the dialogue. Task 1 Check 4 answers. Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "desktop",
+      "code": "60142",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "contentTokenRecall": 1,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 4 - Task 2 · PoC",
+        "heading": "AI Tutor • WS 4 - Task 2",
+        "subtitle": "Meaning & Appropriacy",
+        "text": "‹ AI Tutor • WS 4 - Task 2 Meaning & Appropriacy Check Task 2. Enter your A, B or C answers from the worksheet. Your answers 5 items A B C 1 2 3 4 5 Demo Check All question content stays in the worksheet. The app only records your choices and gives targeted clues when needed. Task 2 Check 5 answers. Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 4 - Task 2 · React",
+        "heading": "AI Tutor • WS 4 - Task 2",
+        "subtitle": "Meaning & Appropriacy",
+        "text": "‹ AI Tutor • WS 4 - Task 2 Meaning & Appropriacy Check Task 2. Enter your A, B or C answers from the worksheet. Your answers 5 items A B C 1 2 3 4 5 Demo Check All question content stays in the worksheet. The app only records your choices and gives targeted clues when needed. Task 2 Check 5 answers. Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "desktop",
+      "code": "60143",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "contentTokenRecall": 1,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 4 - Task 3 · PoC",
+        "heading": "AI Tutor • WS 4 - Task 3",
+        "subtitle": "Supported Dialogue · STT Check",
+        "text": "‹ AI Tutor • WS 4 - Task 3 Supported Dialogue · STT Check Task 3. Keep your worksheet open. Read each line of the dialogue you wrote. I’ll check whether each turn does the right job. Trang • Turn 1 1/4 Introduce Nam Read the line you wrote in your worksheet. Do not type it again. Just read your own sentence. 0.0 sec Demo 🎙 Record Task 3 Turn 1 of 4 Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 4 - Task 3 · React",
+        "heading": "AI Tutor • WS 4 - Task 3",
+        "subtitle": "Supported Dialogue · STT Check",
+        "text": "‹ AI Tutor • WS 4 - Task 3 Supported Dialogue · STT Check Task 3. Keep your worksheet open. Read each line of the dialogue you wrote. I’ll check whether each turn does the right job. Trang • Turn 1 1/4 Turn 1 Turn 2 Turn 3 Turn 4 Introduce Nam Read the line you wrote in your worksheet. Do not type it again. Just read your own sentence. 0.0 sec Demo 🎙 Record Task 3 Turn 1 of 4 Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "desktop",
+      "code": "60144",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "contentTokenRecall": 1,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 4 - Task 4 · PoC",
+        "heading": "AI Tutor • WS 4 - Task 4",
+        "subtitle": "AI Role-play · Communication",
+        "text": "‹ AI Tutor • WS 4 - Task 4 AI Role-play · Communication Task 4. Two short speaking rounds. Read my messages, listen if you want, then answer by speaking. Round 1 • Respond 1 / 2 RESPOND + ASK Greet Sam after the AI introduces Sam to you. Then ask Sam one suitable question. Task 4 Round 1 of 2 Finish",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 4 - Task 4 · React",
+        "heading": "AI Tutor • WS 4 - Task 4",
+        "subtitle": "AI Role-play · Communication",
+        "text": "‹ AI Tutor • WS 4 - Task 4 AI Role-play · Communication Task 4. Two short speaking rounds. Read my messages, listen if you want, then answer by speaking. Round 1 • Respond 1 / 2 RESPOND + ASK Greet Sam after the AI introduces Sam to you. Then ask Sam one suitable question. Hi! This is Sam, my new classmate. 🔊 Listen Your turn Greet Sam 0.0 sec Demo 🎙 Record Task 4 Round 1 of 2 Finish",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "desktop",
+      "code": "60151",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "contentTokenRecall": 1,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 5 - Task 1 · PoC",
+        "heading": "AI Tutor • WS 5 - Task 1",
+        "subtitle": "Read for the Big Idea",
+        "text": "‹ AI Tutor • WS 5 - Task 1 Read for the Big Idea Check Task 1. Use the summaries you matched in the worksheet. Enter A, B or C for each school. Your answers 3 schools A B C 1 2 3 Demo Check The school profiles and summaries stay in the worksheet. The app only checks your choices and guides you back to the right evidence. Task 1 Check 3 answers. Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 5 - Task 1 · React",
+        "heading": "AI Tutor • WS 5 - Task 1",
+        "subtitle": "Read for the Big Idea",
+        "text": "‹ AI Tutor • WS 5 - Task 1 Read for the Big Idea Check Task 1. Use the summaries you matched in the worksheet. Enter A, B or C for each school. Your answers 3 schools A B C 1 2 3 Demo Check The school profiles and summaries stay in the worksheet. The app only checks your choices and guides you back to the right evidence. Task 1 Check 3 answers. Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "desktop",
+      "code": "60152",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "contentTokenRecall": 1,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 5 - Task 2 · PoC",
+        "heading": "AI Tutor • WS 5 - Task 2",
+        "subtitle": "Reading Comprehension · Details & Meaning",
+        "text": "‹ AI Tutor • WS 5 - Task 2 Reading Comprehension · Details & Meaning Check Task 2. Enter your A, B or C answers from the worksheet. Your answers 6 questions A B C 1 2 3 4 5 6 Demo Check All questions and answer choices stay in the worksheet. The app only checks your choices and guides you back to the right reading evidence. Task 2 Check 6 answers. Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 5 - Task 2 · React",
+        "heading": "AI Tutor • WS 5 - Task 2",
+        "subtitle": "Reading Comprehension · Details & Meaning",
+        "text": "‹ AI Tutor • WS 5 - Task 2 Reading Comprehension · Details & Meaning Check Task 2. Enter your A, B or C answers from the worksheet. Your answers 6 questions A B C 1 2 3 4 5 6 Demo Check All questions and answer choices stay in the worksheet. The app only checks your choices and guides you back to the right reading evidence. Task 2 Check 6 answers. Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "desktop",
+      "code": "60153",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "contentTokenRecall": 1,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 5 - Task 3 · PoC",
+        "heading": "AI Tutor • WS 5 - Task 3",
+        "subtitle": "Conversation · Discourse Cohesion",
+        "text": "‹ AI Tutor • WS 5 - Task 3 Conversation · Discourse Cohesion Check Task 3. Enter the letters you used for blanks 1–5 in the worksheet. Your answers 5 blanks a b c d e f 1 2 3 4 5 Demo Check The full conversation and responses a–f stay in the worksheet. The app only records your letters and helps you follow the conversation when a blank is wrong. Task 3 Check 5 answers. Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 5 - Task 3 · React",
+        "heading": "AI Tutor • WS 5 - Task 3",
+        "subtitle": "Conversation · Discourse Cohesion",
+        "text": "‹ AI Tutor • WS 5 - Task 3 Conversation · Discourse Cohesion Check Task 3. Enter the letters you used for blanks 1–5 in the worksheet. Your answers 5 blanks a b c d e f 1 2 3 4 5 Demo Check The full conversation and responses a–f stay in the worksheet. The app only records your letters and helps you follow the conversation when a blank is wrong. Task 3 Check 5 answers. Back to book",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "desktop",
+      "code": "60154",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "contentTokenRecall": 1,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 5 - Task 4 · PoC",
+        "heading": "AI Tutor • WS 5 - Task 4",
+        "subtitle": "Speaking Plan · Readiness Check",
+        "text": "‹ AI Tutor • WS 5 - Task 4 Speaking Plan · Readiness Check Task 4. Keep your speaking plan open in the worksheet. Check that you have all four parts before you start speaking. Speaking plan check 4 parts School chosen You chose one school from the reading. One fact from the text You noted one true fact about that school. Why it is good for you You wrote one personal reason. One activity you would like to do You noted one activity for your talk. Demo Check my plan Do not type your notes into the app. Keep the short notes in your worksheet and use them in Task 5. Task 4 Prepare for speaking. Continue",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 5 - Task 4 · React",
+        "heading": "AI Tutor • WS 5 - Task 4",
+        "subtitle": "Speaking Plan · Readiness Check",
+        "text": "‹ AI Tutor • WS 5 - Task 4 Speaking Plan · Readiness Check Task 4. Keep your speaking plan open in the worksheet. Check that you have all four parts before you start speaking. Speaking plan check 4 parts School chosen You chose one school from the reading. One fact from the text You noted one true fact about that school. Why it is good for you You wrote one personal reason. One activity you would like to do You noted one activity for your talk. Demo Check my plan Do not type your notes into the app. Keep the short notes in your worksheet and use them in Task 5. Task 4 Prepare for speaking. Continue",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    },
+    {
+      "profile": "desktop",
+      "code": "60155",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "contentTokenRecall": 1,
+      "contentTokenRecallThreshold": 0.72,
+      "html": {
+        "title": "AI Tutor • WS 5 - Task 5 · PoC",
+        "heading": "AI Tutor • WS 5 - Task 5",
+        "subtitle": "AI Speaking · My School Choice",
+        "text": "‹ AI Tutor • WS 5 - Task 5 AI Speaking · My School Choice Task 5. Use your notes from Task 4. First, tell me which school you would like to go to and why. Round 1 • My Choice Speaking 30–45 seconds Your talk should include: the school name two reasons one activity you would like to do Keep your worksheet open. Use your notes as prompts, not as a script. Task 5 Round 1 • My Choice Finish WS5",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      },
+      "react": {
+        "title": "AI Tutor • WS 5 - Task 5 · React",
+        "heading": "AI Tutor • WS 5 - Task 5",
+        "subtitle": "AI Speaking · My School Choice",
+        "text": "‹ AI Tutor • WS 5 - Task 5 AI Speaking · My School Choice Task 5. Use your notes from Task 4. First, tell me which school you would like to go to and why. Round 1 • My Choice Speaking 30–45 seconds Your talk should include: the school name two reasons one activity you would like to do Keep your worksheet open. Use your notes as prompts, not as a script. Which school would you like to go to? 🔊 Listen Your first recording 30–45s 0.0 sec Demo 🎙 Record Task 5 Round 1 • My Choice Finish WS5",
+        "overflow": false,
+        "appWidth": 480,
+        "avatar": {
+          "width": "34px",
+          "height": "34px",
+          "border-radius": "50%"
+        },
+        "tutorBubble": {
+          "background-color": "rgb(241, 245, 249)",
+          "color": "rgb(24, 33, 47)",
+          "font-family": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+          "font-size": "14px",
+          "line-height": "20.3px",
+          "padding": "10px 12px",
+          "border-radius": "17px 17px 17px 5px"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+.task-60116 .chat { padding-bottom: 120px; }
+.task-60116 .helpbox { display: none; margin-top: 10px; padding: 10px 11px; border: 1px solid #e9d8e0; border-radius: 12px; background: var(--color-surface-soft); }
+.task-60116 .helpbox.show { display: block; }
+.task-60116 .helpbox ul { margin: 0; padding-left: 18px; color: #6f3b56; font-size: 12px; line-height: 1.6; }
+.task-60116 .helpbox .action-button { width: 100%; margin-top: 8px; }
+.task-60116 .starters { display: none; margin-top: 8px; padding: 10px 11px; border-radius: 12px; color: #6f3b56; background: var(--color-primary-soft); font-size: 12px; line-height: 1.65; }
+.task-60116 .starters.show { display: block; }
+.task-60116 .timer { margin: 10px 0 2px; text-align: center; font-size: 34px; font-weight: 850; }
+.task-60116 #stop { width: 100%; margin-top: 12px; }
+.task-60116 .transcript { margin-top: 0; background: var(--color-surface-soft); font-size: 13px; line-height: 1.55; }
+.task-60116 .feedback-grid { display: grid; gap: 8px; margin-top: 10px; }
+.task-60116 .feedback-grid > div { padding: 10px 11px; border-radius: 12px; color: #24633a; background: var(--color-success-soft); font-size: 12px; line-height: 1.45; }
+.task-60116 .feedback-grid > div:last-child { color: #8a4b0f; background: #fff7ed; }

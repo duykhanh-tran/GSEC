@@ -1,0 +1,2 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
+export function useStopwatch(){const[seconds,setSeconds]=useState(0);const timer=useRef<number|null>(null);const stop=useCallback(()=>{if(timer.current!==null)window.clearInterval(timer.current);timer.current=null},[]);const start=useCallback(()=>{stop();setSeconds(0);timer.current=window.setInterval(()=>setSeconds(v=>v+1),1000)},[stop]);useEffect(()=>stop,[stop]);return{seconds,start,stop}}

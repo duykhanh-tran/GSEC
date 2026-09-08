@@ -1,0 +1,22 @@
+[
+  {
+    "contractVersion": "1.0.0", "attemptId": "attempt-001", "taskId": "example-guided-choice", "status": "correct", "score": 1, "maxScore": 1,
+    "supportMode": "independent", "answerShown": false, "independentMastery": true, "confidence": 1,
+    "feedbackCodes": ["correct"], "incorrectItemIds": [], "nextAction": "complete", "evaluatedAt": "2026-09-07T00:00:00Z"
+  },
+  {
+    "contractVersion": "1.0.0", "attemptId": "attempt-002", "taskId": "example-guided-choice", "status": "incorrect", "score": 0, "maxScore": 1,
+    "supportMode": "independent", "answerShown": false, "independentMastery": false, "confidence": 1,
+    "feedbackCodes": ["return-to-book", "show-hint"], "incorrectItemIds": ["question-one"], "nextAction": "show-hint", "evaluatedAt": "2026-09-07T00:00:00Z"
+  },
+  {
+    "contractVersion": "1.0.0", "attemptId": "attempt-003", "taskId": "example-sequence-ordering-repair", "status": "correct", "score": 1, "maxScore": 1,
+    "supportMode": "guided", "answerShown": true, "independentMastery": false, "confidence": 1,
+    "feedbackCodes": ["completed-with-model"], "incorrectItemIds": [], "nextAction": "complete", "evaluatedAt": "2026-09-07T00:00:00Z"
+  },
+  {
+    "contractVersion": "1.0.0", "attemptId": "attempt-004", "taskId": "example-writing-coach", "status": "pending-review", "score": 0, "maxScore": 1,
+    "supportMode": "independent", "answerShown": false, "independentMastery": false, "confidence": 0.55,
+    "feedbackCodes": ["teacher-review"], "incorrectItemIds": [], "nextAction": "request-review", "evaluatedAt": "2026-09-07T00:00:00Z"
+  }
+]

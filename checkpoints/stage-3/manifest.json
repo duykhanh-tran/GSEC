@@ -1,0 +1,272 @@
+{
+  "createdAt": "2026-09-06T01:42:12.116Z",
+  "foundation": "react-foundation-1",
+  "fileCount": 53,
+  "files": [
+    {
+      "path": ".gitignore",
+      "bytes": 253,
+      "sha256": "FE718E7BABB14F3CBAD2D97F08889B9CE5215ED3FE0E43B2B8CFBFB3B9B844E8"
+    },
+    {
+      "path": ".oxlintrc.json",
+      "bytes": 245,
+      "sha256": "B4D344818A1E1BF43997E4744A9153C8EEF770C98B58229CD86363DABB85DED4"
+    },
+    {
+      "path": "FOUNDATION-STANDARD.md",
+      "bytes": 4731,
+      "sha256": "1E8945C17F73C34548123C0D9877D17FFBE6994A48133A7D1ED38485A708038C"
+    },
+    {
+      "path": "README.md",
+      "bytes": 928,
+      "sha256": "2A39D072D7E593994F93D4187059B97E18096C1B3B2FB33E7E66D855B577DD15"
+    },
+    {
+      "path": "STAGE-2-REPORT.md",
+      "bytes": 3072,
+      "sha256": "0E2743BF1EC2E9C16DFF80D0D3348098A3044FCFFABF6772F8CB35E1E9D44A05"
+    },
+    {
+      "path": "STAGE-3-REPORT.md",
+      "bytes": 2781,
+      "sha256": "DA152D0EF4732901A2F41979D0252D06C3DD61332892BB9DA2E2BEF8E98E996D"
+    },
+    {
+      "path": "checkpoints/stage-3/validation.log",
+      "bytes": 779,
+      "sha256": "870852B2BE8932E15F96F05DEBFE1D8379C672F9997B7436FC48ACC886641AB0"
+    },
+    {
+      "path": "dist/assets/index-BqvKdy6Q.js",
+      "bytes": 294925,
+      "sha256": "8379817DFD5D34378A7BDE8A16250B0F5F7B29003E6DD118C4C5372BC54380F9"
+    },
+    {
+      "path": "dist/assets/index-dWvRJdRv.css",
+      "bytes": 10629,
+      "sha256": "09EA38E7E7FB9C3EA981B321D72FAB0DCCEC252A53DF427DE3A0037994DCAA34"
+    },
+    {
+      "path": "dist/index.html",
+      "bytes": 551,
+      "sha256": "E566E3D97A4374D685013C28D4BFFED35EE10062A6FFA09455BE96B739A25FEA"
+    },
+    {
+      "path": "index.html",
+      "bytes": 453,
+      "sha256": "467443DDCB0B442BF03969D59B206C6E4CE9C46B45C6E8DA36FDFBFE7557052D"
+    },
+    {
+      "path": "package-lock.json",
+      "bytes": 85322,
+      "sha256": "96F2FC99969414995F0C6112493EAEC3D1AB7C75B5B10096010E8ECECE722359"
+    },
+    {
+      "path": "package.json",
+      "bytes": 910,
+      "sha256": "20048C4DF6DF841BE674769CA9251FB86F241FA7DE352F0A11732AB600BCC1AE"
+    },
+    {
+      "path": "playwright.config.ts",
+      "bytes": 259,
+      "sha256": "2C7CD5CF711A064B075A7015559A49EA0365DB3BE4C6BBDDF7F2560553987033"
+    },
+    {
+      "path": "scripts/create-stage3-manifest.mjs",
+      "bytes": 1957,
+      "sha256": "CE494A9F06516EF5C7C431868C728A22A24ADC1F850B6FC98669EAE5EEDC92CF"
+    },
+    {
+      "path": "scripts/run-e2e.mjs",
+      "bytes": 1822,
+      "sha256": "1112FE529C2F26330023CBC418026C99C48ACC849AB36E96E0C060A3234357D2"
+    },
+    {
+      "path": "src/app/App.tsx",
+      "bytes": 156,
+      "sha256": "79722411DCB350E31361FFBFF751449B1AE68D39E47AB6652B7DBE7C56C807E4"
+    },
+    {
+      "path": "src/app/pages/FoundationTaskPage.tsx",
+      "bytes": 2138,
+      "sha256": "931756E688B5FC252F82C98676ADA2E5F11039A8521EDA560A54CCE7D0346FC1"
+    },
+    {
+      "path": "src/app/pages/IndexPage.tsx",
+      "bytes": 1071,
+      "sha256": "C878128CA84DA0E3D59ACAB9D20A3BE9768F6C4CFD5FFDD6CBFDFD4E3462BFE6"
+    },
+    {
+      "path": "src/app/pages/NotFoundPage.tsx",
+      "bytes": 406,
+      "sha256": "C0406DB6390CC009D515887C0F04242EB93711193439CC9427A37D51EE4D31CB"
+    },
+    {
+      "path": "src/app/pages/TaskRoutes.tsx",
+      "bytes": 605,
+      "sha256": "F03290E13873D07D4EF015A19B544A3D099ECBA99268CEFE52E4582AD60FAF23"
+    },
+    {
+      "path": "src/app/registry.ts",
+      "bytes": 3332,
+      "sha256": "0FA524C3FC27454D3604E4225D4BB7CBA59532FDEE04CFAD0B1DA5F237B37394"
+    },
+    {
+      "path": "src/app/router.tsx",
+      "bytes": 472,
+      "sha256": "10075348F3AB26C27C9996D693C851DD9BB0FB6A2CB2FA7F50336AA393350187"
+    },
+    {
+      "path": "src/app/task-types.ts",
+      "bytes": 360,
+      "sha256": "12755511F1A1F3C7A4AF94EC0EAF44910DCA5260408202342AA4D47B5C346788"
+    },
+    {
+      "path": "src/components/chat/ChatRow.tsx",
+      "bytes": 482,
+      "sha256": "9E7EDF9B95A91232856237D2604CD73C1B6D535871E9597F4AFD3BEDAA6F6952"
+    },
+    {
+      "path": "src/components/chat/StudentBubble.tsx",
+      "bytes": 247,
+      "sha256": "D97911300660207EB8550257D486A5B22625CE96A574904ED0132DBF8976AB07"
+    },
+    {
+      "path": "src/components/chat/TutorAvatar.tsx",
+      "bytes": 523,
+      "sha256": "E8187B4318D6E27FC30B31A4CB196127EC5FB31C89017BF800E952FF66412E82"
+    },
+    {
+      "path": "src/components/chat/TutorBubble.tsx",
+      "bytes": 239,
+      "sha256": "960DA43FA2AC8791C830E0D21E60A616093433DDC4C1C4521C0BF1CCDE2D55D1"
+    },
+    {
+      "path": "src/components/keypad/CodeKeypad.tsx",
+      "bytes": 6855,
+      "sha256": "822536F8A700A3AB6D4AF085A2F5CD30946E4ACC4D51FC6A20AF2B4A7E2BF21A"
+    },
+    {
+      "path": "src/components/keypad/CodeKeypadModal.tsx",
+      "bytes": 607,
+      "sha256": "C582FB5A01B1CF61BA331E4C2088F9AC0153FECF4BA4510F79E302EBB4927544"
+    },
+    {
+      "path": "src/components/keypad/InlineCodeKeypad.tsx",
+      "bytes": 255,
+      "sha256": "06F5618DCF0273FA6AA3077E9E5B5552443EDEB35F2081AFC072B29534E681CE"
+    },
+    {
+      "path": "src/components/shell/AppShell.tsx",
+      "bytes": 474,
+      "sha256": "3B899E85DB9A84D36D5FC78B0925552D46AF149BD0B507EAFFCC51EF2C4A9DC2"
+    },
+    {
+      "path": "src/components/shell/TaskFooter.tsx",
+      "bytes": 1109,
+      "sha256": "DBA17A58C2308C1285FC4C2587F1651858CE619C0DFBEADD9D185F38677F10C3"
+    },
+    {
+      "path": "src/components/shell/TutorHeader.tsx",
+      "bytes": 1134,
+      "sha256": "48D74E79B99F75C6477D76BBEBF367B4868DD9723A11EF061B394CA386DF9BCF"
+    },
+    {
+      "path": "src/components/task/ActionButton.tsx",
+      "bytes": 428,
+      "sha256": "404F3183A1C2B0BCE5E0EF689FDA7BF7F2F9B7B2C1018D3B6205E80C1467DF6A"
+    },
+    {
+      "path": "src/components/task/FeedbackBox.tsx",
+      "bytes": 373,
+      "sha256": "78980AD07D32A4A04AF42642D49C67F9CF7B0EC383D2D16DC5F216C53445860A"
+    },
+    {
+      "path": "src/components/task/ResultSummary.tsx",
+      "bytes": 484,
+      "sha256": "5E00A708B5BCF6BED8AE98C350607025B0D7ED2AFDE73A18430FFC952C965C90"
+    },
+    {
+      "path": "src/components/task/TaskCard.tsx",
+      "bytes": 454,
+      "sha256": "010ABB1F3DDE86BEAE3087C73B53D07EC4142BA4184EFA7F8FA7982604A4A6D5"
+    },
+    {
+      "path": "src/main.tsx",
+      "bytes": 304,
+      "sha256": "F7576636A91A6ECF94CDEABA5F0A40CF19FC17B77EF38FBC1A60B0660085A7BF"
+    },
+    {
+      "path": "src/styles/components.css",
+      "bytes": 10617,
+      "sha256": "1FDCAFF0488448863D639D8CB8C2671A370C7C459C5FCDD5643EA0993A1B9AF0"
+    },
+    {
+      "path": "src/styles/global.css",
+      "bytes": 899,
+      "sha256": "116E0FEF7027F6A7145738D6CEC5AEAD1E5DBBEEA6502563E179770FF4FA807E"
+    },
+    {
+      "path": "src/styles/tokens.css",
+      "bytes": 1300,
+      "sha256": "62610E0D34525F22EC35757D0F05FFC72887513A19216CF8BD27D10E731830CA"
+    },
+    {
+      "path": "src/test/setup.ts",
+      "bytes": 42,
+      "sha256": "977AFDE26BBA6A51325908CD7713CBFDC87D18F06B78B237C8F364C44864B7DE"
+    },
+    {
+      "path": "tests/components/chat.test.tsx",
+      "bytes": 1367,
+      "sha256": "BCFAF96E71D24486FE80DAFC2C0C56C8D5B0DD9B6ECC0CAC516383456CAEA03B"
+    },
+    {
+      "path": "tests/components/keypad.test.tsx",
+      "bytes": 2539,
+      "sha256": "FF01E4F4B53704EE720985DD1BA1557A1D8BD562F59FA463DC26E751DB29DF01"
+    },
+    {
+      "path": "tests/e2e/foundation.spec.ts",
+      "bytes": 3358,
+      "sha256": "D034C612F5CB5238F7AF5E6EBF06B8E68B182072B7A7DCBAF749DFA66E7F1299"
+    },
+    {
+      "path": "tests/unit/registry.test.ts",
+      "bytes": 949,
+      "sha256": "FDAF881FD337FFDA369C01D29807256CE323C79BFFB503DB23AAECE3FCA7EE97"
+    },
+    {
+      "path": "tests/unit/source-contract.test.ts",
+      "bytes": 1155,
+      "sha256": "5551D495988A31500D43F115AE8E12E5A83D5FE7697BB07F455793ADE2660BF1"
+    },
+    {
+      "path": "tsconfig.app.json",
+      "bytes": 675,
+      "sha256": "488F407A5DB52B1169A1E0078651435092CD0BE334F90E3B9A2097FB67623408"
+    },
+    {
+      "path": "tsconfig.json",
+      "bytes": 119,
+      "sha256": "770B4140BBB581E2DFD9EA9946FFC9C75A1D86BA7D2DB5F77C83E37CBDF9D808"
+    },
+    {
+      "path": "tsconfig.node.json",
+      "bytes": 558,
+      "sha256": "D366CC0827139DB39C61815F22491BBFDA56C654354A42AD7795143D314E45E8"
+    },
+    {
+      "path": "vite.config.ts",
+      "bytes": 161,
+      "sha256": "E1EEFD0ED1639C88D1213884EF760516884DB9E168190E223FEE6B063AD3E088"
+    },
+    {
+      "path": "vitest.config.ts",
+      "bytes": 267,
+      "sha256": "CED455AEBCB7CD6300B92B63F46092B68097E67536B49695B9CFF14ABD6259F7"
+    }
+  ]
+}

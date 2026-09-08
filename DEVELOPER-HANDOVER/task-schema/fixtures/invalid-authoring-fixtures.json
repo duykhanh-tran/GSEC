@@ -1,0 +1,57 @@
+[
+  {
+    "name": "answer-key-in-admin-payload",
+    "baseExampleId": "example-guided-choice",
+    "operation": "set",
+    "path": "answerKey",
+    "value": "B",
+    "expectedRule": "server-only field"
+  },
+  {
+    "name": "choice-reveals-book-answer-text",
+    "baseExampleId": "example-guided-choice",
+    "operation": "set",
+    "path": "blocks.1.options.0.text",
+    "value": "The complete answer copied from the book",
+    "expectedRule": "choice option property"
+  },
+  {
+    "name": "unapproved-custom-block",
+    "baseExampleId": "example-guided-choice",
+    "operation": "set",
+    "path": "blocks.1.type",
+    "value": "custom",
+    "expectedRule": "unsupported block type"
+  },
+  {
+    "name": "missing-block-reference",
+    "baseExampleId": "example-listening-choice-assessment",
+    "operation": "set",
+    "path": "configuration.playbackBlockId",
+    "value": "missing-audio",
+    "expectedRule": "unresolved block reference"
+  },
+  {
+    "name": "recording-without-permission-policy",
+    "baseExampleId": "example-recording-feedback",
+    "operation": "delete",
+    "path": "services.permissionPolicyRef",
+    "expectedRule": "permission policy"
+  },
+  {
+    "name": "model-does-not-force-guided",
+    "baseExampleId": "example-sequence-ordering-repair",
+    "operation": "set",
+    "path": "configuration.guidedOnModel",
+    "value": false,
+    "expectedRule": "guidedOnModel"
+  },
+  {
+    "name": "duplicate-block-id",
+    "baseExampleId": "example-readiness-checklist",
+    "operation": "set",
+    "path": "blocks.1.id",
+    "value": "intro",
+    "expectedRule": "duplicate block id"
+  }
+]

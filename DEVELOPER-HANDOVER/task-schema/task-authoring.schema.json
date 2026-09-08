@@ -1,0 +1,205 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gsec.local/schemas/task-authoring/1.0.0",
+  "title": "GSEC Task Authoring Document",
+  "description": "Admin-safe task content. Answer keys, scoring, AI prompts and permission decisions are deliberately excluded.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "id", "code", "locale", "status", "archetype", "variant", "bookReference", "presentation", "capabilities", "blocks", "configuration", "services", "metadata"],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "id": { "$ref": "#/$defs/slug" },
+    "code": { "type": "string", "pattern": "^[0-9]{5}$" },
+    "locale": { "type": "string", "enum": ["en", "vi", "en-VN"] },
+    "status": { "type": "string", "enum": ["draft", "in-review", "approved", "published", "archived"] },
+    "archetype": {
+      "type": "string",
+      "enum": ["structured-answer-retry", "guided-choice", "listen-classify-pronounce", "recording-feedback", "writing-capture-repair", "mastery-review", "readiness-checklist", "speaking-coach", "listening-choice-assessment", "sequence-ordering-repair", "writing-coach"]
+    },
+    "variant": { "$ref": "#/$defs/slug" },
+    "bookReference": { "$ref": "#/$defs/bookReference" },
+    "presentation": { "$ref": "#/$defs/presentation" },
+    "capabilities": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": ["text-entry", "choice-input", "listening", "recording", "transcript-confirmation", "retry-coaching", "guided-tracking", "mastery-gate", "ordering", "writing-revision", "readiness-check", "role-play", "evidence-summary"]
+      }
+    },
+    "blocks": { "type": "array", "minItems": 2, "maxItems": 40, "items": { "$ref": "#/$defs/block" } },
+    "configuration": { "type": "object" },
+    "services": { "$ref": "#/$defs/services" },
+    "metadata": { "$ref": "#/$defs/metadata" }
+  },
+  "allOf": [
+    { "if": { "properties": { "archetype": { "const": "structured-answer-retry" } } }, "then": { "properties": { "configuration": { "$ref": "#/$defs/structuredAnswerRetryConfig" } } } },
+    { "if": { "properties": { "archetype": { "const": "guided-choice" } } }, "then": { "properties": { "configuration": { "$ref": "#/$defs/guidedChoiceConfig" } } } },
+    { "if": { "properties": { "archetype": { "const": "listen-classify-pronounce" } } }, "then": { "properties": { "configuration": { "$ref": "#/$defs/listenClassifyConfig" } } } },
+    { "if": { "properties": { "archetype": { "const": "recording-feedback" } } }, "then": { "properties": { "configuration": { "$ref": "#/$defs/recordingFeedbackConfig" } } } },
+    { "if": { "properties": { "archetype": { "const": "writing-capture-repair" } } }, "then": { "properties": { "configuration": { "$ref": "#/$defs/writingCaptureConfig" } } } },
+    { "if": { "properties": { "archetype": { "const": "mastery-review" } } }, "then": { "properties": { "configuration": { "$ref": "#/$defs/masteryReviewConfig" } } } },
+    { "if": { "properties": { "archetype": { "const": "readiness-checklist" } } }, "then": { "properties": { "configuration": { "$ref": "#/$defs/readinessConfig" } } } },
+    { "if": { "properties": { "archetype": { "const": "speaking-coach" } } }, "then": { "properties": { "configuration": { "$ref": "#/$defs/speakingCoachConfig" } } } },
+    { "if": { "properties": { "archetype": { "const": "listening-choice-assessment" } } }, "then": { "properties": { "configuration": { "$ref": "#/$defs/listeningChoiceConfig" } } } },
+    { "if": { "properties": { "archetype": { "const": "sequence-ordering-repair" } } }, "then": { "properties": { "configuration": { "$ref": "#/$defs/sequenceOrderingConfig" } } } },
+    { "if": { "properties": { "archetype": { "const": "writing-coach" } } }, "then": { "properties": { "configuration": { "$ref": "#/$defs/writingCoachConfig" } } } }
+  ],
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$", "minLength": 1, "maxLength": 80 },
+    "text": { "type": "string", "minLength": 1, "maxLength": 600 },
+    "blockId": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,63}$" },
+    "blockIds": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/blockId" } },
+    "bookReference": {
+      "type": "object", "additionalProperties": false,
+      "required": ["worksheet", "exercise"],
+      "properties": {
+        "worksheet": { "type": "string", "pattern": "^WS[1-9][0-9]*$" },
+        "page": { "type": "integer", "minimum": 1, "maximum": 999 },
+        "exercise": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "instruction": { "$ref": "#/$defs/text" }
+      }
+    },
+    "presentation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["title", "tutorIntro", "completionMessage"],
+      "properties": { "title": { "$ref": "#/$defs/text" }, "tutorIntro": { "$ref": "#/$defs/text" }, "completionMessage": { "$ref": "#/$defs/text" } }
+    },
+    "services": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "assessmentPolicyRef": { "$ref": "#/$defs/slug" },
+        "aiPolicyRef": { "$ref": "#/$defs/slug" },
+        "permissionPolicyRef": { "$ref": "#/$defs/slug" },
+        "mediaCollectionRef": { "$ref": "#/$defs/slug" }
+      }
+    },
+    "metadata": {
+      "type": "object", "additionalProperties": false,
+      "required": ["contentVersion", "owner", "updatedAt"],
+      "properties": {
+        "contentVersion": { "type": "integer", "minimum": 1 },
+        "owner": { "$ref": "#/$defs/slug" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "tags": { "type": "array", "maxItems": 12, "uniqueItems": true, "items": { "$ref": "#/$defs/slug" } }
+      }
+    },
+    "symbolOption": {
+      "type": "object", "additionalProperties": false, "required": ["id", "label"],
+      "properties": { "id": { "$ref": "#/$defs/slug" }, "label": { "type": "string", "enum": ["A", "B", "C", "D", "E", "F", "T"] } }
+    },
+    "tutorMessageBlock": {
+      "type": "object", "additionalProperties": false, "required": ["id", "type", "text"],
+      "properties": { "id": { "$ref": "#/$defs/blockId" }, "type": { "const": "tutor-message" }, "text": { "$ref": "#/$defs/text" }, "speechText": { "$ref": "#/$defs/text" } }
+    },
+    "bookReferenceBlock": {
+      "type": "object", "additionalProperties": false, "required": ["id", "type", "label"],
+      "properties": { "id": { "$ref": "#/$defs/blockId" }, "type": { "const": "book-reference" }, "label": { "$ref": "#/$defs/text" } }
+    },
+    "shortTextBlock": {
+      "type": "object", "additionalProperties": false, "required": ["id", "type", "fields"],
+      "properties": {
+        "id": { "$ref": "#/$defs/blockId" }, "type": { "const": "short-text-input" },
+        "fields": { "type": "array", "minItems": 1, "maxItems": 20, "items": { "type": "object", "additionalProperties": false, "required": ["id", "label"], "properties": { "id": { "$ref": "#/$defs/slug" }, "label": { "$ref": "#/$defs/text" }, "placeholder": { "type": "string", "maxLength": 80 }, "bookItem": { "type": "string", "maxLength": 20 } } } }
+      }
+    },
+    "choiceBlock": {
+      "type": "object", "additionalProperties": false, "required": ["id", "type", "prompt", "options"],
+      "properties": {
+        "id": { "$ref": "#/$defs/blockId" }, "type": { "const": "choice-group" }, "prompt": { "$ref": "#/$defs/text" }, "bookItem": { "type": "string", "maxLength": 20 },
+        "options": { "type": "array", "minItems": 2, "maxItems": 6, "uniqueItems": true, "items": { "$ref": "#/$defs/symbolOption" } }
+      }
+    },
+    "matrixBlock": {
+      "type": "object", "additionalProperties": false, "required": ["id", "type", "rows", "options"],
+      "properties": {
+        "id": { "$ref": "#/$defs/blockId" }, "type": { "const": "answer-matrix" },
+        "rows": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "bookItem"],
+            "properties": {
+              "id": { "$ref": "#/$defs/slug" },
+              "bookItem": { "type": "string", "maxLength": 20 }
+            }
+          }
+        },
+        "options": { "type": "array", "minItems": 2, "maxItems": 6, "items": { "$ref": "#/$defs/symbolOption" } }
+      }
+    },
+    "retryBlock": {
+      "type": "object", "additionalProperties": false, "required": ["id", "type", "maxAttempts", "hints"],
+      "properties": { "id": { "$ref": "#/$defs/blockId" }, "type": { "const": "retry-panel" }, "maxAttempts": { "type": "integer", "minimum": 1, "maximum": 3 }, "hints": { "type": "array", "minItems": 1, "maxItems": 3, "items": { "$ref": "#/$defs/text" } }, "allowModel": { "type": "boolean" } }
+    },
+    "playbackBlock": {
+      "type": "object", "additionalProperties": false, "required": ["id", "type", "items"],
+      "properties": {
+        "id": { "$ref": "#/$defs/blockId" },
+        "type": { "enum": ["listening-playback", "playback-sequence"] },
+        "items": {
+          "type": "array", "minItems": 1, "maxItems": 20,
+          "items": {
+            "type": "object", "additionalProperties": false, "required": ["id"],
+            "properties": { "id": { "$ref": "#/$defs/slug" }, "text": { "$ref": "#/$defs/text" }, "audioAssetId": { "$ref": "#/$defs/slug" } },
+            "anyOf": [{ "required": ["text"] }, { "required": ["audioAssetId"] }]
+          }
+        }
+      }
+    },
+    "recordingBlock": {
+      "type": "object", "additionalProperties": false, "required": ["id", "type", "label", "range", "transcriptConfirmation"],
+      "properties": { "id": { "$ref": "#/$defs/blockId" }, "type": { "const": "recording" }, "label": { "$ref": "#/$defs/text" }, "range": { "type": "string", "maxLength": 60 }, "transcriptConfirmation": { "type": "boolean" }, "maxDurationSeconds": { "type": "integer", "minimum": 5, "maximum": 180 } }
+    },
+    "checklistBlock": {
+      "type": "object", "additionalProperties": false, "required": ["id", "type", "items"],
+      "properties": {
+        "id": { "$ref": "#/$defs/blockId" },
+        "type": { "enum": ["readiness-checklist", "writing-verification"] },
+        "items": {
+          "type": "array", "minItems": 1, "maxItems": 20,
+          "items": {
+            "type": "object", "additionalProperties": false, "required": ["id", "label"],
+            "properties": { "id": { "$ref": "#/$defs/slug" }, "label": { "$ref": "#/$defs/text" } }
+          }
+        },
+        "requireEvidence": { "type": "boolean" }
+      }
+    },
+    "sequenceBlock": {
+      "type": "object", "additionalProperties": false, "required": ["id", "type", "slots", "symbols"],
+      "properties": { "id": { "$ref": "#/$defs/blockId" }, "type": { "const": "sequence-order" }, "slots": { "type": "integer", "minimum": 2, "maximum": 12 }, "symbols": { "type": "array", "minItems": 2, "maxItems": 12, "items": { "type": "string", "pattern": "^[A-L]$" } } }
+    },
+    "writingBlock": {
+      "type": "object", "additionalProperties": false, "required": ["id", "type", "label"],
+      "properties": { "id": { "$ref": "#/$defs/blockId" }, "type": { "enum": ["draft-input", "revision-input", "draft-comparison", "language-help"] }, "label": { "$ref": "#/$defs/text" }, "minWords": { "type": "integer", "minimum": 0, "maximum": 500 }, "maxWords": { "type": "integer", "minimum": 1, "maximum": 1000 }, "phrases": { "type": "array", "maxItems": 20, "items": { "$ref": "#/$defs/text" } } }
+    },
+    "progressBlock": {
+      "type": "object", "additionalProperties": false, "required": ["id", "type", "steps"],
+      "properties": { "id": { "$ref": "#/$defs/blockId" }, "type": { "const": "progress-steps" }, "steps": { "type": "array", "minItems": 2, "maxItems": 12, "items": { "$ref": "#/$defs/text" } } }
+    },
+    "block": {
+      "oneOf": [
+        { "$ref": "#/$defs/tutorMessageBlock" }, { "$ref": "#/$defs/bookReferenceBlock" }, { "$ref": "#/$defs/shortTextBlock" },
+        { "$ref": "#/$defs/choiceBlock" }, { "$ref": "#/$defs/matrixBlock" }, { "$ref": "#/$defs/retryBlock" },
+        { "$ref": "#/$defs/playbackBlock" }, { "$ref": "#/$defs/recordingBlock" }, { "$ref": "#/$defs/checklistBlock" },
+        { "$ref": "#/$defs/sequenceBlock" }, { "$ref": "#/$defs/writingBlock" }, { "$ref": "#/$defs/progressBlock" }
+      ]
+    },
+    "configBase": { "type": "object", "additionalProperties": false },
+    "structuredAnswerRetryConfig": { "type": "object", "additionalProperties": false, "required": ["responseBlockIds", "retryBlockId", "completionMode"], "properties": { "responseBlockIds": { "$ref": "#/$defs/blockIds" }, "retryBlockId": { "$ref": "#/$defs/blockId" }, "completionMode": { "const": "evidence-summary" } } },
+    "guidedChoiceConfig": { "type": "object", "additionalProperties": false, "required": ["choiceBlockIds", "retryBlockId", "guidedTracking", "showAnswerPolicy"], "properties": { "choiceBlockIds": { "$ref": "#/$defs/blockIds" }, "retryBlockId": { "$ref": "#/$defs/blockId" }, "guidedTracking": { "type": "boolean" }, "showAnswerPolicy": { "enum": ["never", "after-final-attempt"] } } },
+    "listenClassifyConfig": { "type": "object", "additionalProperties": false, "required": ["playbackBlockId", "classificationBlockId", "recordingBlockId"], "properties": { "playbackBlockId": { "$ref": "#/$defs/blockId" }, "classificationBlockId": { "$ref": "#/$defs/blockId" }, "recordingBlockId": { "$ref": "#/$defs/blockId" } } },
+    "recordingFeedbackConfig": { "type": "object", "additionalProperties": false, "required": ["recordingBlockIds", "repairBlockId", "transcriptConfirmation"], "properties": { "recordingBlockIds": { "$ref": "#/$defs/blockIds" }, "repairBlockId": { "$ref": "#/$defs/blockId" }, "transcriptConfirmation": { "const": true } } },
+    "writingCaptureConfig": { "type": "object", "additionalProperties": false, "required": ["inputBlockIds", "previewEnabled", "repairBlockId"], "properties": { "inputBlockIds": { "$ref": "#/$defs/blockIds" }, "previewEnabled": { "const": true }, "repairBlockId": { "$ref": "#/$defs/blockId" } } },
+    "masteryReviewConfig": { "type": "object", "additionalProperties": false, "required": ["evidenceBlockIds", "reviewBlockIds", "masteryResult"], "properties": { "evidenceBlockIds": { "$ref": "#/$defs/blockIds" }, "reviewBlockIds": { "$ref": "#/$defs/blockIds" }, "masteryResult": { "const": "trusted-service" } } },
+    "readinessConfig": { "type": "object", "additionalProperties": false, "required": ["checklistBlockId", "unlockWhen"], "properties": { "checklistBlockId": { "$ref": "#/$defs/blockId" }, "unlockWhen": { "const": "all-checked" } } },
+    "speakingCoachConfig": { "type": "object", "additionalProperties": false, "required": ["roundBlockIds", "recordingBlockId", "transcriptConfirmation", "completionResult"], "properties": { "roundBlockIds": { "$ref": "#/$defs/blockIds" }, "recordingBlockId": { "$ref": "#/$defs/blockId" }, "transcriptConfirmation": { "const": true }, "completionResult": { "const": "trusted-service" } } },
+    "listeningChoiceConfig": { "type": "object", "additionalProperties": false, "required": ["playbackBlockId", "choiceBlockIds", "retryBlockId", "requirePlaybackBeforeAnswer"], "properties": { "playbackBlockId": { "$ref": "#/$defs/blockId" }, "choiceBlockIds": { "$ref": "#/$defs/blockIds" }, "retryBlockId": { "$ref": "#/$defs/blockId" }, "requirePlaybackBeforeAnswer": { "const": true } } },
+    "sequenceOrderingConfig": { "type": "object", "additionalProperties": false, "required": ["sequenceBlockId", "repairBlockId", "guidedOnModel"], "properties": { "sequenceBlockId": { "$ref": "#/$defs/blockId" }, "repairBlockId": { "$ref": "#/$defs/blockId" }, "guidedOnModel": { "const": true } } },
+    "writingCoachConfig": { "type": "object", "additionalProperties": false, "required": ["draftBlockId", "verificationBlockId", "revisionBlockId", "comparisonBlockId", "masteryResult"], "properties": { "draftBlockId": { "$ref": "#/$defs/blockId" }, "verificationBlockId": { "$ref": "#/$defs/blockId" }, "revisionBlockId": { "$ref": "#/$defs/blockId" }, "comparisonBlockId": { "$ref": "#/$defs/blockId" }, "masteryResult": { "const": "trusted-service" } } }
+  }
+}
