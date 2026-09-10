@@ -18,7 +18,7 @@ export interface AuthContextType {
   loading: boolean
   signInWithGoogle: () => Promise<{ error: Error | null }>
   signInWithFacebook: () => Promise<{ error: Error | null }>
-  signInWithPassword: (email: string, password: string) => Promise<{ error: Error | null }>
+  signInWithPassword: (emailOrUsername: string, password: string) => Promise<{ error: Error | null }>
   signUpWithEmail: (
     email: string,
     password: string,

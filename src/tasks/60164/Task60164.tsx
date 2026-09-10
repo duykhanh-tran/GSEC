@@ -11,6 +11,7 @@ import { useAutoScroll } from '../../hooks/useAutoScroll'
 import { useTaskTimers } from '../../hooks/useTaskTimers'
 import { TaskRenderer } from '../../task-engine/TaskRenderer'
 import type { SequenceValue, TaskFlowBlock } from '../../task-engine/schema'
+import { saveTaskAttempt } from '../../lib/taskAttemptService'
 import { PARAGRAPH_LINK_HINTS, PARAGRAPH_ORDER_KEY } from './data'
 
 interface Notice { id: number; content: ReactNode }
@@ -42,6 +43,15 @@ export function Task60164({ task }: TaskComponentProps) {
     setOrder([...PARAGRAPH_ORDER_KEY])
     setComplete(true)
     setFeedback('')
+
+    saveTaskAttempt({
+      taskCode: task.code,
+      score: guidedResult ? 80 : 100,
+      status: 'completed',
+      supportMode: guidedResult ? 'GUIDED' : 'INDEPENDENT',
+      answersPayload: PARAGRAPH_ORDER_KEY,
+    })
+
     addNotice(<><strong>Task 4 complete.</strong><br />{guidedResult ? 'Review how the sentences connect before Task 5.' : 'You organised the paragraph independently.'} Back to your book for Task 5.</>)
   }
 
@@ -49,7 +59,32 @@ export function Task60164({ task }: TaskComponentProps) {
     if (order.some((value) => value === null)) { addNotice('Complete all five positions first.'); return }
     setEntryVisible(false)
     setCheckedOrder([...order])
-    if (order.every((value, index) => value === PARAGRAPH_ORDER_KEY[index])) { finish(); return }
+
+    const correctCount = order.filter((value, index) => value === PARAGRAPH_ORDER_KEY[index]).length
+    const firstScore = Math.round((correctCount / PARAGRAPH_ORDER_KEY.length) * 100)
+
+    if (order.every((value, index) => value === PARAGRAPH_ORDER_KEY[index])) {
+      saveTaskAttempt({
+        taskCode: task.code,
+        score: 100,
+        firstScore: 100,
+        status: 'completed',
+        supportMode: 'INDEPENDENT',
+        answersPayload: order,
+      })
+      finish()
+      return
+    }
+
+    saveTaskAttempt({
+      taskCode: task.code,
+      score: firstScore,
+      firstScore: firstScore,
+      status: 'in_progress',
+      supportMode: 'GUIDED',
+      answersPayload: order,
+    })
+
     setAttempt(1)
     addNotice('The paragraph order is not complete yet. Let’s repair it by following the links between sentences.')
   }
@@ -88,5 +123,5 @@ export function Task60164({ task }: TaskComponentProps) {
     ...(complete ? [{ id: 'complete', type: 'panel' as const, title: 'Task 4 complete ✓', subtitle: 'Paragraph Organisation', variant: 'summary' as const, stage: 'complete', content: <><div className="result"><span>Paragraph order</span><GuidedIndependentStatus mode={guided ? 'guided' : 'independent'} /></div><div className="result"><span>School → It</span><StatusTag tone="success">Linked ✓</StatusTag></div><div className="result"><span>Playground → there</span><StatusTag tone="success">Linked ✓</StatusTag></div><div className="result"><span>Activity → This activity</span><StatusTag tone="success">Linked ✓</StatusTag></div><div className="note">Evidence stored as <strong>WRITE-COHESION</strong>. The app checks paragraph links without copying the full sentences from the worksheet.</div></> }] : []),
   ]
 
-  return <TaskRenderer task={task} className="task-60164" chatRef={chatRef} footer={<StatusFooter title={complete ? 'Task 4 complete' : 'Task 4'} status={complete ? 'Continue to Task 5.' : 'Enter the paragraph order.'} actionLabel="Back to book" actionId="backBook" disabled={!complete} onAction={() => addNotice('Keep going. Task 5 is your own 40–50 word paragraph.')} />} blocks={blocks} />
+  return <TaskRenderer task={task} disableAutoSave={true} className="task-60164" chatRef={chatRef} footer={<StatusFooter title={complete ? 'Task 4 complete' : 'Task 4'} status={complete ? 'Continue to Task 5.' : 'Enter the paragraph order.'} actionLabel="Back to book" actionId="backBook" disabled={!complete} onAction={() => addNotice('Keep going. Task 5 is your own 40–50 word paragraph.')} />} blocks={blocks} />
 }

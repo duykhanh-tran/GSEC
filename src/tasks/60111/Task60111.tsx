@@ -8,6 +8,7 @@ import { useCelebrationSound } from '../../hooks/useCelebrationSound'
 import { useTaskTimers } from '../../hooks/useTaskTimers'
 import { TaskRenderer } from '../../task-engine/TaskRenderer'
 import type { TaskFlowBlock } from '../../task-engine/schema'
+import { saveTaskAttempt } from '../../lib/taskAttemptService'
 import './task.css'
 
 const things = [
@@ -51,7 +52,29 @@ export function Task60111({ task }: TaskComponentProps) {
 
     const errors = fields.filter((field) => !isValid(field, values[field.id])).map((field) => field.id)
     setWrong(errors)
-    setPhase(errors.length ? 'retry' : 'complete')
+    const firstScore = Math.round(((fields.length - errors.length) / fields.length) * 100)
+
+    if (errors.length === 0) {
+      saveTaskAttempt({
+        taskCode: task.code,
+        score: 100,
+        firstScore: 100,
+        status: 'completed',
+        supportMode: 'INDEPENDENT',
+        answersPayload: values,
+      })
+      setPhase('complete')
+    } else {
+      saveTaskAttempt({
+        taskCode: task.code,
+        score: firstScore,
+        firstScore: firstScore,
+        status: 'in_progress',
+        supportMode: 'GUIDED',
+        answersPayload: values,
+      })
+      setPhase('retry')
+    }
   }
 
   const retry = () => {
@@ -63,7 +86,16 @@ export function Task60111({ task }: TaskComponentProps) {
       setWrong(next)
       setRetryValue('')
       setAttempt(1)
-      if (!next.length) setPhase('complete')
+      if (!next.length) {
+        saveTaskAttempt({
+          taskCode: task.code,
+          score: 100,
+          status: 'completed',
+          supportMode: 'GUIDED',
+          answersPayload: values,
+        })
+        setPhase('complete')
+      }
       return
     }
 
@@ -146,5 +178,5 @@ export function Task60111({ task }: TaskComponentProps) {
     ] : []),
   ]
 
-  return <TaskRenderer task={task} className="task-60111" footer={<StatusFooter title="Task 1" status={`${progress}%`} statusId="progressText" actionLabel="Back to book" actionId="backBookBtn" disabled={phase !== 'complete'} onAction={() => { setNotices((current) => [...current, 'Nice. Keep going.']); schedule(() => {}, 0) }} />} blocks={blocks} />
+  return <TaskRenderer task={task} disableAutoSave={true} className="task-60111" footer={<StatusFooter title="Task 1" status={`${progress}%`} statusId="progressText" actionLabel="Back to book" actionId="backBookBtn" disabled={phase !== 'complete'} onAction={() => { setNotices((current) => [...current, 'Nice. Keep going.']); schedule(() => {}, 0) }} />} blocks={blocks} />
 }

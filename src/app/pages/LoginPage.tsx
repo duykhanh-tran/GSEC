@@ -1,25 +1,34 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth'
+import { supabase } from '../../lib/supabaseClient'
 import '../../styles/auth.css'
 
 export function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/'
-  const { signInWithGoogle, signInWithFacebook, signInWithPassword, user } = useAuth()
+  const { signInWithGoogle, signInWithFacebook, signInWithPassword, user, profile } = useAuth()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  // Nếu đã đăng nhập, chuyển về trang đích hoặc trang chủ
+  // Nếu đã đăng nhập, chuyển về trang phù hợp với vai trò
   useEffect(() => {
-    if (user) {
-      navigate(from, { replace: true })
+    if (user && profile) {
+      if (from && from !== '/') {
+        navigate(from, { replace: true })
+      } else if (profile.role === 'ADMIN') {
+        navigate('/admin', { replace: true })
+      } else if (profile.role === 'TEACHER') {
+        navigate('/teacher', { replace: true })
+      } else {
+        navigate('/', { replace: true })
+      }
     }
-  }, [user, navigate, from])
+  }, [user, profile, navigate, from])
 
   const handleEmailLogin = async (e: FormEvent) => {
     e.preventDefault()
@@ -34,7 +43,22 @@ export function LoginPage() {
         ? 'Email hoặc mật khẩu không chính xác.'
         : error.message)
     } else {
-      navigate(from, { replace: true })
+      // Chuyển ngay trang theo role người dùng
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', (await supabase.auth.getUser()).data.user?.id)
+        .maybeSingle()
+
+      if (from && from !== '/') {
+        navigate(from, { replace: true })
+      } else if (prof?.role === 'ADMIN') {
+        navigate('/admin', { replace: true })
+      } else if (prof?.role === 'TEACHER') {
+        navigate('/teacher', { replace: true })
+      } else {
+        navigate('/', { replace: true })
+      }
     }
   }
 
@@ -118,14 +142,14 @@ export function LoginPage() {
 
       <form className="auth-form" onSubmit={handleEmailLogin}>
         <div className="form-group">
-          <label htmlFor="login-email">Địa chỉ Email</label>
+          <label htmlFor="login-email">Email hoặc Tên đăng nhập</label>
           <input
             id="login-email"
-            type="email"
+            type="text"
             className="form-input"
             required
-            autoComplete="email"
-            placeholder="vd: hocsinh@gmail.com"
+            autoComplete="username"
+            placeholder="vd: an.6a1 hoặc hocsinh@gmail.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={loading}

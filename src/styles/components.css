@@ -112,9 +112,10 @@
 
 .chat {
   flex: 1;
-  padding: 16px 12px 110px;
+  padding: 16px 12px 180px;
   overflow: auto;
   scroll-behavior: smooth;
+  scroll-padding-bottom: 160px;
 }
 
 .ui-avatar {
@@ -501,6 +502,106 @@
 .answer-choice-matrix__prompt {
   margin-bottom: 8px;
   line-height: 1.45;
+}
+
+/* Table Layout for Choice Matrix */
+.matrix-wrap,
+.answer-choice-matrix--table.matrix-wrap {
+  overflow: auto;
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
+  background: var(--color-surface, #ffffff);
+}
+
+.matrix,
+.answer-choice-matrix--table .matrix {
+  width: 100%;
+  min-width: 300px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.matrix th,
+.matrix td,
+.answer-choice-matrix--table .matrix th,
+.answer-choice-matrix--table .matrix td {
+  padding: 0;
+  border-bottom: 1px solid #eef1f4;
+  text-align: center;
+}
+
+.matrix th,
+.answer-choice-matrix--table .matrix th {
+  padding: 12px 8px;
+  color: #556070;
+  background: #f8fafc;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.matrix th:first-child,
+.answer-choice-matrix--table .matrix th:first-child {
+  text-align: left;
+  padding: 12px 14px;
+  width: 60%;
+}
+
+.cell,
+.answer-choice-matrix--table .cell {
+  display: grid;
+  width: 100%;
+  height: 46px;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  outline: none;
+  transition: background var(--transition-fast, 0.15s ease);
+}
+
+.cell:hover:not(:disabled),
+.answer-choice-matrix--table .cell:hover:not(:disabled) {
+  background: rgba(162, 28, 97, 0.06);
+}
+
+.cell.sel,
+.answer-choice-matrix--table .cell.sel {
+  background: var(--color-primary-soft, rgba(162, 28, 97, 0.12));
+}
+
+.choice-dot,
+.answer-choice-matrix--table .choice-dot {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border: 2px solid #cbd3df;
+  border-radius: 50%;
+  background: #ffffff;
+  box-sizing: border-box;
+  transition: border-color var(--transition-fast, 0.15s ease), transform var(--transition-fast, 0.15s ease);
+}
+
+.cell:hover:not(:disabled) .choice-dot,
+.answer-choice-matrix--table .cell:hover:not(:disabled) .choice-dot {
+  border-color: var(--color-primary, #a21c61);
+  transform: scale(1.05);
+}
+
+.cell.sel .choice-dot,
+.answer-choice-matrix--table .cell.sel .choice-dot {
+  border-color: var(--color-primary, #a21c61);
+  background: #ffffff;
+}
+
+.cell.sel .choice-dot::after,
+.answer-choice-matrix--table .cell.sel .choice-dot::after {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-primary, #a21c61);
+  content: "";
 }
 
 .retry-panel {

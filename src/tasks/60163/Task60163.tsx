@@ -8,6 +8,7 @@ import { StatusFooter } from '../../components/shell/StatusFooter'
 import { useAutoScroll } from '../../hooks/useAutoScroll'
 import { TaskRenderer } from '../../task-engine/TaskRenderer'
 import type { TaskFlowBlock } from '../../task-engine/schema'
+import { saveTaskAttempt } from '../../lib/taskAttemptService'
 import { SENTENCE_CHECK_ITEMS } from './data'
 
 interface Notice { id: number; content: ReactNode }
@@ -30,6 +31,17 @@ export function Task60163({ task }: TaskComponentProps) {
     } else {
       setComplete(true)
       const independent = guided.filter((value) => !value).length
+      const score = Math.round((independent / SENTENCE_CHECK_ITEMS.length) * 100)
+      const finalScore = independent === 5 ? 100 : Math.max(score, 75)
+
+      saveTaskAttempt({
+        taskCode: task.code,
+        score: finalScore,
+        firstScore: score,
+        status: 'completed',
+        supportMode: independent === 5 ? 'INDEPENDENT' : 'GUIDED',
+      })
+
       addNotice(<><strong>Task 3 complete.</strong><br />{independent === 5 ? 'All five sentences were completed independently.' : 'Guided sentences can be reviewed later.'} Back to your book for Task 4.</>)
     }
   }
@@ -42,5 +54,5 @@ export function Task60163({ task }: TaskComponentProps) {
     ...(complete ? [{ id: 'complete', type: 'panel' as const, title: 'Task 3 complete ✓', subtitle: 'Sentence Building', variant: 'summary' as const, stage: 'complete', content: <>{SENTENCE_CHECK_ITEMS.map((sentence, itemIndex) => <div className="result" key={sentence.type}><span>Sentence {itemIndex + 1} • {sentence.type}</span><GuidedIndependentStatus mode={guided[itemIndex] ? 'guided' : 'independent'} /></div>)}<div className="note">Evidence stored as <strong>WRITE-SENTENCE</strong>. STT is only used to capture the sentence you wrote; pronunciation is not scored.</div></> }] : []),
   ]
 
-  return <TaskRenderer task={task} className="task-60163" chatRef={chatRef} footer={<StatusFooter title={complete ? 'Task 3 complete' : 'Task 3'} status={complete ? 'Continue to Task 4.' : `Sentence ${index + 1} of 5`} actionLabel="Back to book" actionId="backBook" disabled={!complete} onAction={() => addNotice('Keep going. Task 4 is about paragraph organisation.')} />} blocks={blocks} />
+  return <TaskRenderer task={task} disableAutoSave={true} className="task-60163" chatRef={chatRef} footer={<StatusFooter title={complete ? 'Task 3 complete' : 'Task 3'} status={complete ? 'Continue to Task 4.' : `Sentence ${index + 1} of 5`} actionLabel="Back to book" actionId="backBook" disabled={!complete} onAction={() => addNotice('Keep going. Task 4 is about paragraph organisation.')} />} blocks={blocks} />
 }

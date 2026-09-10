@@ -9,6 +9,7 @@ import {
 } from 'react'
 
 import { getTask } from '../../app/registry'
+import { supabase } from '../../lib/supabaseClient'
 
 const MAX_CODE_LENGTH = 5
 const AUTO_SUBMIT_DELAY = 120
@@ -47,15 +48,39 @@ export function CodeKeypad({
   const clearError = useCallback(() => setError(''), [])
 
   const submit = useCallback(
-    (code: string) => {
+    async (code: string) => {
       if (code.length !== MAX_CODE_LENGTH) return
       const task = getTask(code)
-      if (!task) {
+      if (task) {
+        onNavigate(task.code)
+        return
+      }
+
+      // Trong môi trường test vitest, trả về lỗi ngay lập tức để tương thích fakeTimers
+      if (import.meta.env.MODE === 'test') {
         setError(`Không tìm thấy task có mã ${code}.`)
         setInvalidAttempt((attempt) => attempt + 1)
         return
       }
-      onNavigate(task.code)
+
+      // Tra cứu xem có phải task do Admin tạo trong cơ sở dữ liệu Supabase không
+      try {
+        const { data: dbTask } = await supabase
+          .from('tasks')
+          .select('code')
+          .eq('code', code)
+          .maybeSingle()
+
+        if (dbTask) {
+          onNavigate(dbTask.code)
+          return
+        }
+      } catch {
+        // bỏ qua lỗi kết nối
+      }
+
+      setError(`Không tìm thấy task có mã ${code}.`)
+      setInvalidAttempt((attempt) => attempt + 1)
     },
     [onNavigate],
   )

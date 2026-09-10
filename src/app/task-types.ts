@@ -1,7 +1,7 @@
 import type { ComponentType } from 'react'
 import type { TaskArchetype } from '../task-engine/schema'
 
-export type WorksheetNumber = 1 | 2 | 3 | 4 | 5 | 6
+export type WorksheetNumber = number
 export type TaskMigrationStatus = 'planned' | 'migrated'
 
 export interface TaskComponentProps {
@@ -10,7 +10,9 @@ export interface TaskComponentProps {
 
 export interface TaskDefinition {
   code: string
+  unit?: number
   worksheet: WorksheetNumber
+  lesson?: number
   taskNumber: number
   title: string
   subtitle: string

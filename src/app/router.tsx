@@ -8,12 +8,39 @@ import { NotFoundPage } from './pages/NotFoundPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { LegacyTaskRoute, TaskRoute } from './pages/TaskRoutes'
 
+import { TeacherPortalPage } from './pages/TeacherPortalPage'
+import { AdminDashboardPage } from './pages/AdminDashboardPage'
+
 export const router = createBrowserRouter([
   {
     path: '/',
     element: (
       <ProtectedRoute>
         <IndexPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin',
+    element: (
+      <ProtectedRoute>
+        <AdminDashboardPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/tasks',
+    element: (
+      <ProtectedRoute>
+        <AdminDashboardPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/teacher',
+    element: (
+      <ProtectedRoute>
+        <TeacherPortalPage />
       </ProtectedRoute>
     ),
   },

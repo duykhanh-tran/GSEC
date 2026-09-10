@@ -14,6 +14,7 @@ import { GuidedIndependentStatus } from '../progress/GuidedIndependentStatus'
 import { StatusFooter } from '../shell/StatusFooter'
 import { ActionButton } from '../task/ActionButton'
 import { StatusTag } from '../task/StatusTag'
+import { saveTaskAttempt } from '../../lib/taskAttemptService'
 import './guided-choice-task.css'
 
 export interface GuidedChoiceItem {
@@ -107,6 +108,19 @@ export function GuidedChoiceTask({ task, config }: TaskComponentProps & { config
     setComplete(true)
     setShowCelebration(Boolean(config.celebration))
     const independent = config.items.filter((item) => !guidedState[item.id]).length
+    const finalScore =
+      independent === config.items.length
+        ? 100
+        : Math.max(Math.round((independent / config.items.length) * 100), 75)
+
+    saveTaskAttempt({
+      taskCode: task.code,
+      score: finalScore,
+      status: 'completed',
+      supportMode: independent === config.items.length ? 'INDEPENDENT' : 'GUIDED',
+      answersPayload: answers,
+    })
+
     addNotice(<><strong>{config.summaryTitle.replace(' ✓', '')}.</strong><br />{independent === config.items.length ? config.completeIndependent : config.completeGuided}</>)
   }
 
@@ -134,7 +148,30 @@ export function GuidedChoiceTask({ task, config }: TaskComponentProps & { config
     setEntryVisible(false)
     setResultWrong(wrong)
     setQueue(wrong)
-    if (!wrong.length) { finish(); return }
+    const firstScore = Math.round(((config.items.length - wrong.length) / config.items.length) * 100)
+
+    if (!wrong.length) {
+      saveTaskAttempt({
+        taskCode: task.code,
+        score: 100,
+        firstScore: 100,
+        status: 'completed',
+        supportMode: 'INDEPENDENT',
+        answersPayload: answers,
+      })
+      finish()
+      return
+    }
+
+    saveTaskAttempt({
+      taskCode: task.code,
+      score: firstScore,
+      firstScore: firstScore,
+      status: 'in_progress',
+      supportMode: 'GUIDED',
+      answersPayload: answers,
+    })
+
     addNotice(<>{config.itemPlural} <strong>{wrong.join(', ')}</strong> need another look.{config.wrongSuffix ?? ' Keep your worksheet open.'}</>)
     schedule(() => beginRetry(wrong[0]), 220)
   }
@@ -203,5 +240,5 @@ export function GuidedChoiceTask({ task, config }: TaskComponentProps & { config
     { id: 'celebration', type: 'custom', content: <Celebration active={showCelebration} onComplete={() => setShowCelebration(false)} /> },
   ]
 
-  return <TaskRenderer task={task} className={`${config.className} guided-choice-task`} chatRef={chatRef} footer={<StatusFooter title={complete ? config.summaryTitle.replace(' ✓', '') : `Task ${task.taskNumber}`} status={complete ? config.footerComplete : config.footerIdle} actionLabel="Back to book" actionId="backBook" disabled={!complete} onAction={() => addNotice(config.backMessage)} />} blocks={blocks} />
+  return <TaskRenderer task={task} disableAutoSave={true} className={`${config.className} guided-choice-task`} chatRef={chatRef} footer={<StatusFooter title={complete ? config.summaryTitle.replace(' ✓', '') : `Task ${task.taskNumber}`} status={complete ? config.footerComplete : config.footerIdle} actionLabel="Back to book" actionId="backBook" disabled={!complete} onAction={() => addNotice(config.backMessage)} />} blocks={blocks} />
 }

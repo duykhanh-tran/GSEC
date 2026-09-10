@@ -98,10 +98,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const signInWithPassword = async (email: string, password: string) => {
+  const signInWithPassword = async (emailOrUsername: string, password: string) => {
     try {
+      let targetEmail = emailOrUsername.trim()
+
+      if (!targetEmail.includes('@')) {
+        // Tra cứu email theo username qua RPC (nếu có) hoặc fallback theo domain nội bộ
+        try {
+          const { data: foundEmail } = await supabase.rpc('get_email_by_username', {
+            p_username: targetEmail,
+          })
+          if (foundEmail) {
+            targetEmail = foundEmail
+          } else {
+            targetEmail = `${targetEmail.toLowerCase()}@student.gsec.internal`
+          }
+        } catch {
+          targetEmail = `${targetEmail.toLowerCase()}@student.gsec.internal`
+        }
+      }
+
       const { error } = await supabase.auth.signInWithPassword({
-        email,
+        email: targetEmail,
         password,
       })
       return { error: error ? new Error(error.message) : null }
