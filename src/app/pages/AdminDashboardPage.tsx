@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../auth'
 import { TASKS } from '../registry'
+import type { Form3SubMode } from '../../task-engine/dynamic-schema'
 import { AppHeader } from '../../components/shell/AppHeader'
 import '../../styles/portal.css'
 import '../../styles/auth.css'
@@ -64,7 +65,7 @@ export function AdminDashboardPage() {
   const navigate = useNavigate()
   const { user, profile } = useAuth()
 
-  const [activeTab, setActiveTab] = useState<'tasks' | 'assignments' | 'gradebook' | 'classes'>('tasks')
+  const [activeTab, setActiveTab] = useState<'tasks' | 'assignments' | 'gradebook' | 'classes' | 'ai_config'>('tasks')
 
   // Tasks state
   const [tasks, setTasks] = useState<TaskListItem[]>([])
@@ -188,6 +189,50 @@ export function AdminDashboardPage() {
     setTaskIntro('Check Task 1. Enter your answers.')
     setTaskAudioUrl('')
     setTaskAudioName('')
+    setForm3SubMode('FREE_SENTENCE')
+    setParagraphPrompt('Write a short paragraph (40-60 words) about your school.')
+    setParagraphMinWords(40)
+    setParagraphMaxWords(80)
+    setParagraphHelperWords('library, playground, friendly teachers, classmates')
+    setParagraphCriteria([
+      'Giới thiệu tên trường và vị trí',
+      'Kể ít nhất 2 phòng học hoặc tiện ích trong trường',
+      'Nêu cảm nghĩ của bạn về trường',
+    ])
+    setParagraphHints([
+      'Sử dụng thì hiện tại đơn (Present Simple)',
+      'Chú ý viết hoa đầu câu và dấu chấm câu kết thúc',
+    ])
+    setWritingItems([
+      {
+        label: 'Question 1',
+        prompt: '',
+        requiredWords: 'usually, badminton',
+        hints: ['Đặt trạng từ tần suất trước động từ thường.', 'Kiểm tra chủ ngữ và chia động từ phù hợp.'],
+      },
+    ])
+    setSpeakingLinkedTaskCode('60115')
+    setSpeakingPassScore(80)
+    setSpeakingFallbackSentences(
+      'I usually play badminton after school.\nMy brother often reads comic books in the library.\nWe sometimes ride bicycles around the park.\nThey never skip homework before going to bed.'
+    )
+    setForm5PassScore(80)
+    setForm5Items([
+      {
+        id: 'item-1',
+        label: 'Sentence 1',
+        target_text: 'I usually play badminton after school.',
+        audio_url: '',
+        hints: ['Nghe kỹ phát âm âm đuôi và ngữ điệu.'],
+      },
+      {
+        id: 'item-2',
+        label: 'Sentence 2',
+        target_text: 'My brother often reads comic books in the library.',
+        audio_url: '',
+        hints: ['Chú ý phát âm đuôi s ở reads.'],
+      },
+    ])
     if (audioInputRef.current) {
       audioInputRef.current.value = ''
     }
@@ -213,6 +258,109 @@ export function AdminDashboardPage() {
   }>>([
     { label: '1', placeholder: 'Your answer', correctAnswers: 'school, a school', hints: ['', ''] },
   ])
+
+  // Form 3 Writing items & sub-mode state
+  const [form3SubMode, setForm3SubMode] = useState<Form3SubMode>('FREE_SENTENCE')
+  const [paragraphPrompt, setParagraphPrompt] = useState('Write a short paragraph (40-60 words) about your school.')
+  const [paragraphMinWords, setParagraphMinWords] = useState(40)
+  const [paragraphMaxWords, setParagraphMaxWords] = useState(80)
+  const [paragraphHelperWords, setParagraphHelperWords] = useState('library, playground, friendly teachers, classmates')
+  const [paragraphCriteria, setParagraphCriteria] = useState<string[]>([
+    'Giới thiệu tên trường và vị trí',
+    'Kể ít nhất 2 phòng học hoặc tiện ích trong trường',
+    'Nêu cảm nghĩ của bạn về trường',
+  ])
+  const [paragraphHints, setParagraphHints] = useState<string[]>([
+    'Sử dụng thì hiện tại đơn (Present Simple)',
+    'Chú ý viết hoa đầu câu và dấu chấm câu kết thúc',
+  ])
+
+  const [writingItems, setWritingItems] = useState<Array<{
+    label: string
+    prompt: string
+    requiredWords: string
+    hints: string[]
+  }>>([
+    {
+      label: 'Question 1',
+      prompt: '',
+      requiredWords: 'usually, badminton',
+      hints: ['Đặt trạng từ tần suất trước động từ thường.', 'Kiểm tra chủ ngữ và chia động từ phù hợp.'],
+    },
+  ])
+
+  // Form 4 Speaking items state
+  const [speakingLinkedTaskCode, setSpeakingLinkedTaskCode] = useState('60115')
+  const [speakingPassScore, setSpeakingPassScore] = useState(80)
+  const [speakingFallbackSentences, setSpeakingFallbackSentences] = useState(
+    'I usually play badminton after school.\nMy brother often reads comic books in the library.\nWe sometimes ride bicycles around the park.\nThey never skip homework before going to bed.'
+  )
+
+  // Form 5 Listen & Repeat items state
+  const [form5PassScore, setForm5PassScore] = useState(80)
+  const [form5Items, setForm5Items] = useState<
+    Array<{ id: string; label: string; target_text: string; audio_url?: string; hints?: string[] }>
+  >([
+    {
+      id: 'item-1',
+      label: 'Sentence 1',
+      target_text: 'I usually play badminton after school.',
+      audio_url: '',
+      hints: ['Nghe kỹ phát âm âm đuôi và ngữ điệu.'],
+    },
+    {
+      id: 'item-2',
+      label: 'Sentence 2',
+      target_text: 'My brother often reads comic books in the library.',
+      audio_url: '',
+      hints: ['Chú ý phát âm đuôi s ở reads.'],
+    },
+  ])
+
+  const handleItemAudioUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = async (ev) => {
+      const base64Url = ev.target?.result as string
+      setForm5Items((prev) => {
+        const next = [...prev]
+        next[index] = { ...next[index], audio_url: base64Url }
+        return next
+      })
+
+      try {
+        const fileExt = file.name.split('.').pop() || 'mp3'
+        const filePath = `tasks/${Date.now()}_${Math.random().toString(36).slice(2, 7)}.${fileExt}`
+        const { data, error } = await supabase.storage.from('task-audio').upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true,
+        })
+        if (!error && data) {
+          const { data: pubUrl } = supabase.storage.from('task-audio').getPublicUrl(data.path)
+          if (pubUrl?.publicUrl) {
+            setForm5Items((prev) => {
+              const next = [...prev]
+              next[index] = { ...next[index], audio_url: pubUrl.publicUrl }
+              return next
+            })
+          }
+        }
+      } catch (err) {
+        console.warn('Item audio upload error, using base64 fallback:', err)
+      }
+    }
+    reader.readAsDataURL(file)
+  }
+
+  // AI Keys Config states
+  const [assemblyAiKeyInput, setAssemblyAiKeyInput] = useState<string>(() => {
+    return typeof window !== 'undefined' ? localStorage.getItem('gsec_assemblyai_api_key') || '' : ''
+  })
+  const [geminiKeyInput, setGeminiKeyInput] = useState<string>(() => {
+    return typeof window !== 'undefined' ? localStorage.getItem('gsec_gemini_api_key') || '' : ''
+  })
+  const [apiKeySaveMsg, setApiKeySaveMsg] = useState<{ success: boolean; text: string } | null>(null)
 
   const [savingTask, setSavingTask] = useState(false)
   const [authoringStatus, setAuthoringStatus] = useState<{ success: boolean; text: string } | null>(null)
@@ -699,10 +847,151 @@ export function AdminDashboardPage() {
             h2: cleanHints[1] || cleanHints[0] || 'Look closely at the lesson context and spelling.',
           }
         })
+      } else if (authoringFormType === 'FORM_3_WRITING') {
+        if (form3SubMode === 'PARAGRAPH') {
+          const cleanCriteria = paragraphCriteria.map((c) => c.trim()).filter(Boolean)
+          const cleanHints = paragraphHints.map((h) => h.trim()).filter(Boolean)
+          const cleanHelperWords = paragraphHelperWords.split(',').map((w) => w.trim()).filter(Boolean)
+
+          contentPayload = {
+            intro: taskIntro.trim() || 'Write a paragraph.',
+            sub_mode: 'PARAGRAPH',
+            paragraph: {
+              prompt: paragraphPrompt.trim() || 'Write a short paragraph about your school.',
+              min_words: paragraphMinWords || 30,
+              max_words: paragraphMaxWords || 100,
+              helper_words: cleanHelperWords,
+              criteria: cleanCriteria,
+              hints: cleanHints,
+            },
+          }
+
+          keysPayload = {
+            min_words: paragraphMinWords || 30,
+            max_words: paragraphMaxWords || 100,
+            helper_words: cleanHelperWords,
+            criteria: cleanCriteria,
+          }
+
+          hintsPayload = {
+            hints: cleanHints,
+            h1: cleanHints[0] || 'Make sure your paragraph has enough words and clear sentences.',
+            h2: cleanHints[1] || cleanHints[0] || 'Check grammar, spelling, and punctuation.',
+          }
+        } else {
+          // 'FREE_SENTENCE' hoặc 'BOOK_KEYWORD'
+          contentPayload = {
+            intro: taskIntro.trim() || (form3SubMode === 'BOOK_KEYWORD' ? 'Check your book. Write sentences using the target words.' : 'Write your sentences below.'),
+            sub_mode: form3SubMode,
+            items: writingItems.map((item, index) => {
+              const reqWords = form3SubMode === 'BOOK_KEYWORD'
+                ? item.requiredWords.split(',').map((w) => w.trim()).filter(Boolean)
+                : []
+              const rawHints = item.hints && Array.isArray(item.hints) ? item.hints : []
+              const cleanHints = rawHints.map((h: string) => (h || '').trim()).filter(Boolean)
+              if (cleanHints.length === 0) {
+                cleanHints.push('Check the word order and verb form.')
+              }
+              return {
+                id: `q${index + 1}`,
+                label: item.label || `Question ${index + 1}`,
+                prompt: item.prompt || (form3SubMode === 'BOOK_KEYWORD' ? 'Xem gợi ý từ trong sách bài tập' : ''),
+                required_words: reqWords.length > 0 ? reqWords : undefined,
+                hints: cleanHints,
+                cue: reqWords.length > 0 ? `Target words from book: ${reqWords.join(', ')}` : undefined,
+              }
+            }),
+          }
+
+          writingItems.forEach((item, index) => {
+            const key = `q${index + 1}`
+            const reqWords = form3SubMode === 'BOOK_KEYWORD'
+              ? item.requiredWords.split(',').map((w) => w.trim()).filter(Boolean)
+              : []
+            keysPayload[key] = {
+              required_words: reqWords,
+            }
+
+            const rawHints = item.hints && Array.isArray(item.hints) ? item.hints : []
+            const cleanHints = rawHints.map((h: string) => (h || '').trim()).filter(Boolean)
+            hintsPayload[key] = {
+              hints: cleanHints,
+              h1: cleanHints[0] || 'Check your sentence grammar.',
+              h2: cleanHints[1] || cleanHints[0] || 'Check subject-verb agreement and word order.',
+            }
+          })
+        }
+      } else if (authoringFormType === 'FORM_4_SPEAKING') {
+        const cleanFallbacks = speakingFallbackSentences
+          .split('\n')
+          .map((s) => s.trim())
+          .filter(Boolean)
+
+        contentPayload = {
+          intro: taskIntro.trim() || 'Read aloud the sentences you wrote. AI will evaluate your pronunciation clarity.',
+          linked_task_code: speakingLinkedTaskCode.trim() || '60115',
+          pass_score: Number(speakingPassScore) || 80,
+          fallback_sentences: cleanFallbacks.length > 0 ? cleanFallbacks : [
+            'I usually play badminton after school.',
+            'My brother often reads comic books in the library.',
+            'We sometimes ride bicycles around the park.',
+            'They never skip homework before going to bed.',
+          ],
+        }
+
+        keysPayload = {
+          linked_task_code: speakingLinkedTaskCode.trim() || '60115',
+          pass_score: Number(speakingPassScore) || 80,
+        }
+
+        hintsPayload = {
+          h1: 'Speak clearly into your microphone at a steady pace.',
+          h2: 'Listen to the audio guide or try again if words are unclear.',
+        }
+      } else if (authoringFormType === 'FORM_5_LISTEN_REPEAT') {
+        const cleanItems = form5Items
+          .map((item, index) => {
+            const rawHints = item.hints && Array.isArray(item.hints) ? item.hints : []
+            const cleanHints = rawHints.map((h: string) => (h || '').trim()).filter(Boolean)
+            if (cleanHints.length === 0) {
+              cleanHints.push('Nghe kỹ ngữ điệu và phát âm rõ từng từ.')
+            }
+            return {
+              id: item.id || `item-${index + 1}`,
+              label: item.label || `Sentence ${index + 1}`,
+              target_text: item.target_text.trim(),
+              audio_url: item.audio_url?.trim() || undefined,
+              hints: cleanHints,
+            }
+          })
+          .filter((it) => it.target_text.length > 0)
+
+        contentPayload = {
+          intro: taskIntro.trim() || 'Listen to each audio clip carefully. Repeat aloud into your microphone to get scored.',
+          pass_score: Number(form5PassScore) || 80,
+          items: cleanItems.length > 0 ? cleanItems : [
+            {
+              id: 'item-1',
+              label: 'Sentence 1',
+              target_text: 'I usually play badminton after school.',
+              hints: ['Nghe kỹ ngữ điệu và phát âm rõ từng từ.'],
+            },
+          ],
+        }
+
+        keysPayload = {
+          pass_score: Number(form5PassScore) || 80,
+          items: cleanItems,
+        }
+
+        hintsPayload = {
+          h1: 'Listen carefully to the model voice before recording.',
+          h2: 'Repeat clearly at a steady pace to get over 80%.',
+        }
       }
 
-      // Bổ sung file âm thanh nếu có
-      if (taskAudioUrl.trim()) {
+      // Bổ sung file âm thanh nếu có (chỉ áp dụng cho Form 1 và Form 2, bỏ hoàn toàn ở Form 3, Form 4 và Form 5)
+      if (authoringFormType !== 'FORM_3_WRITING' && authoringFormType !== 'FORM_4_SPEAKING' && authoringFormType !== 'FORM_5_LISTEN_REPEAT' && taskAudioUrl.trim()) {
         contentPayload.audioUrl = taskAudioUrl.trim()
         contentPayload.audio_url = taskAudioUrl.trim()
       }
@@ -714,8 +1003,8 @@ export function AdminDashboardPage() {
       // 1. Lưu vào bảng public.tasks
       const taskContent = {
         ...contentPayload,
-        audioUrl: taskAudioUrl.trim() || undefined,
-        audio_url: taskAudioUrl.trim() || undefined,
+        audioUrl: (authoringFormType !== 'FORM_3_WRITING' && authoringFormType !== 'FORM_4_SPEAKING' && authoringFormType !== 'FORM_5_LISTEN_REPEAT') ? (taskAudioUrl.trim() || undefined) : undefined,
+        audio_url: (authoringFormType !== 'FORM_3_WRITING' && authoringFormType !== 'FORM_4_SPEAKING' && authoringFormType !== 'FORM_5_LISTEN_REPEAT') ? (taskAudioUrl.trim() || undefined) : undefined,
         unit: finalUnit,
         lesson: finalLesson,
       }
@@ -923,6 +1212,13 @@ export function AdminDashboardPage() {
         >
           🏫 Danh Sách Lớp & Giáo Viên ({classes.length})
         </button>
+        <button
+          type="button"
+          className={`portal-tab-btn ${activeTab === 'ai_config' ? 'is-active' : ''}`}
+          onClick={() => setActiveTab('ai_config')}
+        >
+          ⚙️ Cấu hình AI & API Keys
+        </button>
       </nav>
 
       {/* TAB 1: NGÂN HÀNG BÀI TẬP & SOẠN ĐỀ */}
@@ -976,10 +1272,13 @@ export function AdminDashboardPage() {
                 onChange={(e) => setTaskFilterForm(e.target.value)}
               >
                 <option value="ALL">Tất cả dạng bài</option>
-                <option value="FORM_1_CHOICE">Trắc nghiệm (A/B/C hoặc T/F)</option>
-                <option value="FORM_2_FILL">Điền từ vào ô trống</option>
-                <option value="FORM_4_SENTENCE_REPAIR">Sửa lỗi câu & Ngữ pháp</option>
-                <option value="FORM_5_SEQUENCE">Sắp xếp đoạn văn</option>
+                <option value="FORM_1_CHOICE">Form 1: Trắc nghiệm (A/B/C hoặc T/F)</option>
+                <option value="FORM_2_FILL">Form 2: Điền từ vào ô trống</option>
+                <option value="FORM_3_WRITING">Form 3: Viết câu & Đoạn văn (AI Grammar)</option>
+                <option value="FORM_4_SPEAKING">Form 4: Luyện nói & Chấm phát âm (AssemblyAI)</option>
+                <option value="FORM_5_LISTEN_REPEAT">Form 5: Nghe & Ghi âm lặp lại (AssemblyAI &gt; 80%)</option>
+                <option value="FORM_4_SENTENCE_REPAIR">Form 4 Legacy: Sửa lỗi câu & Ngữ pháp</option>
+                <option value="FORM_5_SEQUENCE">Form 5 Legacy: Sắp xếp đoạn văn</option>
               </select>
             </div>
 
@@ -1541,6 +1840,185 @@ export function AdminDashboardPage() {
         </section>
       )}
 
+      {/* TAB 5: CẤU HÌNH AI & API KEYS */}
+      {activeTab === 'ai_config' && (
+        <section style={{ maxWidth: '840px', margin: '0 auto' }}>
+          <div style={{ marginBottom: '24px' }}>
+            <h2 style={{ margin: 0 }}>Cấu Hình Trí Tuệ Nhân Tạo (AI Services & API Keys)</h2>
+            <p style={{ margin: '6px 0 0', fontSize: '13.5px', color: 'var(--color-muted)', lineHeight: 1.5 }}>
+              Quản lý API Key cho các mô hình AI phục vụ học sinh: Google Gemini (Chấm Ngữ pháp Form 3) và AssemblyAI (Chuyển giọng nói & Chấm phát âm Form 4). Khóa API được lưu cục bộ an toàn trên trình duyệt của máy bạn và sử dụng ngay lập tức khi học sinh làm bài.
+            </p>
+          </div>
+
+          {apiKeySaveMsg && (
+            <div
+              className={`auth-message ${apiKeySaveMsg.success ? 'auth-message--success' : 'auth-message--error'}`}
+              style={{ marginBottom: '20px', padding: '14px 18px', borderRadius: '10px', fontSize: '14px', fontWeight: 600 }}
+            >
+              {apiKeySaveMsg.text}
+            </div>
+          )}
+
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              if (typeof window !== 'undefined') {
+                if (assemblyAiKeyInput.trim()) {
+                  localStorage.setItem('gsec_assemblyai_api_key', assemblyAiKeyInput.trim())
+                } else {
+                  localStorage.removeItem('gsec_assemblyai_api_key')
+                }
+
+                if (geminiKeyInput.trim()) {
+                  localStorage.setItem('gsec_gemini_api_key', geminiKeyInput.trim())
+                } else {
+                  localStorage.removeItem('gsec_gemini_api_key')
+                }
+                setApiKeySaveMsg({ success: true, text: '✅ Đã lưu cấu hình API Keys thành công! Các bài tập Form 3 & Form 4 sẽ sử dụng ngay lập tức.' })
+                setTimeout(() => setApiKeySaveMsg(null), 5000)
+              }
+            }}
+            style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}
+          >
+            {/* Card 1: AssemblyAI */}
+            <div style={{ background: '#ffffff', border: '1px solid var(--color-line)', borderRadius: '14px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '24px' }}>🎙️</span>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '16px', color: 'var(--color-heading)' }}>AssemblyAI API Key (Dành cho Form 4 Nói & Phát âm)</h3>
+                    <div style={{ fontSize: '12px', color: 'var(--color-muted)', marginTop: '2px' }}>
+                      Chuyển đổi âm thanh micro thành văn bản (Speech-to-Text) kèm độ tin cậy âm học từng từ
+                    </div>
+                  </div>
+                </div>
+                <span
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: '999px',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    background: assemblyAiKeyInput.trim() ? '#dcfce7' : '#fee2e2',
+                    color: assemblyAiKeyInput.trim() ? '#166534' : '#991b1b',
+                  }}
+                >
+                  {assemblyAiKeyInput.trim() ? '✓ Đã cấu hình' : 'Chưa cấu hình'}
+                </span>
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '10px' }}>
+                <label htmlFor="cfg-assemblyai-key" style={{ fontWeight: 600, fontSize: '13px' }}>
+                  Khóa bí mật (AssemblyAI Token):
+                </label>
+                <input
+                  id="cfg-assemblyai-key"
+                  type="password"
+                  className="form-input"
+                  placeholder="Nhập AssemblyAI API Key (ví dụ: a1b2c3d4e5f6...)"
+                  value={assemblyAiKeyInput}
+                  onChange={(e) => setAssemblyAiKeyInput(e.target.value)}
+                  style={{ fontFamily: 'monospace' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#64748b' }}>
+                <span>Được sử dụng cho bài 60116 và tất cả bài tập thuộc định dạng FORM_4_SPEAKING.</span>
+                <a
+                  href="https://www.assemblyai.com/dashboard/signup"
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ color: 'var(--color-primary)', fontWeight: 600, textDecoration: 'none' }}
+                >
+                  Đăng ký lấy key miễn phí →
+                </a>
+              </div>
+            </div>
+
+            {/* Card 2: Google Gemini */}
+            <div style={{ background: '#ffffff', border: '1px solid var(--color-line)', borderRadius: '14px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '24px' }}>✨</span>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '16px', color: 'var(--color-heading)' }}>Google Gemini API Key (Dành cho Form 3 Chấm Ngữ Pháp)</h3>
+                    <div style={{ fontSize: '12px', color: 'var(--color-muted)', marginTop: '2px' }}>
+                      Phân tích ngữ pháp tiếng Anh, cấu trúc câu và đối chiếu từ bắt buộc trong sách
+                    </div>
+                  </div>
+                </div>
+                <span
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: '999px',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    background: geminiKeyInput.trim() ? '#dcfce7' : '#fee2e2',
+                    color: geminiKeyInput.trim() ? '#166534' : '#991b1b',
+                  }}
+                >
+                  {geminiKeyInput.trim() ? '✓ Đã cấu hình' : 'Chưa cấu hình'}
+                </span>
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '10px' }}>
+                <label htmlFor="cfg-gemini-key" style={{ fontWeight: 600, fontSize: '13px' }}>
+                  Google AI Studio API Key (Gemini Token):
+                </label>
+                <input
+                  id="cfg-gemini-key"
+                  type="password"
+                  className="form-input"
+                  placeholder="Nhập Gemini API Key (ví dụ: AIzaSy...)"
+                  value={geminiKeyInput}
+                  onChange={(e) => setGeminiKeyInput(e.target.value)}
+                  style={{ fontFamily: 'monospace' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#64748b' }}>
+                <span>Được sử dụng cho bài 60115 và tất cả bài tập thuộc định dạng FORM_3_WRITING.</span>
+                <a
+                  href="https://aistudio.google.com/app/apikey"
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ color: 'var(--color-primary)', fontWeight: 600, textDecoration: 'none' }}
+                >
+                  Lấy key miễn phí từ Google AI Studio →
+                </a>
+              </div>
+            </div>
+
+            {/* Submit & Reset actions */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '10px' }}>
+              <button
+                type="button"
+                className="btn-auth-link btn-auth-link--secondary"
+                style={{ padding: '10px 20px', border: '1px solid #d1d5db', cursor: 'pointer', borderRadius: '8px' }}
+                onClick={() => {
+                  if (window.confirm('Bạn có chắc chắn muốn xóa toàn bộ API Keys đã lưu trên trình duyệt không?')) {
+                    setAssemblyAiKeyInput('')
+                    setGeminiKeyInput('')
+                    localStorage.removeItem('gsec_assemblyai_api_key')
+                    localStorage.removeItem('gsec_gemini_api_key')
+                    setApiKeySaveMsg({ success: true, text: 'Đã xóa toàn bộ API Keys khỏi trình duyệt.' })
+                    setTimeout(() => setApiKeySaveMsg(null), 4000)
+                  }
+                }}
+              >
+                Xóa tất cả Keys
+              </button>
+              <button
+                type="submit"
+                className="btn-submit"
+                style={{ width: 'auto', padding: '10px 28px', fontWeight: 700 }}
+              >
+                💾 Lưu Cấu Hình API Keys
+              </button>
+            </div>
+          </form>
+        </section>
+      )}
+
       {/* MODAL SOẠN BÀI TẬP MỚI */}
       {isAuthoringOpen && (
         <div className="portal-modal-overlay">
@@ -1605,6 +2083,9 @@ export function AdminDashboardPage() {
                   >
                     <option value="FORM_1_CHOICE">FORM 1: Trắc nghiệm (A/B/C hoặc T/F)</option>
                     <option value="FORM_2_FILL">FORM 2: Điền từ vào ô trống</option>
+                    <option value="FORM_3_WRITING">FORM 3: Viết câu với từ bắt buộc (AI chấm ngữ pháp)</option>
+                    <option value="FORM_4_SPEAKING">FORM 4: Luyện nói & Chấm phát âm (AssemblyAI)</option>
+                    <option value="FORM_5_LISTEN_REPEAT">FORM 5: Nghe & Ghi âm lặp lại (AssemblyAI &gt; 80%)</option>
                   </select>
                 </div>
 
@@ -1630,13 +2111,9 @@ export function AdminDashboardPage() {
                     type="number"
                     min={1}
                     className="form-input"
+                    required
                     value={taskUnit}
                     onChange={(e) => handleUnitChange(e.target.value)}
-                    onBlur={() => {
-                      if (!taskUnit || Number(taskUnit) < 1) {
-                        handleUnitChange('1')
-                      }
-                    }}
                   />
                 </div>
                 <div className="form-group">
@@ -1646,155 +2123,134 @@ export function AdminDashboardPage() {
                     type="number"
                     min={1}
                     className="form-input"
+                    required
                     value={taskLesson}
                     onChange={(e) => handleLessonChange(e.target.value)}
-                    onBlur={() => {
-                      if (!taskLesson || Number(taskLesson) < 1) {
-                        handleLessonChange('1')
-                      }
-                    }}
                   />
                 </div>
                 <div className="form-group">
-                  <label htmlFor="modal-task-num">Số thứ tự bài:</label>
+                  <label htmlFor="modal-task-number">Bài số (Task #):</label>
                   <input
-                    id="modal-task-num"
+                    id="modal-task-number"
                     type="number"
                     min={1}
                     className="form-input"
+                    required
                     value={taskNumber}
                     onChange={(e) => handleTaskNumberChange(e.target.value)}
-                    onBlur={() => {
-                      if (!taskNumber || Number(taskNumber) < 1) {
-                        handleTaskNumberChange('1')
-                      }
-                    }}
                   />
                 </div>
               </div>
 
               <div className="form-group">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <label htmlFor="modal-task-title">Tiêu đề bài học:</label>
-                  <span style={{ fontSize: '11px', color: 'var(--color-muted)' }}>Tự động sinh theo Lesson & Task</span>
-                </div>
+                <label htmlFor="modal-task-title">Tiêu đề bài tập (Tự động tạo theo Lesson & Task):</label>
                 <input
                   id="modal-task-title"
                   type="text"
                   className="form-input"
                   required
-                  placeholder="vd: AI Tutor • WS 1 - Task 7"
+                  placeholder="AI Tutor • WS 1 - Task 1"
                   value={taskTitle}
                   onChange={(e) => setTaskTitle(e.target.value)}
                 />
               </div>
 
               <div className="form-group">
-                <label htmlFor="modal-task-subtitle">Chủ đề bài học (Subtitle):</label>
-                <input
-                  id="modal-task-subtitle"
-                  type="text"
-                  className="form-input"
-                  placeholder="vd: Unit 1 · My New School"
-                  value={taskSubtitle}
-                  onChange={(e) => setTaskSubtitle(e.target.value)}
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="modal-task-intro">Lời giới thiệu:</label>
+                <label htmlFor="modal-task-intro">Lời dẫn dắt của AI Tutor (Intro Text):</label>
                 <input
                   id="modal-task-intro"
                   type="text"
                   className="form-input"
-                  placeholder="vd: Check Task 1. Enter your A, B or C answers."
+                  placeholder="ví dụ: Check Task 1. Enter your answers."
                   value={taskIntro}
                   onChange={(e) => setTaskIntro(e.target.value)}
                 />
               </div>
 
-              {/* TRƯỜNG TẢI FILE ÂM THANH (AUDIO CHO CẢ FORM 1 & FORM 2) */}
-              <div className="form-group" style={{ borderTop: '1px solid var(--color-line)', paddingTop: '14px', marginTop: '14px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <label htmlFor="modal-task-audio-file" style={{ margin: 0, fontWeight: 600 }}>
-                    File âm thanh (Audio bài nghe):
-                  </label>
-                  <span style={{ fontSize: '12px', color: 'var(--color-muted)' }}>
-                    (Tùy chọn - Dành cho bài tập Listening)
-                  </span>
-                </div>
-
-                <div
-                  style={{
-                    padding: '14px',
-                    border: '1.5px dashed var(--color-line, #d1d5db)',
-                    borderRadius: '12px',
-                    background: taskAudioUrl ? '#f0fdf4' : '#fafafa',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '10px',
-                  }}
-                >
-                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-                    <input
-                      id="modal-task-audio-file"
-                      ref={audioInputRef}
-                      type="file"
-                      accept="audio/*"
-                      style={{ display: 'none' }}
-                      onChange={handleAudioFileUpload}
-                    />
-                    <button
-                      type="button"
-                      className="btn-auth-link btn-auth-link--secondary"
-                      onClick={() => audioInputRef.current?.click()}
-                      disabled={isUploadingAudio}
-                    >
-                      {isUploadingAudio ? '⏳ Đang tải file lên...' : taskAudioUrl ? '📁 Đổi file âm thanh khác' : '📁 Tải file âm thanh từ máy lên'}
-                    </button>
-
-                    {taskAudioUrl && (
-                      <button
-                        type="button"
-                        style={{
-                          background: 'none',
-                          border: '1px solid #fca5a5',
-                          borderRadius: '8px',
-                          color: '#dc2626',
-                          padding: '6px 12px',
-                          fontSize: '13px',
-                          cursor: 'pointer',
-                        }}
-                        onClick={handleRemoveAudio}
-                      >
-                        🗑️ Xóa file âm thanh
-                      </button>
-                    )}
+              {/* TRƯỜNG TẢI FILE ÂM THANH (AUDIO CHO FORM 1 & FORM 2, ẨN HOÀN TOÀN Ở FORM 3, 4, 5) */}
+              {authoringFormType !== 'FORM_3_WRITING' && authoringFormType !== 'FORM_4_SPEAKING' && authoringFormType !== 'FORM_5_LISTEN_REPEAT' && (
+                <div className="form-group" style={{ borderTop: '1px solid var(--color-line)', paddingTop: '14px', marginTop: '14px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <label htmlFor="modal-task-audio-file" style={{ margin: 0, fontWeight: 600 }}>
+                      File âm thanh (Audio bài nghe):
+                    </label>
+                    <span style={{ fontSize: '12px', color: 'var(--color-muted)' }}>
+                      (Tùy chọn - Dành cho bài tập Listening)
+                    </span>
                   </div>
 
-                  {taskAudioName && (
-                    <div style={{ fontSize: '13px', color: '#374151', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span>🎵</span>
-                      <strong>{taskAudioName}</strong>
-                    </div>
-                  )}
+                  <div
+                    style={{
+                      padding: '14px',
+                      border: '1.5px dashed var(--color-line, #d1d5db)',
+                      borderRadius: '12px',
+                      background: taskAudioUrl ? '#f0fdf4' : '#fafafa',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '10px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <input
+                        id="modal-task-audio-file"
+                        ref={audioInputRef}
+                        type="file"
+                        accept="audio/*"
+                        style={{ display: 'none' }}
+                        onChange={handleAudioFileUpload}
+                      />
+                      <button
+                        type="button"
+                        className="btn-auth-link btn-auth-link--secondary"
+                        onClick={() => audioInputRef.current?.click()}
+                        disabled={isUploadingAudio}
+                      >
+                        {isUploadingAudio ? '⏳ Đang tải file lên...' : taskAudioUrl ? '📁 Đổi file âm thanh khác' : '📁 Tải file âm thanh từ máy lên'}
+                      </button>
 
-                  {taskAudioUrl && (
-                    <div style={{ marginTop: '4px' }}>
-                      <audio controls src={taskAudioUrl} style={{ width: '100%', height: '36px' }} />
-                      <div style={{ fontSize: '11px', color: '#16a34a', marginTop: '4px' }}>
-                        ✓ File âm thanh sẵn sàng. Khi học sinh làm bài, hệ thống sẽ yêu cầu nghe 2 lần trước khi mở khóa câu hỏi.
+                      {taskAudioUrl && (
+                        <button
+                          type="button"
+                          style={{
+                            background: 'none',
+                            border: '1px solid #fca5a5',
+                            borderRadius: '8px',
+                            color: '#dc2626',
+                            padding: '6px 12px',
+                            fontSize: '13px',
+                            cursor: 'pointer',
+                          }}
+                          onClick={handleRemoveAudio}
+                        >
+                          🗑️ Xóa file âm thanh
+                        </button>
+                      )}
+                    </div>
+
+                    {taskAudioName && (
+                      <div style={{ fontSize: '13px', color: '#374151', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>🎵</span>
+                        <strong>{taskAudioName}</strong>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {!taskAudioUrl && (
-                    <div style={{ fontSize: '12px', color: 'var(--color-muted)' }}>
-                      💡 Nếu bài tập không có file âm thanh, giao diện loa nghe sẽ được tự động ẩn hoàn toàn.
-                    </div>
-                  )}
+                    {taskAudioUrl && (
+                      <div style={{ marginTop: '4px' }}>
+                        <audio controls src={taskAudioUrl} style={{ width: '100%', height: '36px' }} />
+                        <div style={{ fontSize: '11px', color: '#16a34a', marginTop: '4px' }}>
+                          ✓ File âm thanh sẵn sàng. Khi học sinh làm bài, hệ thống sẽ yêu cầu nghe 2 lần trước khi mở khóa câu hỏi.
+                        </div>
+                      </div>
+                    )}
+
+                    {!taskAudioUrl && (
+                      <div style={{ fontSize: '12px', color: 'var(--color-muted)' }}>
+                        💡 Nếu bài tập không có file âm thanh, giao diện loa nghe sẽ được tự động ẩn hoàn toàn.
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* BUILDER CHO FORM 1: TRẮC NGHIỆM */}
               {authoringFormType === 'FORM_1_CHOICE' && (
@@ -2116,6 +2572,768 @@ export function AdminDashboardPage() {
                         </div>
                       )
                     })}
+                  </div>
+                </div>
+              )}
+
+              {/* BUILDER CHO FORM 3: CÁC DẠNG BÀI VIẾT (AI CHẤM) */}
+              {authoringFormType === 'FORM_3_WRITING' && (
+                <div style={{ borderTop: '1px solid var(--color-line)', paddingTop: '16px', marginTop: '10px' }}>
+                  {/* Chọn dạng bài viết (Sub-mode) */}
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-heading)', display: 'block', marginBottom: '8px' }}>
+                      🎯 Chọn dạng bài viết (Form 3 Sub-mode):
+                    </label>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
+                      <button
+                        type="button"
+                        onClick={() => setForm3SubMode('FREE_SENTENCE')}
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          textAlign: 'left',
+                          cursor: 'pointer',
+                          border: form3SubMode === 'FREE_SENTENCE' ? '2px solid var(--color-primary, #6366f1)' : '1px solid var(--color-line)',
+                          background: form3SubMode === 'FREE_SENTENCE' ? 'rgba(99, 102, 241, 0.08)' : 'var(--color-surface, #fff)',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        <div style={{ fontWeight: 600, fontSize: '13px', color: form3SubMode === 'FREE_SENTENCE' ? 'var(--color-primary, #6366f1)' : 'inherit' }}>
+                          ✍️ 3.1 Viết câu tự do
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--color-muted)', marginTop: '4px' }}>
+                          Không có từ mẫu. AI chấm ngữ pháp từng câu đến khi hoàn toàn chính xác.
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setForm3SubMode('BOOK_KEYWORD')}
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          textAlign: 'left',
+                          cursor: 'pointer',
+                          border: form3SubMode === 'BOOK_KEYWORD' ? '2px solid var(--color-primary, #6366f1)' : '1px solid var(--color-line)',
+                          background: form3SubMode === 'BOOK_KEYWORD' ? 'rgba(99, 102, 241, 0.08)' : 'var(--color-surface, #fff)',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        <div style={{ fontWeight: 600, fontSize: '13px', color: form3SubMode === 'BOOK_KEYWORD' ? 'var(--color-primary, #6366f1)' : 'inherit' }}>
+                          📖 3.2 Từ gợi ý trong sách
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--color-muted)', marginTop: '4px' }}>
+                          Từ gợi ý ẩn trên web (học sinh xem sách). AI chấm ngầm đủ từ + đúng ngữ pháp.
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setForm3SubMode('PARAGRAPH')}
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          textAlign: 'left',
+                          cursor: 'pointer',
+                          border: form3SubMode === 'PARAGRAPH' ? '2px solid var(--color-primary, #6366f1)' : '1px solid var(--color-line)',
+                          background: form3SubMode === 'PARAGRAPH' ? 'rgba(99, 102, 241, 0.08)' : 'var(--color-surface, #fff)',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        <div style={{ fontWeight: 600, fontSize: '13px', color: form3SubMode === 'PARAGRAPH' ? 'var(--color-primary, #6366f1)' : 'inherit' }}>
+                          📝 3.3 Viết đoạn văn
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--color-muted)', marginTop: '4px' }}>
+                          Viết đoạn văn dài theo tiêu chí, vốn từ trợ giúp. AI chấm ngữ pháp và nội dung.
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* SUB-MODE 3.3: VIẾT ĐOẠN VĂN (PARAGRAPH) */}
+                  {form3SubMode === 'PARAGRAPH' ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      <div className="form-group">
+                        <label style={{ fontSize: '12px', fontWeight: 600 }}>📝 Đề bài / Yêu cầu viết đoạn văn (Prompt):</label>
+                        <textarea
+                          className="form-input"
+                          rows={2}
+                          placeholder="vd: Write a short paragraph (40-60 words) about your favourite hobby."
+                          value={paragraphPrompt}
+                          onChange={(e) => setParagraphPrompt(e.target.value)}
+                        />
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        <div className="form-group">
+                          <label style={{ fontSize: '12px', fontWeight: 600 }}>🔢 Số từ tối thiểu (Min Words):</label>
+                          <input
+                            type="number"
+                            className="form-input"
+                            min={10}
+                            max={300}
+                            value={paragraphMinWords}
+                            onChange={(e) => setParagraphMinWords(Math.max(5, parseInt(e.target.value, 10) || 10))}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label style={{ fontSize: '12px', fontWeight: 600 }}>🔢 Số từ tối đa (Max Words):</label>
+                          <input
+                            type="number"
+                            className="form-input"
+                            min={20}
+                            max={500}
+                            value={paragraphMaxWords}
+                            onChange={(e) => setParagraphMaxWords(Math.max(20, parseInt(e.target.value, 10) || 50))}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="form-group">
+                        <label style={{ fontSize: '12px', fontWeight: 600 }}>💡 Vốn từ / Cụm từ trợ giúp (Helper Word Bank - cách nhau bằng dấu phẩy):</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="vd: library, playground, friendly teachers, classmates"
+                          value={paragraphHelperWords}
+                          onChange={(e) => setParagraphHelperWords(e.target.value)}
+                        />
+                        <div style={{ fontSize: '11px', color: 'var(--color-muted)', marginTop: '4px' }}>
+                          Các từ này sẽ hiển thị thành các chip gợi ý từ vựng trực quan để học sinh tham khảo khi viết.
+                        </div>
+                      </div>
+
+                      {/* Tiêu chí đánh giá (Rubric Checklist) */}
+                      <div style={{ borderTop: '1px dashed #e5e7eb', paddingTop: '10px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-heading)' }}>
+                            📋 Tiêu chí đánh giá nội dung (AI sẽ đối chiếu từng tiêu chí):
+                          </span>
+                          <button
+                            type="button"
+                            style={{
+                              fontSize: '11px',
+                              background: 'none',
+                              border: 'none',
+                              color: 'var(--color-primary)',
+                              cursor: 'pointer',
+                              fontWeight: 600,
+                            }}
+                            onClick={() => setParagraphCriteria((prev) => [...prev, ''])}
+                          >
+                            + Thêm tiêu chí
+                          </button>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {paragraphCriteria.map((crit, cIdx) => (
+                            <div key={cIdx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                              <input
+                                type="text"
+                                className="form-input"
+                                style={{ fontSize: '12px', padding: '6px 10px', flex: 1 }}
+                                placeholder={`Tiêu chí ${cIdx + 1} (vd: Giới thiệu tên trường và vị trí)`}
+                                value={crit}
+                                onChange={(e) => {
+                                  const next = [...paragraphCriteria]
+                                  next[cIdx] = e.target.value
+                                  setParagraphCriteria(next)
+                                }}
+                              />
+                              {paragraphCriteria.length > 1 && (
+                                <button
+                                  type="button"
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: 'var(--color-muted)',
+                                    cursor: 'pointer',
+                                    fontSize: '15px',
+                                    padding: '2px 6px',
+                                  }}
+                                  title="Xóa tiêu chí này"
+                                  onClick={() => {
+                                    const next = [...paragraphCriteria]
+                                    next.splice(cIdx, 1)
+                                    setParagraphCriteria(next)
+                                  }}
+                                >
+                                  ✕
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Gợi ý cho học sinh (Hints) */}
+                      <div style={{ borderTop: '1px dashed #e5e7eb', paddingTop: '10px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-heading)' }}>
+                            💡 Gợi ý cấu trúc / phong cách viết (Hints):
+                          </span>
+                          <button
+                            type="button"
+                            style={{
+                              fontSize: '11px',
+                              background: 'none',
+                              border: 'none',
+                              color: 'var(--color-primary)',
+                              cursor: 'pointer',
+                              fontWeight: 600,
+                            }}
+                            onClick={() => setParagraphHints((prev) => [...prev, ''])}
+                          >
+                            + Thêm gợi ý
+                          </button>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {paragraphHints.map((hint, hIdx) => (
+                            <div key={hIdx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                              <input
+                                type="text"
+                                className="form-input"
+                                style={{ fontSize: '12px', padding: '6px 10px', flex: 1 }}
+                                placeholder={`Gợi ý ${hIdx + 1} (vd: Sử dụng thì hiện tại đơn)`}
+                                value={hint}
+                                onChange={(e) => {
+                                  const next = [...paragraphHints]
+                                  next[hIdx] = e.target.value
+                                  setParagraphHints(next)
+                                }}
+                              />
+                              {paragraphHints.length > 1 && (
+                                <button
+                                  type="button"
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: 'var(--color-muted)',
+                                    cursor: 'pointer',
+                                    fontSize: '15px',
+                                    padding: '2px 6px',
+                                  }}
+                                  title="Xóa gợi ý này"
+                                  onClick={() => {
+                                    const next = [...paragraphHints]
+                                    next.splice(hIdx, 1)
+                                    setParagraphHints(next)
+                                  }}
+                                >
+                                  ✕
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    /* SUB-MODE 3.1 VÀ 3.2: TỪNG CÂU HỎI VIẾT */
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                        <div>
+                          <strong>Danh sách câu hỏi:</strong>
+                          <div style={{ fontSize: '12px', color: 'var(--color-muted)', marginTop: '2px' }}>
+                            {form3SubMode === 'BOOK_KEYWORD'
+                              ? 'Học sinh nhìn từ gợi ý trong sách giấy. Web sẽ ẩn từ khóa, AI chấm ngầm xem học sinh có viết đủ từ không.'
+                              : 'Học sinh tự do viết câu theo yêu cầu đề bài. AI sẽ chấm cấu trúc ngữ pháp từng câu đến khi đúng.'}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          className="btn-auth-link btn-auth-link--secondary"
+                          onClick={() =>
+                            setWritingItems((prev) => [
+                              ...prev,
+                              {
+                                label: `Question ${prev.length + 1}`,
+                                prompt: form3SubMode === 'BOOK_KEYWORD' ? 'Xem gợi ý từ trong sách bài tập' : '',
+                                requiredWords: '',
+                                hints: ['', ''],
+                              },
+                            ])
+                          }
+                        >
+                          + Thêm câu hỏi
+                        </button>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                        {writingItems.map((item, index) => {
+                          const itemHints = item.hints || ['', '']
+                          return (
+                            <div
+                              key={index}
+                              style={{
+                                padding: '14px',
+                                background: 'var(--color-surface, #f9fafb)',
+                                borderRadius: '10px',
+                                border: '1px solid var(--color-line)',
+                              }}
+                            >
+                              <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'center' }}>
+                                <input
+                                  type="text"
+                                  className="form-input"
+                                  placeholder="Nhãn câu (vd: Question 1)"
+                                  value={item.label}
+                                  onChange={(e) => {
+                                    const next = [...writingItems]
+                                    next[index].label = e.target.value
+                                    setWritingItems(next)
+                                  }}
+                                  style={{ flex: 1 }}
+                                />
+                                {form3SubMode === 'BOOK_KEYWORD' && (
+                                  <input
+                                    type="text"
+                                    className="form-input"
+                                    placeholder="Ghi chú đề bài (tùy chọn)"
+                                    value={item.prompt}
+                                    onChange={(e) => {
+                                      const next = [...writingItems]
+                                      next[index].prompt = e.target.value
+                                      setWritingItems(next)
+                                    }}
+                                    style={{ flex: 1.5 }}
+                                  />
+                                )}
+                                {writingItems.length > 1 && (
+                                  <button
+                                    type="button"
+                                    style={{
+                                      background: 'none',
+                                      border: 'none',
+                                      color: 'var(--color-muted)',
+                                      cursor: 'pointer',
+                                      fontSize: '16px',
+                                      padding: '4px',
+                                    }}
+                                    title="Xóa câu này"
+                                    onClick={() => {
+                                      const next = [...writingItems]
+                                      next.splice(index, 1)
+                                      setWritingItems(next)
+                                    }}
+                                  >
+                                    🗑️
+                                  </button>
+                                )}
+                              </div>
+
+                              {form3SubMode === 'BOOK_KEYWORD' && (
+                                <div className="form-group" style={{ marginBottom: '10px' }}>
+                                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#0369a1' }}>
+                                    📖 Từ khóa yêu cầu trong sách (Ẩn trên giao diện học sinh, AI chấm ngầm):
+                                  </label>
+                                  <input
+                                    type="text"
+                                    className="form-input"
+                                    placeholder="ví dụ: usually, badminton hoặc play badminton, Sunday"
+                                    value={item.requiredWords}
+                                    onChange={(e) => {
+                                      const next = [...writingItems]
+                                      next[index].requiredWords = e.target.value
+                                      setWritingItems(next)
+                                    }}
+                                  />
+                                  <div style={{ fontSize: '11px', color: 'var(--color-muted)', marginTop: '3px' }}>
+                                    * Các từ/cụm từ này sẽ được giấu kín khỏi màn hình làm bài của học sinh để các em tự tra cứu sách bài tập.
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Quản lý danh sách Hint cho câu viết */}
+                              <div style={{ marginTop: '8px', borderTop: '1px dashed #e5e7eb', paddingTop: '8px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                  <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-muted)' }}>
+                                    Gợi ý cấu trúc câu (AI sẽ căn cứ để chấm ngữ pháp và hướng dẫn học sinh):
+                                  </span>
+                                  <button
+                                    type="button"
+                                    style={{
+                                      fontSize: '11px',
+                                      background: 'none',
+                                      border: 'none',
+                                      color: 'var(--color-primary)',
+                                      cursor: 'pointer',
+                                      fontWeight: 600,
+                                    }}
+                                    onClick={() => {
+                                      const next = [...writingItems]
+                                      next[index].hints = [...itemHints, '']
+                                      setWritingItems(next)
+                                    }}
+                                  >
+                                    + Thêm gợi ý
+                                  </button>
+                                </div>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                  {itemHints.map((hint, hIdx) => (
+                                    <div key={hIdx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                      <input
+                                        type="text"
+                                        className="form-input"
+                                        style={{ fontSize: '12px', padding: '6px 10px', flex: 1 }}
+                                        placeholder={`Gợi ý ${hIdx + 1} (vd: Đặt trạng từ tần suất trước động từ thường)`}
+                                        value={hint}
+                                        onChange={(e) => {
+                                          const next = [...writingItems]
+                                          const currentHints = [...(next[index].hints || ['', ''])]
+                                          currentHints[hIdx] = e.target.value
+                                          next[index].hints = currentHints
+                                          setWritingItems(next)
+                                        }}
+                                      />
+                                      {itemHints.length > 1 && (
+                                        <button
+                                          type="button"
+                                          style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            color: 'var(--color-muted)',
+                                            cursor: 'pointer',
+                                            fontSize: '15px',
+                                            padding: '2px 6px',
+                                          }}
+                                          title="Xóa gợi ý này"
+                                          onClick={() => {
+                                            const next = [...writingItems]
+                                            const currentHints = [...(next[index].hints || ['', ''])]
+                                            currentHints.splice(hIdx, 1)
+                                            next[index].hints = currentHints
+                                            setWritingItems(next)
+                                          }}
+                                        >
+                                          ✕
+                                        </button>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* CẤU HÌNH CHO FORM 4: SPEAKING & PRONUNCIATION */}
+              {authoringFormType === 'FORM_4_SPEAKING' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', background: '#f8fafc', padding: '18px', borderRadius: '12px', border: '1px solid #cbd5e1', marginTop: '14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#1e3a8a', fontWeight: 700, fontSize: '15px' }}>
+                    🎙️ Cấu hình Dạng 4: Luyện nói & Chấm phát âm (AssemblyAI)
+                  </div>
+                  <div style={{ fontSize: '13px', color: '#475569', lineHeight: 1.5 }}>
+                    Dạng bài này kết nối với bài tập Form 3 trước đó. Khi học sinh làm bài, hệ thống sẽ tự động tải các câu học sinh đã viết đúng trong bài Form 3 để học sinh đọc lại. AI sẽ ghi âm, nhận diện giọng nói và chấm điểm phát âm từ 0 - 100 điểm.
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                    <div className="form-group">
+                      <label htmlFor="modal-speaking-linked-task" style={{ fontWeight: 600, fontSize: '13px' }}>
+                        Mã bài Form 3 liên kết:
+                      </label>
+                      <input
+                        id="modal-speaking-linked-task"
+                        type="text"
+                        className="form-input"
+                        placeholder="ví dụ: 60115"
+                        value={speakingLinkedTaskCode}
+                        onChange={(e) => setSpeakingLinkedTaskCode(e.target.value)}
+                      />
+                      <span style={{ fontSize: '11px', color: '#64748b' }}>Hệ thống sẽ lấy các câu văn học sinh đã hoàn thành đúng ở mã bài này.</span>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="modal-speaking-pass-score" style={{ fontWeight: 600, fontSize: '13px' }}>
+                        Điểm đạt tối thiểu (0 - 100 điểm):
+                      </label>
+                      <input
+                        id="modal-speaking-pass-score"
+                        type="number"
+                        min={0}
+                        max={100}
+                        className="form-input"
+                        value={speakingPassScore}
+                        onChange={(e) => setSpeakingPassScore(Number(e.target.value))}
+                      />
+                      <span style={{ fontSize: '11px', color: '#64748b' }}>Mặc định là 80 điểm để được công nhận hoàn thành bài.</span>
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="modal-speaking-fallbacks" style={{ fontWeight: 600, fontSize: '13px' }}>
+                      Câu mẫu dự phòng (Fallback Sentences - mỗi dòng 1 câu):
+                    </label>
+                    <textarea
+                      id="modal-speaking-fallbacks"
+                      rows={4}
+                      className="form-input"
+                      style={{ fontFamily: 'inherit', resize: 'vertical', fontSize: '13px' }}
+                      placeholder="Nhập các câu dự phòng..."
+                      value={speakingFallbackSentences}
+                      onChange={(e) => setSpeakingFallbackSentences(e.target.value)}
+                    />
+                    <span style={{ fontSize: '11px', color: '#64748b' }}>Được sử dụng khi học sinh vào thẳng bài nói này mà chưa từng làm bài viết Form 3 tương ứng.</span>
+                  </div>
+                </div>
+              )}
+
+              {/* CẤU HÌNH CHO FORM 5: LISTEN & REPEAT */}
+              {authoringFormType === 'FORM_5_LISTEN_REPEAT' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', background: '#f0fdf4', padding: '18px', borderRadius: '12px', border: '1px solid #bbf7d0', marginTop: '14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#166534', fontWeight: 700, fontSize: '15px' }}>
+                    🎧 Cấu hình Dạng 5: Nghe & Ghi âm lặp lại (AssemblyAI chấm &gt; 80%)
+                  </div>
+                  <div style={{ fontSize: '13px', color: '#14532d', lineHeight: 1.5 }}>
+                    Bài tập phát âm thanh từng câu để học sinh nghe và lặp lại. AssemblyAI chấm độ khớp từ và độ tự tin âm thanh (thang điểm 100). Học sinh phải đạt tối thiểu từ <strong>{form5PassScore} điểm</strong> trở lên cho mỗi câu để được mở khóa câu tiếp theo.
+                  </div>
+
+                  <div className="form-group" style={{ maxWidth: '280px' }}>
+                    <label htmlFor="modal-form5-pass-score" style={{ fontWeight: 600, fontSize: '13px', color: '#166534' }}>
+                      Điểm đạt tối thiểu (0 - 100 điểm):
+                    </label>
+                    <input
+                      id="modal-form5-pass-score"
+                      type="number"
+                      min={0}
+                      max={100}
+                      className="form-input"
+                      value={form5PassScore}
+                      onChange={(e) => setForm5PassScore(Number(e.target.value))}
+                    />
+                    <span style={{ fontSize: '11px', color: '#15803d' }}>Mặc định là 80 điểm (bắt buộc đúng trên 80% mới cho qua).</span>
+                  </div>
+
+                  <div style={{ borderTop: '1px dashed #86efac', paddingTop: '14px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <div>
+                        <strong style={{ fontSize: '14px', color: '#166534' }}>Danh sách các câu luyện nghe & nói:</strong>
+                        <div style={{ fontSize: '12px', color: '#15803d', marginTop: '2px' }}>
+                          Mỗi câu có thể tải file audio riêng, nhập link, hoặc để trống (hệ thống sẽ tự động dùng AI đọc Web Speech bản xứ).
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn-auth-link btn-auth-link--secondary"
+                        onClick={() =>
+                          setForm5Items((prev) => [
+                            ...prev,
+                            {
+                              id: `item-${Date.now()}`,
+                              label: `Sentence ${prev.length + 1}`,
+                              target_text: '',
+                              audio_url: '',
+                              hints: ['Nghe kỹ phát âm âm đuôi và ngữ điệu.'],
+                            },
+                          ])
+                        }
+                      >
+                        + Thêm câu luyện tập
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      {form5Items.map((item, index) => {
+                        const itemHints = item.hints || ['']
+                        return (
+                          <div
+                            key={item.id || index}
+                            style={{
+                              padding: '16px',
+                              background: '#ffffff',
+                              borderRadius: '10px',
+                              border: '1px solid #bbf7d0',
+                              boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                              <input
+                                type="text"
+                                className="form-input"
+                                placeholder={`Nhãn câu (vd: Sentence ${index + 1})`}
+                                value={item.label}
+                                onChange={(e) => {
+                                  const next = [...form5Items]
+                                  next[index].label = e.target.value
+                                  setForm5Items(next)
+                                }}
+                                style={{ width: '200px', fontWeight: 600, fontSize: '13px' }}
+                              />
+                              {form5Items.length > 1 && (
+                                <button
+                                  type="button"
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: '#dc2626',
+                                    cursor: 'pointer',
+                                    fontSize: '15px',
+                                    padding: '4px 8px',
+                                  }}
+                                  title="Xóa câu này"
+                                  onClick={() => {
+                                    const next = [...form5Items]
+                                    next.splice(index, 1)
+                                    setForm5Items(next)
+                                  }}
+                                >
+                                  🗑️ Xóa câu
+                                </button>
+                              )}
+                            </div>
+
+                            <div className="form-group" style={{ marginBottom: '10px' }}>
+                              <label style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>
+                                Câu mẫu tiếng Anh (Target Text - học sinh đọc theo câu này):
+                              </label>
+                              <input
+                                type="text"
+                                className="form-input"
+                                placeholder="vd: I usually play badminton after school."
+                                value={item.target_text}
+                                onChange={(e) => {
+                                  const next = [...form5Items]
+                                  next[index].target_text = e.target.value
+                                  setForm5Items(next)
+                                }}
+                                style={{ width: '100%', fontSize: '13px' }}
+                              />
+                            </div>
+
+                            <div className="form-group" style={{ marginBottom: '10px' }}>
+                              <label style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>
+                                File âm thanh mẫu (Audio URL - Tùy chọn):
+                              </label>
+                              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                <input
+                                  type="text"
+                                  className="form-input"
+                                  placeholder="Dán link audio (mp3/wav) hoặc để trống để dùng AI Web Speech phát âm"
+                                  value={item.audio_url || ''}
+                                  onChange={(e) => {
+                                    const next = [...form5Items]
+                                    next[index].audio_url = e.target.value
+                                    setForm5Items(next)
+                                  }}
+                                  style={{ flex: 1, fontSize: '12px' }}
+                                />
+                                <label
+                                  className="btn-auth-link btn-auth-link--secondary"
+                                  style={{ margin: 0, padding: '6px 12px', fontSize: '12px', cursor: 'pointer' }}
+                                >
+                                  📁 Tải file
+                                  <input
+                                    type="file"
+                                    accept="audio/*"
+                                    style={{ display: 'none' }}
+                                    onChange={(e) => handleItemAudioUpload(index, e)}
+                                  />
+                                </label>
+                                {item.audio_url && (
+                                  <button
+                                    type="button"
+                                    style={{
+                                      background: 'none',
+                                      border: '1px solid #fca5a5',
+                                      borderRadius: '6px',
+                                      color: '#dc2626',
+                                      padding: '5px 8px',
+                                      fontSize: '12px',
+                                      cursor: 'pointer',
+                                    }}
+                                    onClick={() => {
+                                      const next = [...form5Items]
+                                      next[index].audio_url = ''
+                                      setForm5Items(next)
+                                    }}
+                                  >
+                                    ✕ Xóa audio
+                                  </button>
+                                )}
+                              </div>
+                              <span style={{ fontSize: '11px', color: '#6b7280' }}>
+                                {item.audio_url ? '✓ Đã gắn audio mẫu cho câu này.' : '💡 Nếu để trống, hệ thống sẽ tự động dùng AI Web Speech chuẩn giọng bản xứ.'}
+                              </span>
+                            </div>
+
+                            {/* Hints */}
+                            <div style={{ marginTop: '8px', borderTop: '1px dashed #e5e7eb', paddingTop: '8px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                <span style={{ fontSize: '12px', fontWeight: 600, color: '#6b7280' }}>
+                                  Gợi ý phát âm (Hints):
+                                </span>
+                                <button
+                                  type="button"
+                                  style={{
+                                    fontSize: '11px',
+                                    background: 'none',
+                                    border: 'none',
+                                    color: '#16a34a',
+                                    cursor: 'pointer',
+                                    fontWeight: 600,
+                                  }}
+                                  onClick={() => {
+                                    const next = [...form5Items]
+                                    next[index].hints = [...itemHints, '']
+                                    setForm5Items(next)
+                                  }}
+                                >
+                                  + Thêm gợi ý
+                                </button>
+                              </div>
+
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                {itemHints.map((h, hIdx) => (
+                                  <div key={hIdx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                    <input
+                                      type="text"
+                                      className="form-input"
+                                      style={{ fontSize: '12px', padding: '5px 10px', flex: 1 }}
+                                      placeholder={`Gợi ý ${hIdx + 1} (vd: Chú ý phát âm âm đuôi s)`}
+                                      value={h}
+                                      onChange={(e) => {
+                                        const next = [...form5Items]
+                                        const hList = [...(next[index].hints || [''])]
+                                        hList[hIdx] = e.target.value
+                                        next[index].hints = hList
+                                        setForm5Items(next)
+                                      }}
+                                    />
+                                    {itemHints.length > 1 && (
+                                      <button
+                                        type="button"
+                                        style={{
+                                          background: 'none',
+                                          border: 'none',
+                                          color: '#9ca3af',
+                                          cursor: 'pointer',
+                                          fontSize: '14px',
+                                          padding: '2px 6px',
+                                        }}
+                                        onClick={() => {
+                                          const next = [...form5Items]
+                                          const hList = [...(next[index].hints || [''])]
+                                          hList.splice(hIdx, 1)
+                                          next[index].hints = hList
+                                          setForm5Items(next)
+                                        }}
+                                      >
+                                        ✕
+                                      </button>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
                   </div>
                 </div>
               )}

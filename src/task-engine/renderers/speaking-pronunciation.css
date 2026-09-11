@@ -1,0 +1,340 @@
+/* Form 4: Luyện nói & Chấm phát âm AI (Speaking & Pronunciation) */
+
+.form-4-speaking-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.speaking-target-card {
+  background: #ffffff;
+  border: 1px solid var(--color-line, #e5e7eb);
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.target-sentences-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.target-sentence-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.target-sentence-item.active {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.08);
+}
+
+.sentence-num-badge {
+  display: grid;
+  place-items: center;
+  min-width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #e2e8f0;
+  color: #334155;
+  font-weight: 700;
+  font-size: 13px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.target-sentence-item.active .sentence-num-badge {
+  background: #3b82f6;
+  color: #ffffff;
+}
+
+.sentence-text-content {
+  flex: 1;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #1e293b;
+  font-weight: 500;
+}
+
+.listen-model-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #0f766e;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.listen-model-btn:hover:not(:disabled) {
+  background: #f0fdfa;
+  border-color: #0d9488;
+}
+
+/* Console Thu Âm */
+.recording-console-card {
+  background: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
+  border: 1.5px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 24px 20px;
+  text-align: center;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+}
+
+.recording-status-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 12px;
+}
+
+.recording-timer {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #0f172a;
+  font-variant-numeric: tabular-nums;
+  margin: 10px 0;
+}
+
+.recording-timer.pulsing {
+  color: #dc2626;
+  animation: timerPulse 1s infinite alternate;
+}
+
+@keyframes timerPulse {
+  from { opacity: 0.8; }
+  to { opacity: 1; }
+}
+
+.waveform-canvas {
+  width: 100%;
+  max-width: 400px;
+  height: 60px;
+  margin: 10px auto;
+  border-radius: 8px;
+  background: #f1f5f9;
+}
+
+.recording-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+
+.record-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 30px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.record-action-btn.start {
+  background: #ef4444;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.record-action-btn.start:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+
+.record-action-btn.stop {
+  background: #0f172a;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25);
+  animation: stopPulse 1.2s infinite;
+}
+
+@keyframes stopPulse {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+  70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+/* Card Đánh Giá Phát Âm & Word-by-Word Highlighting */
+.pronunciation-result-card {
+  background: #ffffff;
+  border: 1px solid #bbf7d0;
+  border-radius: 16px;
+  padding: 22px;
+  box-shadow: 0 4px 16px rgba(22, 163, 74, 0.08);
+}
+
+.pronunciation-result-card.failed {
+  border-color: #fed7aa;
+  box-shadow: 0 4px 16px rgba(234, 88, 12, 0.08);
+}
+
+.score-overview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.score-badge-circle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #f0fdf4;
+  border: 3px solid #22c55e;
+  color: #15803d;
+  font-weight: 800;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.score-badge-circle.failed {
+  background: #fff7ed;
+  border-color: #f97316;
+  color: #c2410c;
+}
+
+.score-badge-circle small {
+  font-size: 10px;
+  font-weight: 600;
+  color: inherit;
+  opacity: 0.85;
+  margin-top: 2px;
+}
+
+/* Các thẻ từ vựng tương tác */
+.evaluated-words-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 6px;
+  margin-top: 16px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  line-height: 2;
+}
+
+.word-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 9px;
+  border-radius: 8px;
+  font-size: 14.5px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.word-chip.correct {
+  background: #dcfce7;
+  color: #15803d;
+  border-color: #86efac;
+}
+
+.word-chip.unclear {
+  background: #fef9c3;
+  color: #854d0e;
+  border-color: #fde047;
+}
+
+.word-chip.mispronounced {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #fca5a5;
+}
+
+.word-chip.missing {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #fca5a5;
+  text-decoration: line-through;
+  opacity: 0.85;
+}
+
+.word-chip.extra {
+  background: #f3e8ff;
+  color: #6b21a8;
+  border-color: #d8b4fe;
+  font-style: italic;
+}
+
+.word-chip:hover {
+  transform: translateY(-1px);
+  filter: brightness(0.96);
+}
+
+/* Chú thích màu */
+.color-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.legend-dot.correct { background: #22c55e; }
+.legend-dot.unclear { background: #eab308; }
+.legend-dot.mispronounced { background: #ef4444; }
+
+/* Thông báo liên kết Form 3 */
+.linked-task-callout {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+  font-size: 13.5px;
+  line-height: 1.5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}

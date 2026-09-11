@@ -1,0 +1,429 @@
+/* Styling for Form 3 - Sentence Writing based on Task 60115 UI */
+
+.form-3-writing-container .card,
+.form-3-writing-container .summary {
+  margin: 2px 0 16px 43px;
+  overflow: hidden;
+  border: 1px solid #e9d8e0;
+  border-radius: var(--radius-card, 16px);
+  background: var(--color-surface, #ffffff);
+  box-shadow: var(--shadow-card, 0 2px 8px rgba(0, 0, 0, 0.04));
+}
+
+@media (max-width: 640px) {
+  .form-3-writing-container .card,
+  .form-3-writing-container .summary {
+    margin-left: 0;
+  }
+}
+
+.form-3-writing-container .ch {
+  padding: 12px 14px 9px;
+  border-bottom: 1px solid #f2e8ed;
+}
+
+.form-3-writing-container .ch h2 {
+  margin: 0 0 2px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text, #1e293b);
+}
+
+.form-3-writing-container .ch p {
+  margin: 0;
+  color: var(--color-muted, #64748b);
+  font-size: 12px;
+}
+
+.form-3-writing-container .cb {
+  padding: 14px;
+}
+
+.form-3-writing-container .capture-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.form-3-writing-container .capture-row:last-child {
+  margin-bottom: 4px;
+}
+
+.form-3-writing-container .capture-row > span.num-badge {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 9px;
+  color: #4b5563;
+  background: #f4f6f8;
+  font-size: 12px;
+  font-weight: 800;
+  margin-top: 4px;
+}
+
+.form-3-writing-container .capture-input-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.form-3-writing-container .prompt-label {
+  font-size: 12px;
+  color: var(--color-muted, #64748b);
+  margin-bottom: 2px;
+}
+
+.form-3-writing-container .target-words-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.form-3-writing-container .target-word-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #64748b;
+}
+
+.form-3-writing-container .target-word-pill.matched {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.form-3-writing-container .capture-row input {
+  width: 100%;
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid #d9dde4;
+  border-radius: 12px;
+  outline: none;
+  background: var(--color-surface, #ffffff);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.4;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  box-sizing: border-box;
+}
+
+.form-3-writing-container .capture-row input:focus {
+  border-color: #c982a7;
+  box-shadow: 0 0 0 3px var(--color-primary-soft, rgba(201, 130, 167, 0.15));
+}
+
+.form-3-writing-container .capture-row input.is-correct {
+  border-color: #86efac;
+  background: #fcfdfd;
+}
+
+.form-3-writing-container .capture-row input.is-wrong {
+  border-color: #fca5a5;
+  background: #fffafa;
+}
+
+.form-3-writing-container .hint-box {
+  margin-top: 4px;
+  padding: 9px 12px;
+  border-radius: 11px;
+  color: #6f3b56;
+  background: var(--color-primary-soft, #fdf2f6);
+  font-size: 12px;
+  line-height: 1.45;
+  border: 1px solid var(--color-primary-border, #f9dbe7);
+}
+
+.form-3-writing-container .actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.form-3-writing-container .summary {
+  border-color: #cde7d5;
+}
+
+.form-3-writing-container .summary .ch {
+  border-bottom-color: #dfeee4;
+  background: var(--color-success-soft, #f0fdf4);
+}
+
+.form-3-writing-container .summary .ch h2 {
+  color: var(--color-success, #16a34a);
+}
+
+.form-3-writing-container .sr {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f1f3f5;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.form-3-writing-container .reuse {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.form-3-writing-container .reuse > div {
+  padding: 10px 12px;
+  border: 1px solid #e9d8e0;
+  border-radius: 11px;
+  background: var(--color-surface-soft, #fdf8fa);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* Book Keyword Cue Badge */
+.form-3-writing-container .book-cue-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #0369a1;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  margin-bottom: 4px;
+}
+
+/* Paragraph Writing Specific Styles */
+.form-3-writing-container .paragraph-meta-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.form-3-writing-container .paragraph-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.form-3-writing-container .paragraph-badge.success {
+  background: #f0fdf4;
+  color: #16a34a;
+  border-color: #bbf7d0;
+}
+
+.form-3-writing-container .paragraph-badge.warning {
+  background: #fffbeb;
+  color: #d97706;
+  border-color: #fde68a;
+}
+
+.form-3-writing-container .helper-words-box {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.form-3-writing-container .helper-words-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 6px;
+}
+
+.form-3-writing-container .helper-words-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.form-3-writing-container .helper-word-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+}
+
+.form-3-writing-container .helper-word-chip.used {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #059669;
+}
+
+.form-3-writing-container .criteria-box {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  background: #faf5ff;
+  border: 1px solid #f3e8ff;
+  border-radius: 10px;
+}
+
+.form-3-writing-container .criteria-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b21a8;
+  margin-bottom: 6px;
+}
+
+.form-3-writing-container .criteria-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: #581c87;
+  padding-left: 16px;
+  margin: 0;
+}
+
+.form-3-writing-container .paragraph-textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid #d9dde4;
+  border-radius: 12px;
+  outline: none;
+  background: var(--color-surface, #ffffff);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.6;
+  resize: vertical;
+  min-height: 120px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  box-sizing: border-box;
+}
+
+.form-3-writing-container .paragraph-textarea:focus {
+  border-color: #c982a7;
+  box-shadow: 0 0 0 3px var(--color-primary-soft, rgba(201, 130, 167, 0.15));
+}
+
+.form-3-writing-container .paragraph-counter-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--color-muted, #64748b);
+}
+
+.form-3-writing-container .ai-paragraph-feedback {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 12px;
+  background: #fdf2f6;
+  border: 1px solid #f9dbe7;
+  color: #6f3b56;
+}
+
+.form-3-writing-container .ai-paragraph-feedback.passed {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+
+.form-3-writing-container .feedback-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.form-3-writing-container .criteria-eval-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.form-3-writing-container .criteria-eval-item.passed {
+  color: #15803d;
+}
+
+.form-3-writing-container .criteria-eval-item.failed {
+  color: #b91c1c;
+}
+
+.form-3-writing-container .grammar-issue-item {
+  font-size: 12px;
+  margin-top: 4px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 6px;
+}
+
+/* Guided Sentence Repair Card (Form 3 Dạng 3.1 & 3.2 retry) */
+.guided-sentence-repair-card {
+  margin: 4px 0 16px 43px;
+  border: 1.5px solid #fbcfe8 !important;
+  border-radius: 16px !important;
+  background: #ffffff !important;
+  box-shadow: 0 4px 16px rgba(225, 29, 72, 0.08) !important;
+  animation: repairCardSlideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes repairCardSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 640px) {
+  .guided-sentence-repair-card {
+    margin-left: 0 !important;
+    padding: 14px 14px !important;
+  }
+}
+
+.guided-sentence-repair-card .original-sentence-box {
+  background: #fef2f2;
+  border: 1px solid #fee2e2;
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+
+.guided-sentence-repair-card input:focus {
+  border-color: #f43f5e !important;
+  box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.15) !important;
+}
+

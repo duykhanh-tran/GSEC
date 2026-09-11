@@ -51,7 +51,7 @@ export function IndexPage() {
   const [loadingAssignments, setLoadingAssignments] = useState(false)
 
   useEffect(() => {
-    document.title = 'AI Tutor · WS 1'
+    document.title = 'GSEC-6'
   }, [])
 
   useEffect(() => {
@@ -506,7 +506,7 @@ export function IndexPage() {
         <span className="launcher-avatar" aria-hidden="true">
           AI
         </span>
-        <h1>AI Tutor · WS 1</h1>
+        <h1>GSEC-6</h1>
         <InlineCodeKeypad onNavigate={(code) => navigate(`/tasks/${code}`)} />
         {requestedCode ? (
           <p className="launcher-error" role="alert">

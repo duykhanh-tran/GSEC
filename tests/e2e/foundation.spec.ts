@@ -27,7 +27,7 @@ test('inline keypad opens a registered task and preserves foundation styles', as
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
 
-  await expect(page.getByRole('heading', { name: 'AI Tutor · WS 1' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'GSEC-6' })).toBeVisible()
   await expect(page.locator('.pin-slot')).toHaveCount(5)
 
   for (const digit of ['6', '0', '1', '5', '4']) {

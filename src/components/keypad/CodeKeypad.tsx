@@ -178,7 +178,7 @@ export function CodeKeypad({
       onKeyDown={trapFocus}
     >
       <div className="keypad-head">
-        <strong id={titleId}>Nhập mã task</strong>
+
         {isModal ? (
           <button
             className="keypad-close"

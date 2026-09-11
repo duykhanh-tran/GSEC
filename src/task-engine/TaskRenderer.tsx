@@ -29,35 +29,35 @@ export function TaskRenderer({
   const hasAutoSavedRef = useRef(false)
 
   // Tự động phát hiện khi bài tập đạt trạng thái hoàn thành (cả 32 bài static):
-  // 1. Chứa block complete / complete-message / done / celebrate / celebration / summary
-  // 2. Hoặc nút hành động tại footer đã được mở (disabled === false)
-  const isCompleted = (
-    blocks.some((b) => {
-      if (!b) return false
-      const id = String(b.id || '').toLowerCase()
-      if (
-        id === 'complete' ||
-        id.startsWith('complete-') ||
-        id === 'done' ||
-        id === 'celebrate' ||
-        id === 'celebration'
-      ) {
-        return true
-      }
-      if (
-        b.type === 'panel' &&
-        (b.stage === 'complete' ||
-          b.variant === 'summary' ||
-          (typeof b.title === 'string' &&
-            (b.title.toLowerCase().includes('complete') ||
-              b.title.toLowerCase().includes('hoàn thành'))))
-      ) {
-        return true
-      }
-      return false
-    }) ||
-    Boolean(footer && typeof footer === 'object' && 'props' in footer && (footer as any).props.disabled === false)
-  )
+  // Chỉ hiển thị khối hành động hoàn thành (Làm lại & Quay lại trang nhập mã) khi:
+  // 1. Chứa block 'complete', 'complete-message' hoặc 'done'
+  // 2. Hoặc panel có stage === 'complete' hoặc variant === 'summary'
+  // 3. Hoặc block có stage === 'complete'
+  // (TUYỆT ĐỐI KHÔNG kiểm tra 'celebrate'/'celebration' hay footer.disabled để tránh hiển thị sớm khi chưa làm xong)
+  const isCompleted = blocks.some((b) => {
+    if (!b) return false
+    const id = String(b.id || '').toLowerCase()
+    if (id === 'complete' || id === 'complete-message' || id === 'done') {
+      return true
+    }
+    if (
+      b.type === 'panel' &&
+      (b.stage === 'complete' ||
+        b.variant === 'summary' ||
+        (typeof b.title === 'string' &&
+          (b.title.toLowerCase().includes('complete') ||
+            b.title.toLowerCase().includes('hoàn thành')) &&
+          !b.title.toLowerCase().includes('check') &&
+          !b.title.toLowerCase().includes('priority') &&
+          !b.title.toLowerCase().includes('first')))
+    ) {
+      return true
+    }
+    if ((b as any).stage === 'complete') {
+      return true
+    }
+    return false
+  })
 
   useEffect(() => {
     if (disableAutoSave) return

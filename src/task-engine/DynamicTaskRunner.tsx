@@ -16,14 +16,27 @@ import { ChoiceGroup } from '../components/answers/ChoiceGroup'
 import { TaskAudioPlayer } from '../components/listening/TaskAudioPlayer'
 import { SentenceRepairRenderer } from './renderers/SentenceRepairRenderer'
 import { SequenceOrderingRenderer } from './renderers/SequenceOrderingRenderer'
+import { SentenceWritingRenderer } from './renderers/SentenceWritingRenderer'
+import { SpeakingPronunciationRenderer } from './renderers/SpeakingPronunciationRenderer'
+import { ListenRepeatRenderer } from './renderers/ListenRepeatRenderer'
+import {
+  checkRequiredKeywords,
+  evaluateSentenceWithAI,
+  evaluateBatchSentencesWithAI,
+  evaluateParagraphWithAI,
+} from '../lib/aiGradingService'
 import { saveTaskAttempt } from '../lib/taskAttemptService'
+import { saveApprovedWriting } from '../lib/studentWritingStorageService'
 import '../components/assessment/guided-choice-task.css'
 import type {
   DynamicTaskRecord,
   Form1ChoiceConfig,
   Form2FillConfig,
+  Form3WritingConfig,
   Form4SentenceRepairConfig,
   Form5SequenceConfig,
+  Form4SpeakingConfig,
+  Form5ListenRepeatConfig,
   GradingResponse,
 } from './dynamic-schema'
 
@@ -65,6 +78,18 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
 
   // Results & Notices
   const [gradingResult, setGradingResult] = useState<GradingResponse | null>(null)
+  const [writingResults, setWritingResults] = useState<Record<
+    string,
+    {
+      correct: boolean
+      hint?: string
+      feedback_vi?: string
+      feedback_en?: string
+      missingWords?: string[]
+      score?: number
+    }
+  > | null>(null)
+  const [isCheckingWriting, setIsCheckingWriting] = useState(false)
   const [isCompleted, setIsCompleted] = useState(false)
   const [showCelebration, setShowCelebration] = useState(false)
   const [notices, setNotices] = useState<NoticeItem[]>([])
@@ -72,7 +97,7 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
 
   useCelebrationSound(showCelebration)
   const { chatRef, scrollToLatest } = useAutoScroll(
-    `${phase}-${activeId}-${attempt}-${feedback}-${currentHint}-${isCompleted}-${notices.length}-${hasStartedWorksheet}-${listenCount}`
+    `${phase}-${activeId}-${attempt}-${feedback}-${currentHint}-${isCompleted}-${notices.length}-${hasStartedWorksheet}-${listenCount}-${isCheckingWriting}`
   )
 
   const addNotice = (content: ReactNode) => {
@@ -235,6 +260,11 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
       itemRef = form2Config.fields?.find((f) => String(f.id) === id)
       const cleanNum = (itemRef?.label || id).replace(/^câu\s*/i, '').replace(/^question\s*/i, '').replace(/:\s*$/, '').trim()
       label = `Question ${cleanNum}`
+    } else if (taskData.form_type === 'FORM_3_WRITING') {
+      const form3Config = taskData.content as Form3WritingConfig
+      itemRef = form3Config.items?.find((i, idx) => String(i.id || idx + 1) === id)
+      label = itemRef?.label || `Question ${id}`
+      setRetryChosenValue(answers[id] || '')
     }
 
     const hint = getRandomHint(id, itemRef, latestResults)
@@ -529,7 +559,446 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
     }
   }
 
-  // 7. Chức năng LÀM LẠI BÀI (Restart from scratch)
+  // 7. Xử lý nộp bài và chấm cho FORM_3_WRITING (Dạng 3.1, 3.2, 3.3)
+  const handleWritingSubmit = async () => {
+    if (!taskData || taskData.form_type !== 'FORM_3_WRITING') return
+    const form3Config = taskData.content as Form3WritingConfig
+    const subMode = form3Config?.sub_mode || 'FREE_SENTENCE'
+
+    // ========================================================
+    // DẠNG 3.3: VIẾT ĐOẠN VĂN (PARAGRAPH)
+    // ========================================================
+    if (subMode === 'PARAGRAPH') {
+      const paragraphConfig = form3Config.paragraph || {
+        prompt: 'Write a short paragraph.',
+        min_words: 30,
+        max_words: 100,
+      }
+      const paragraphText = (answers['paragraph'] || answers['1'] || '').trim()
+
+      if (!paragraphText) {
+        addNotice('Vui lòng nhập đoạn văn của bạn trước khi kiểm tra.')
+        return
+      }
+
+      const words = paragraphText.split(/\s+/).filter(Boolean)
+      if (words.length < 5) {
+        addNotice('Đoạn văn quá ngắn. Vui lòng viết câu hoàn chỉnh.')
+        return
+      }
+
+      setIsCheckingWriting(true)
+      addNotice(
+        <>
+          🤖 <strong>AI Tutor:</strong> Đang phân tích đoạn văn, kiểm tra ngữ pháp và đối chiếu tiêu chí bài học...
+        </>
+      )
+
+      try {
+        const aiRes = await evaluateParagraphWithAI(paragraphText, paragraphConfig)
+
+        const resultPayload = {
+          correct: aiRes.is_correct,
+          score: aiRes.score,
+          feedback_vi: aiRes.feedback_vi,
+          feedback_en: aiRes.feedback_en,
+          word_count: aiRes.word_count,
+          criteria_met: (aiRes.criteria_evaluations || []).map((c) => ({
+            criterion: c.name,
+            passed: c.passed,
+            comment: c.feedback,
+          })),
+          suggestions: aiRes.suggestions,
+        }
+
+        const newResults: Record<string, any> = {
+          paragraph: resultPayload,
+          '1': resultPayload,
+        }
+
+        setWritingResults(newResults)
+
+        if (aiRes.is_correct) {
+          setIsCompleted(true)
+          setShowCelebration(true)
+          const approvedSentences = paragraphText
+            .split(/(?<=[.!?])\s+/)
+            .map((s) => s.trim())
+            .filter(Boolean)
+          saveApprovedWriting(task.code, approvedSentences, paragraphText)
+          saveTaskAttempt({
+            taskCode: task.code,
+            score: aiRes.score,
+            firstScore: aiRes.score,
+            status: 'completed',
+            supportMode: 'INDEPENDENT',
+            answersPayload: answers,
+          })
+          addNotice(
+            <>
+              🎉 <strong>Task complete ✓</strong> Đoạn văn của bạn đã đạt tiêu chuẩn ({aiRes.score}/100 điểm)!
+            </>
+          )
+        } else {
+          saveTaskAttempt({
+            taskCode: task.code,
+            score: aiRes.score,
+            firstScore: aiRes.score,
+            status: 'in_progress',
+            supportMode: 'GUIDED',
+            answersPayload: answers,
+          })
+          addNotice(
+            <>
+              💡 <strong>AI Tutor Feedback:</strong> Đoạn văn cần cải thiện ({aiRes.score}/100 điểm). Hãy xem góp ý và chỉnh sửa lại nhé!
+            </>
+          )
+        }
+      } catch (err: any) {
+        addNotice(`Lỗi chấm đoạn văn: ${err?.message || 'Không thể đánh giá đoạn văn.'}`)
+      } finally {
+        setIsCheckingWriting(false)
+      }
+      return
+    }
+
+    // ========================================================
+    // DẠNG 3.1 VÀ 3.2: TỪNG CÂU HỎI VIẾT (SENTENCES)
+    // ========================================================
+    const items = form3Config?.items || []
+
+    if (items.length === 0) return
+
+    // Kiểm tra xem tất cả các câu đã được nhập chưa
+    const emptyItems = items.filter((item, idx) => {
+      const id = String(item.id || idx + 1)
+      return !answers[id] || !answers[id].trim()
+    })
+
+    if (emptyItems.length > 0) {
+      addNotice('Vui lòng viết câu trả lời cho tất cả các câu hỏi trước khi kiểm tra.')
+      return
+    }
+
+    setIsCheckingWriting(true)
+
+    try {
+      const newResults: Record<
+        string,
+        {
+          correct: boolean
+          hint?: string
+          feedback_vi?: string
+          feedback_en?: string
+          missingWords?: string[]
+          score?: number
+        }
+      > = {}
+
+      // BƯỚC 1: KIỂM TRA TỪ KHÓA BẮT BUỘC (Keyword Matching cho Dạng 3.2 hoặc bài có required_words)
+      let anyKeywordFailed = false
+      const missingItemsList: string[] = []
+
+      for (let idx = 0; idx < items.length; idx++) {
+        const item = items[idx]
+        const id = String(item.id || idx + 1)
+        const sentence = (answers[id] || '').trim()
+        const reqWords = item.required_words || []
+
+        if (reqWords.length > 0) {
+          const kwCheck = checkRequiredKeywords(sentence, reqWords)
+          if (!kwCheck.passed) {
+            anyKeywordFailed = true
+            missingItemsList.push(item.label || `Question ${idx + 1}`)
+            newResults[id] = {
+              correct: false,
+              missingWords: kwCheck.missingWords,
+              hint: `Missing target word: ${kwCheck.missingWords.join(', ')}`,
+              feedback_vi: subMode === 'BOOK_KEYWORD'
+                ? 'Bạn chưa dùng đủ từ gợi ý từ sách bài tập. Hãy mở sách đối chiếu và bổ sung vào câu nhé!'
+                : `Câu chưa có từ bắt buộc: "${kwCheck.missingWords.join(', ')}". Hãy bổ sung từ này vào câu nhé!`,
+              feedback_en: `Missing required word(s): "${kwCheck.missingWords.join(', ')}".`,
+              score: 40,
+            }
+          }
+        }
+      }
+
+      // NẾU CÓ CÂU THIẾU TỪ BẮT BUỘC -> DỪNG NGAY BƯỚC 1, KHÔNG GỌI AI
+      if (anyKeywordFailed) {
+        setWritingResults((prev) => ({ ...(prev || {}), ...newResults }))
+        addNotice(
+          subMode === 'BOOK_KEYWORD' ? (
+            <>
+              📖 <strong>Kiểm tra từ gợi ý:</strong> {missingItemsList.join(', ')} chưa dùng đủ từ gợi ý trong sách bài tập. Hãy mở sách kiểm tra lại trước khi AI chấm ngữ pháp nhé!
+            </>
+          ) : (
+            <>
+              ⚠️ <strong>Keyword check:</strong> {missingItemsList.join(', ')} missing required word(s). Please include all target words before AI evaluates your grammar.
+            </>
+          )
+        )
+        setIsCheckingWriting(false)
+        return
+      }
+
+      // BƯỚC 2: GỌI AI ĐÁNH GIÁ NGỮ PHÁP (Gemini AI / Heuristic fallback)
+      addNotice(
+        <>
+          🤖 <strong>AI Tutor:</strong> {subMode === 'BOOK_KEYWORD' ? 'Đã đủ từ gợi ý! ' : ''}Đang kiểm tra ngữ pháp và cấu trúc câu...
+        </>
+      )
+
+      const itemsToEvaluate = items.map((item, idx) => {
+        const id = String(item.id || idx + 1)
+        const sentence = (answers[id] || '').trim()
+        return {
+          id,
+          prompt: item.prompt || item.label,
+          label: item.label,
+          sentence,
+          required_words: item.required_words,
+          hints: item.hints,
+        }
+      })
+
+      const batchResults = await evaluateBatchSentencesWithAI(itemsToEvaluate, subMode)
+
+      let allGrammarCorrect = true
+      let totalScore = 0
+
+      for (let idx = 0; idx < items.length; idx++) {
+        const item = items[idx]
+        const id = String(item.id || idx + 1)
+        const aiRes = batchResults[id] || {
+          is_correct: false,
+          score: 0,
+          feedback_vi: 'Chưa thể đánh giá câu này.',
+          feedback_en: 'Could not evaluate this sentence.',
+          error_type: 'grammar' as const,
+        }
+
+        totalScore += aiRes.score
+
+        if (!aiRes.is_correct) {
+          allGrammarCorrect = false
+        }
+
+        newResults[id] = {
+          correct: aiRes.is_correct,
+          hint: aiRes.feedback_en,
+          feedback_vi: aiRes.feedback_vi,
+          feedback_en: aiRes.feedback_en,
+          score: aiRes.score,
+        }
+      }
+
+      const averageScore = Math.round(totalScore / items.length)
+      setWritingResults(newResults)
+
+      if (allGrammarCorrect) {
+        setIsCompleted(true)
+        setShowCelebration(true)
+        setPhase('complete')
+        const approvedSentences = items
+          .map((item, idx) => (answers[String(item.id || idx + 1)] || '').trim())
+          .filter(Boolean)
+        saveApprovedWriting(task.code, approvedSentences)
+        saveTaskAttempt({
+          taskCode: task.code,
+          score: 100,
+          firstScore: 100,
+          status: 'completed',
+          supportMode: 'INDEPENDENT',
+          answersPayload: answers,
+        })
+        addNotice(
+          <>
+            🎉 <strong>Task complete ✓</strong> Tất cả các câu đã chính xác về ngữ pháp và cấu trúc!
+          </>
+        )
+      } else {
+        const wrongIds = items
+          .filter((item, idx) => {
+            const id = String(item.id || idx + 1)
+            return !newResults[id]?.correct
+          })
+          .map((item, idx) => String(item.id || idx + 1))
+
+        setInitialWrongIds(wrongIds)
+        setQueue(wrongIds)
+        setPhase('guided')
+
+        const firstWrongId = wrongIds[0]
+        setActiveId(firstWrongId)
+        setAttempt(1)
+        setFeedback('')
+        setRetryChosenValue(answers[firstWrongId] || '')
+
+        const firstWrongItem = items.find((i, idx) => String(i.id || idx + 1) === firstWrongId)
+        const firstHint = firstWrongItem?.hints?.[0] || newResults[firstWrongId]?.hint || ''
+        setCurrentHint(firstHint)
+
+        saveTaskAttempt({
+          taskCode: task.code,
+          score: averageScore,
+          firstScore: averageScore,
+          status: 'in_progress',
+          supportMode: 'GUIDED',
+          answersPayload: answers,
+        })
+
+        const wrongLabels = wrongIds.map((id) => {
+          const item = items.find((i, idx) => String(i.id || idx + 1) === id)
+          return item?.label || `Question ${id}`
+        })
+
+        addNotice(
+          <>
+            💡 <strong>AI Tutor:</strong> Câu <strong>{wrongLabels.join(', ')}</strong> cần chỉnh sửa lại. Hệ thống đã mang câu xuống khung bên dưới để bạn sửa cùng AI nhé!
+          </>
+        )
+
+        schedule(() => scrollToLatest(), 100)
+        schedule(() => scrollToLatest(), 350)
+      }
+    } catch (err: any) {
+      addNotice(`Evaluation error: ${err?.message || 'Unable to check writing.'}`)
+    } finally {
+      setIsCheckingWriting(false)
+    }
+  }
+
+  // 7B. Xử lý nộp câu sửa lại cho FORM_3_WRITING (sửa từng câu ở khung bên dưới)
+  const handleWritingRetrySubmit = async () => {
+    if (activeId === null || feedback === 'Correct ✓' || isCheckingRetry || !taskData) return
+    const form3Config = taskData.content as Form3WritingConfig
+    const items = form3Config?.items || []
+    const activeItem = items.find((i, idx) => String(i.id || idx + 1) === activeId)
+    if (!activeItem) return
+
+    const valueToTest = retryChosenValue.trim()
+    if (!valueToTest) {
+      addNotice('Vui lòng nhập câu đã sửa của bạn.')
+      return
+    }
+
+    setIsCheckingRetry(true)
+
+    try {
+      // 1. Kiểm tra từ khóa nếu là BOOK_KEYWORD
+      if (form3Config.sub_mode === 'BOOK_KEYWORD' && activeItem.required_words?.length) {
+        const kwCheck = checkRequiredKeywords(valueToTest, activeItem.required_words)
+        if (!kwCheck.passed) {
+          setFeedback(`Chưa đủ từ gợi ý trong sách: ${kwCheck.missingWords.join(', ')}`)
+          setIsCheckingRetry(false)
+          return
+        }
+      }
+
+      // 2. Chấm AI cho câu sửa lại
+      const aiRes = await evaluateSentenceWithAI(valueToTest, activeItem)
+
+      if (aiRes.is_correct) {
+        setFeedback('Correct ✓')
+        const updatedAnswers = { ...answers, [activeId]: valueToTest }
+        setAnswers(updatedAnswers)
+
+        setWritingResults((prev) => ({
+          ...(prev || {}),
+          [activeId]: {
+            correct: true,
+            score: 100,
+            feedback_vi: 'Chính xác! Câu của bạn đã hoàn toàn chuẩn ngữ pháp.',
+            feedback_en: 'Correct!',
+          },
+        }))
+
+        schedule(() => {
+          const nextQueue = queue.filter((qId) => qId !== activeId)
+          setQueue(nextQueue)
+
+          if (nextQueue.length > 0) {
+            // Còn câu sai tiếp theo trong hàng đợi
+            const nextId = nextQueue[0]
+            setActiveId(nextId)
+            setAttempt(1)
+            setFeedback('')
+            setRetryChosenValue(updatedAnswers[nextId] || '')
+            const nextItem = items.find((i, idx) => String(i.id || idx + 1) === nextId)
+            const nextHint = nextItem?.hints?.[0] || writingResults?.[nextId]?.hint || ''
+            setCurrentHint(nextHint)
+            addNotice(
+              <>
+                🎉 <strong>{activeItem.label || `Question ${activeId}`}:</strong> Đã sửa đúng ✓. Tiếp theo, hãy cùng xem lại <strong>{nextItem?.label || `Question ${nextId}`}</strong> nhé!
+              </>
+            )
+            schedule(() => scrollToLatest(), 100)
+            schedule(() => scrollToLatest(), 300)
+          } else {
+            // Đã sửa đúng hết tất cả các câu sai!
+            setIsCompleted(true)
+            setShowCelebration(true)
+            setPhase('complete')
+            setActiveId(null)
+            const approvedSentences = items
+              .map((item, idx) => (updatedAnswers[String(item.id || idx + 1)] || '').trim())
+              .filter(Boolean)
+            saveApprovedWriting(task.code, approvedSentences)
+            saveTaskAttempt({
+              taskCode: task.code,
+              score: 100,
+              firstScore: 100,
+              status: 'completed',
+              supportMode: 'GUIDED',
+              answersPayload: updatedAnswers,
+            })
+            addNotice(
+              <>
+                🎉 <strong>Task complete ✓</strong> Bạn đã sửa đúng tất cả các câu! Tuyệt vời!
+              </>
+            )
+            schedule(() => scrollToLatest(), 100)
+            schedule(() => scrollToLatest(), 300)
+          }
+        }, 800)
+      } else {
+        // Vẫn còn lỗi ngữ pháp
+        setFeedback(aiRes.feedback_vi || 'Câu vẫn chưa hoàn toàn chính xác.')
+        const nextAttempt = attempt + 1
+        setAttempt(nextAttempt)
+
+        const hints = activeItem.hints || []
+        if (hints.length >= nextAttempt) {
+          setCurrentHint(hints[nextAttempt - 1])
+        }
+
+        setWritingResults((prev) => ({
+          ...(prev || {}),
+          [activeId]: {
+            correct: false,
+            score: aiRes.score,
+            feedback_vi: aiRes.feedback_vi,
+            feedback_en: aiRes.feedback_en,
+            hint: aiRes.feedback_en,
+          },
+        }))
+
+        addNotice(
+          <>
+            💡 <strong>{activeItem.label || `Question ${activeId}`}:</strong> {aiRes.feedback_vi || 'Câu vẫn chưa chuẩn ngữ pháp. Hãy xem gợi ý và sửa lại nhé!'}
+          </>
+        )
+        schedule(() => scrollToLatest(), 100)
+      }
+    } catch (err: any) {
+      addNotice(`Lỗi kiểm tra câu: ${err?.message || 'Không thể kiểm tra câu viết.'}`)
+    } finally {
+      setIsCheckingRetry(false)
+    }
+  }
+
+  // 8. Chức năng LÀM LẠI BÀI (Restart from scratch)
   const handleRestart = () => {
     shownHintsRef.current = {}
     if (taskData?.form_type === 'FORM_5_SEQUENCE') {
@@ -548,6 +1017,8 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
     setCurrentHint('')
     setIsSubmitting(false)
     setIsCheckingRetry(false)
+    setWritingResults(null)
+    setIsCheckingWriting(false)
     setListenCount(0)
     setHasStartedWorksheet(false)
     setIsCompleted(false)
@@ -598,6 +1069,13 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
             cue: `Look back at Question ${cleanNum} from the worksheet.`,
           }
         })
+      : taskData.form_type === 'FORM_3_WRITING'
+      ? ((taskData.content as Form3WritingConfig)?.items || []).map((item, idx) => ({
+          id: String(item.id || idx + 1),
+          label: item.label || `Question ${idx + 1}`,
+          numBadge: String(idx + 1),
+          cue: item.cue || `Look back at Question ${idx + 1} from your worksheet.`,
+        }))
       : []
 
   const totalItemsCount = allQuestionItems.length || 1
@@ -624,6 +1102,10 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
     (taskData.content as any)?.intro ||
     (taskData.form_type === 'FORM_2_FILL'
       ? 'Check Task 1. Enter your answers from the worksheet.'
+      : taskData.form_type === 'FORM_4_SPEAKING'
+      ? 'Read aloud the sentences you wrote in the previous writing task. AI will evaluate your pronunciation clarity.'
+      : taskData.form_type === 'FORM_5_LISTEN_REPEAT'
+      ? 'Listen to each audio clip carefully. Repeat aloud into your microphone to get scored.'
       : 'Enter your answers below.')
 
   return (
@@ -643,6 +1125,12 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
               ? 'All answers are correct ✓'
               : phase === 'guided' && activeId !== null
               ? `Reviewing: ${currentRetryItem?.label || `Question ${activeId}`} (${queue.length} left)`
+              : taskData.form_type === 'FORM_4_SPEAKING'
+              ? (isCompleted ? 'Speaking complete ✓' : 'Practice speaking aloud')
+              : taskData.form_type === 'FORM_5_LISTEN_REPEAT'
+              ? (isCompleted ? 'Listen & Repeat complete ✓' : 'Listen & repeat each sentence (> 80% to pass)')
+              : taskData.form_type === 'FORM_3_WRITING'
+              ? `${(taskData.content as Form3WritingConfig)?.items?.length || 1} writing questions`
               : `${totalItemsCount} questions`
           }
           actionLabel={
@@ -654,12 +1142,14 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
               ? '🔄 Try again'
               : phase === 'guided'
               ? 'Reviewing...'
-              : isSubmitting
+              : (taskData.form_type === 'FORM_4_SPEAKING' || taskData.form_type === 'FORM_5_LISTEN_REPEAT')
+              ? (isCompleted ? '🎉 Complete ✓' : 'Speak & Score above')
+              : isSubmitting || isCheckingWriting
               ? 'Checking...'
               : 'Check'
           }
           actionId="footerActionBtn"
-          disabled={!isAudioUnlocked || phase === 'guided' || isSubmitting}
+          disabled={!isAudioUnlocked || phase === 'guided' || isSubmitting || isCheckingWriting || ((taskData.form_type === 'FORM_4_SPEAKING' || taskData.form_type === 'FORM_5_LISTEN_REPEAT') && !isCompleted)}
           onAction={
             isCompleted
               ? handleRestart
@@ -670,6 +1160,10 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
                 }
               : isGuidedForm
               ? handleInitialCheck
+              : taskData.form_type === 'FORM_3_WRITING'
+              ? handleWritingSubmit
+              : (taskData.form_type === 'FORM_4_SPEAKING' || taskData.form_type === 'FORM_5_LISTEN_REPEAT')
+              ? () => navigate('/?mode=code')
               : handleGenericSubmit
           }
         />
@@ -807,6 +1301,24 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
               </div>
             </form>
           </section>
+        )}
+
+        {/* FORM 3: VIẾT CÂU HOẶC ĐOẠN VĂN (TASK 60115 / DẠNG 3.1, 3.2, 3.3) */}
+        {taskData.form_type === 'FORM_3_WRITING' && isWorksheetVisible && (
+          <SentenceWritingRenderer
+            config={taskData.content as Form3WritingConfig}
+            answers={answers}
+            onAnswerChange={handleAnswerChange}
+            results={writingResults}
+            disabled={isCompleted || isCheckingWriting}
+            isChecking={isCheckingWriting}
+            onSubmit={handleWritingSubmit}
+            onRestart={handleRestart}
+            isCompleted={isCompleted}
+            onNavigateHome={() => navigate('/?mode=code')}
+            phase={phase}
+            activeRetryId={activeId}
+          />
         )}
 
         {/* 3. BẢNG KẾT QUẢ TỔNG QUAN LẦN 1 (khi có câu sai và đang ở phase 'guided') */}
@@ -961,8 +1473,183 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
           </section>
         )}
 
+        {/* 5C. FORM 3 RETRY CARD (MANG TỪNG CÂU SAI XUỐNG DƯỚI ĐỂ SỬA CÙNG AI) */}
+        {taskData.form_type === 'FORM_3_WRITING' &&
+          (taskData.content as Form3WritingConfig)?.sub_mode !== 'PARAGRAPH' &&
+          phase === 'guided' &&
+          activeId !== null && (
+            <section
+              className="retry guided-choice-retry guided-sentence-repair-card"
+              data-stage="retry"
+              data-attempt={attempt}
+              style={{
+                padding: '18px 20px',
+                background: '#ffffff',
+                border: '1.5px solid #fbcfe8',
+                borderRadius: '16px',
+                boxShadow: '0 4px 14px rgba(219, 39, 119, 0.08)',
+              }}
+            >
+              <div
+                className="retry-head"
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '12px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '26px',
+                      height: '26px',
+                      borderRadius: '50%',
+                      background: '#f43f5e',
+                      color: '#ffffff',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                    }}
+                  >
+                    {currentRetryItem?.numBadge || activeId}
+                  </span>
+                  <strong style={{ fontSize: '15px', color: '#1f2937' }}>
+                    {currentRetryItem?.label || `Question ${activeId}`}
+                  </strong>
+                </div>
+                <StatusTag tone="warning">Lần sửa {attempt}</StatusTag>
+              </div>
+
+              {/* Câu học sinh đã viết ban đầu */}
+              <div
+                className="original-sentence-box"
+                style={{
+                  marginBottom: '12px',
+                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  background: '#fef2f2',
+                  border: '1px solid #fee2e2',
+                  fontSize: '13.5px',
+                  lineHeight: '1.5',
+                }}
+              >
+                <span style={{ fontSize: '12px', fontWeight: 600, color: '#991b1b', display: 'block', marginBottom: '2px' }}>
+                  ✍️ Câu bạn đã viết ban đầu:
+                </span>
+                <span style={{ color: '#374151', fontStyle: 'italic', fontWeight: 500 }}>
+                  "{answers[activeId] || '—'}"
+                </span>
+              </div>
+
+              {/* Tag sách nếu là BOOK_KEYWORD */}
+              {(taskData.content as Form3WritingConfig)?.sub_mode === 'BOOK_KEYWORD' && (
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    marginBottom: '10px',
+                    padding: '4px 10px',
+                    borderRadius: '20px',
+                    background: '#f3e8ff',
+                    color: '#6b21a8',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                  }}
+                >
+                  <span>📖</span>
+                  <span>Hãy đối chiếu từ gợi ý trong sách bài tập</span>
+                </div>
+              )}
+
+              {/* Nhận xét / Gợi ý của AI */}
+              <div
+                className={`hint ${attempt > 1 ? 'deep' : ''}`}
+                style={{
+                  marginBottom: '14px',
+                  padding: '12px 14px',
+                  borderRadius: '12px',
+                  background: '#fdf2f8',
+                  border: '1px solid #fce7f3',
+                  color: '#831843',
+                  fontSize: '13.5px',
+                  lineHeight: '1.5',
+                }}
+              >
+                <div style={{ fontWeight: 700, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>🤖 AI Tutor góp ý:</span>
+                </div>
+                <div>
+                  {writingResults?.[activeId]?.feedback_vi ||
+                    currentHint ||
+                    'Hãy kiểm tra lại ngữ pháp và viết lại câu hoàn chỉnh nhé!'}
+                </div>
+                {writingResults?.[activeId]?.hint &&
+                  writingResults?.[activeId]?.hint !== writingResults?.[activeId]?.feedback_vi && (
+                    <div style={{ marginTop: '6px', fontSize: '12.5px', color: '#9d174d', opacity: 0.9 }}>
+                      💡 Gợi ý cấu trúc: <em>{writingResults[activeId].hint}</em>
+                    </div>
+                  )}
+              </div>
+
+              {/* Ô nhập câu đã sửa và nút Kiểm tra */}
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <input
+                  id={`retry-writing-${activeId}`}
+                  autoFocus
+                  autoComplete="off"
+                  value={retryChosenValue}
+                  placeholder="Nhập lại câu hoàn chỉnh sau khi sửa..."
+                  disabled={feedback === 'Correct ✓' || isCheckingRetry}
+                  onChange={(e) => setRetryChosenValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      handleWritingRetrySubmit()
+                    }
+                  }}
+                  style={{
+                    flex: 1,
+                    minWidth: '240px',
+                    padding: '11px 14px',
+                    border: '1.5px solid #d9dde4',
+                    borderRadius: '12px',
+                    fontSize: '15px',
+                    outline: 'none',
+                    background: '#ffffff',
+                  }}
+                />
+                <ActionButton
+                  id="submitWritingRetryBtn"
+                  disabled={feedback === 'Correct ✓' || isCheckingRetry || !retryChosenValue.trim()}
+                  onClick={() => handleWritingRetrySubmit()}
+                >
+                  {isCheckingRetry ? 'AI đang chấm...' : 'Kiểm tra câu này'}
+                </ActionButton>
+              </div>
+
+              {/* Micro feedback */}
+              <div
+                className={`micro ${feedback === 'Correct ✓' ? 'ok' : feedback ? 'bad' : ''}`}
+                style={{
+                  marginTop: '10px',
+                  minHeight: '20px',
+                  fontWeight: 600,
+                  fontSize: '13.5px',
+                  color: feedback === 'Correct ✓' ? 'var(--color-success, #16a34a)' : 'var(--color-error, #dc2626)',
+                }}
+              >
+                {feedback}
+              </div>
+            </section>
+          )}
+
         {/* 6. GIAI ĐOẠN 3: BẢNG TỔNG KẾT KHI TẤT CẢ ĐÃ LÀM ĐÚNG */}
-        {isGuidedForm && phase === 'complete' && (
+        {(isGuidedForm || (taskData.form_type === 'FORM_3_WRITING' && (taskData.content as Form3WritingConfig)?.sub_mode !== 'PARAGRAPH')) &&
+          phase === 'complete' && (
           <section className="task-panel summary card">
             <div className="ch">
               <h2>Task complete ✓</h2>
@@ -997,8 +1684,71 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
           </section>
         )}
 
-        {/* CÁC DẠNG BÀI KHÁC (FORM 4, FORM 5) */}
-        {!isGuidedForm && isWorksheetVisible && (
+        {/* FORM 4: SPEAKING & PRONUNCIATION */}
+        {taskData.form_type === 'FORM_4_SPEAKING' && (
+          <section className="task-panel" style={{ background: '#ffffff', padding: '20px', borderRadius: '16px', border: '1px solid var(--color-line, #e5e7eb)', boxShadow: '0 4px 16px rgba(0,0,0,0.04)' }}>
+            <SpeakingPronunciationRenderer
+              config={taskData.content as Form4SpeakingConfig}
+              taskCode={task.code}
+              onComplete={(score, result) => {
+                setIsCompleted(true)
+                setShowCelebration(true)
+                saveTaskAttempt({
+                  taskCode: task.code,
+                  score,
+                  firstScore: score,
+                  status: 'completed',
+                  supportMode: 'INDEPENDENT',
+                  answersPayload: {
+                    recognized_text: result.recognizedText,
+                    accuracy_score: result.accuracyScore,
+                    confidence_score: result.confidenceScore,
+                    evaluated_words: result.evaluatedWords,
+                  },
+                })
+              }}
+              onRestart={() => {
+                setIsCompleted(false)
+                setShowCelebration(false)
+              }}
+              onNavigateHome={() => navigate('/?mode=code')}
+              disabled={isCompleted}
+            />
+          </section>
+        )}
+
+        {/* FORM 5: LISTEN & REPEAT */}
+        {taskData.form_type === 'FORM_5_LISTEN_REPEAT' && (
+          <section className="task-panel" style={{ background: '#ffffff', padding: '20px', borderRadius: '16px', border: '1px solid var(--color-line, #e5e7eb)', boxShadow: '0 4px 16px rgba(0,0,0,0.04)' }}>
+            <ListenRepeatRenderer
+              config={taskData.content as Form5ListenRepeatConfig}
+              taskCode={task.code}
+              onComplete={(avgScore, results) => {
+                setIsCompleted(true)
+                setShowCelebration(true)
+                saveTaskAttempt({
+                  taskCode: task.code,
+                  score: avgScore,
+                  firstScore: avgScore,
+                  status: 'completed',
+                  supportMode: 'INDEPENDENT',
+                  answersPayload: {
+                    results,
+                  },
+                })
+              }}
+              onRestart={() => {
+                setIsCompleted(false)
+                setShowCelebration(false)
+              }}
+              onNavigateHome={() => navigate('/?mode=code')}
+              disabled={isCompleted}
+            />
+          </section>
+        )}
+
+        {/* CÁC DẠNG BÀI KHÁC (FORM 4 REPAIR, FORM 5 SEQUENCE) */}
+        {!isGuidedForm && taskData.form_type !== 'FORM_3_WRITING' && taskData.form_type !== 'FORM_4_SPEAKING' && taskData.form_type !== 'FORM_5_LISTEN_REPEAT' && isWorksheetVisible && (
           <section className="task-panel card" style={{ background: '#ffffff', padding: '20px', borderRadius: '12px', border: '1px solid var(--color-line, #e5e7eb)' }}>
             {taskData.form_type === 'FORM_4_SENTENCE_REPAIR' && (
               <SentenceRepairRenderer
@@ -1018,7 +1768,7 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
                 disabled={isCompleted || isSubmitting}
               />
             )}
-            <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+            <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '10px', flexWrap: 'wrap' }}>
               {!isCompleted ? (
                 <ActionButton id="genericSubmitBtn" disabled={isSubmitting} onClick={handleGenericSubmit}>
                   {isSubmitting ? 'Checking...' : 'Check'}

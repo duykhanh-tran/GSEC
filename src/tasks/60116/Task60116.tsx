@@ -1,2 +1,133 @@
-import { useState } from 'react'; import type { TaskComponentProps } from '../../app/task-types'; import { Celebration } from '../../components/effects/Celebration'; import { Waveform } from '../../components/recording/Waveform'; import { StatusFooter } from '../../components/shell/StatusFooter'; import { ActionButton } from '../../components/task/ActionButton'; import { useStopwatch } from '../../hooks/useStopwatch'; import { TaskRenderer } from '../../task-engine/TaskRenderer'; import type { TaskFlowBlock } from '../../task-engine/schema'; import './task.css'
-export function Task60116({task}:TaskComponentProps){const[phase,setPhase]=useState<'setup'|'record'|'review'|'feedback'|'complete'>('setup'),[help,setHelp]=useState(false),[more,setMore]=useState(false),[attempt,setAttempt]=useState(1);const timer=useStopwatch();const start=()=>{setPhase('record');timer.start()};const blocks:TaskFlowBlock[]=[{id:'intro',type:'tutor-message',content:<><strong>Task 6.</strong><br/>Use your Task 5 ideas to speak about your school.</>},...(phase==='setup'?[{id:'setup',type:'custom' as const,content:<section className="card" id="speakSetup"><div className="ch"><h2>6B · Speaking</h2><span>20–30 sec</span></div><div className="cb"><div className="actions"><ActionButton id="startSpeak" onClick={start}>🎙 Start speaking</ActionButton><ActionButton id="helpBtn" variant="secondary" onClick={()=>setHelp(v=>!v)}>I need help</ActionButton></div><div className={`helpbox ${help?'show':''}`} id="helpbox"><ul><li>Your name</li><li>Your school</li><li>Things in your school bag</li><li>How you feel</li></ul><ActionButton id="moreHelp" variant="secondary" onClick={()=>setMore(v=>!v)}>More help</ActionButton><div className={`starters ${more?'show':''}`} id="starters">My name is ...<br/>My school is ...<br/>In my school bag, I have ...<br/>I feel ... at school.</div></div></div></section>}]:[]),...(phase==='record'?[{id:'record',type:'custom' as const,content:<section className="card" id="recordCard"><div className="ch"><h2>6B · Speaking</h2><span>Recording</span></div><div className="cb"><div className="timer" id="timer">00:{String(timer.seconds).padStart(2,'0')}</div><Waveform active/><ActionButton id="stop" onClick={()=>{timer.stop();setPhase('review')}}>■ Stop</ActionButton></div></section>}]:[]),...(phase==='review'?[{id:'review',type:'custom' as const,content:<section className="card" id="reviewRecording"><div className="ch"><h2>Your recording</h2><span>{Math.max(timer.seconds,18)} sec</span></div><div className="cb"><div className="actions"><ActionButton id="redo" variant="secondary" onClick={start}>↻ Record again</ActionButton><ActionButton id="submitSpeech" onClick={()=>setPhase('feedback')}>Submit</ActionButton></div></div></section>}]:[]),...(phase==='feedback'?[{id:'feedback',type:'custom' as const,content:<section className="card" id="speechFeedback"><div className="ch"><h2>Speaking feedback</h2><span>Attempt {attempt}</span></div><div className="cb"><div className="transcript">My name is Lan. My school is Minh Khai School. I have a ruler and a pencil case. I feel happy at school.</div><div className="feedback-grid"><div>✓ You talked about your school and school-bag items.</div><div>Add one more sentence about how you feel.</div></div><div className="actions"><ActionButton id="again" variant="secondary" onClick={()=>{setAttempt(v=>v+1);start()}}>🎙 Record again</ActionButton><ActionButton id="done" variant="success" onClick={()=>setPhase('complete')}>Finish</ActionButton></div></div></section>}]:[]),...(phase==='complete'?[{id:'complete',type:'panel' as const,title:'Task 6 complete ✓',subtitle:'Speaking practice finished.',variant:'summary' as const,stage:'complete',content:<><div className="sr"><span>Speaking</span><span>Completed ✓</span></div><div className="sr"><span>Speaking attempts</span><span>{attempt}</span></div></>},{id:'celebrate',type:'custom' as const,content:<Celebration active/>}]:[])];return <TaskRenderer task={task} className="task-60116 speaking-task" footer={<StatusFooter title={phase==='complete'?'Task 6 complete':'Task 6'} status={phase==='complete'?'Worksheet finished.':'Speaking practice'} actionLabel="Finish" actionId="finishBtn" disabled={phase!=='complete'} onAction={()=>{}}/>} blocks={blocks}/>} 
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import type { TaskComponentProps } from '../../app/task-types'
+import { Celebration } from '../../components/effects/Celebration'
+import { StatusFooter } from '../../components/shell/StatusFooter'
+import { TaskRenderer } from '../../task-engine/TaskRenderer'
+import type { TaskFlowBlock } from '../../task-engine/schema'
+import { SpeakingPronunciationRenderer } from '../../task-engine/renderers/SpeakingPronunciationRenderer'
+import { saveTaskAttempt } from '../../lib/taskAttemptService'
+import type { PronunciationScoreResult } from '../../lib/pronunciationScorer'
+import './task.css'
+
+export function Task60116({ task }: TaskComponentProps) {
+  const navigate = useNavigate()
+  const [complete, setComplete] = useState(false)
+  const [finalScore, setFinalScore] = useState(0)
+  const [lastResult, setLastResult] = useState<PronunciationScoreResult | null>(null)
+  const [notices, setNotices] = useState<string[]>([])
+
+  const handlePronunciationComplete = (score: number, result: PronunciationScoreResult) => {
+    setComplete(true)
+    setFinalScore(score)
+    setLastResult(result)
+
+    saveTaskAttempt({
+      taskCode: task.code,
+      score: score,
+      firstScore: score,
+      status: 'completed',
+      supportMode: 'INDEPENDENT',
+      answersPayload: {
+        recognized_text: result.recognizedText,
+        accuracy_score: result.accuracyScore,
+        confidence_score: result.confidenceScore,
+        evaluated_words: result.evaluatedWords,
+      },
+    })
+  }
+
+  const handleRestart = () => {
+    setComplete(false)
+    setFinalScore(0)
+    setLastResult(null)
+  }
+
+  const blocks: TaskFlowBlock[] = [
+    {
+      id: 'intro',
+      type: 'tutor-message',
+      content: (
+        <>
+          <strong>Task 6 · Speaking & Pronunciation.</strong>
+          <br />
+          Read aloud the sentences you wrote in Task 5. AI will evaluate your pronunciation and speech clarity.
+        </>
+      ),
+    },
+    ...notices.map((n, i): TaskFlowBlock => ({ id: `n-${i}`, type: 'tutor-message', content: n })),
+    {
+      id: 'speaking-console',
+      type: 'custom' as const,
+      content: (
+        <SpeakingPronunciationRenderer
+          config={{
+            intro: '6B · Speaking & Pronunciation',
+            linked_task_code: '60115',
+            fallback_sentences: [
+              'My school is Minh Khai School.',
+              'In my school bag, I have a ruler and a pencil case.',
+              'I also have two pens.',
+              'I feel happy at school.',
+            ],
+            pass_score: 80,
+            allow_model_listen: true,
+          }}
+          taskCode={task.code}
+          onComplete={handlePronunciationComplete}
+          onRestart={handleRestart}
+          onNavigateHome={() => navigate('/?mode=code')}
+        />
+      ),
+    },
+    ...(complete
+      ? [
+          {
+            id: 'complete',
+            type: 'panel' as const,
+            title: 'Task 6 complete ✓',
+            subtitle: `Speaking score: ${finalScore}/100`,
+            variant: 'summary' as const,
+            stage: 'complete',
+            content: (
+              <>
+                <div className="sr">
+                  <span>Pronunciation Mastery</span>
+                  <span style={{ fontWeight: 700, color: '#16a34a' }}>{finalScore}/100 ✓</span>
+                </div>
+                <div className="sr">
+                  <span>Accuracy</span>
+                  <span>{lastResult?.accuracyScore ?? 100}%</span>
+                </div>
+                <div className="sr">
+                  <span>Acoustic Confidence</span>
+                  <span>{lastResult?.confidenceScore ?? 90}%</span>
+                </div>
+              </>
+            ),
+          },
+          { id: 'celebration', type: 'custom' as const, content: <Celebration active /> },
+        ]
+      : []),
+  ]
+
+  return (
+    <TaskRenderer
+      task={task}
+      disableAutoSave={true}
+      className="task-60116 speaking-task"
+      footer={
+        <StatusFooter
+          title={complete ? 'Task 6 complete' : 'Task 6'}
+          status={complete ? 'Worksheet finished.' : 'Speaking practice'}
+          actionLabel="Finish"
+          actionId="finishBtn"
+          disabled={!complete}
+          onAction={() => setNotices((v) => [...v, 'Great work! You finished Task 6.'])}
+        />
+      }
+      blocks={blocks}
+    />
+  )
+}
+ 

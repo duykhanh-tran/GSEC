@@ -96,7 +96,7 @@ export function Task60131({ task }: TaskComponentProps) {
     ...(!state.complete && activeQuestion && state.retryValues.length ? [{ id: `retry-${activeQuestion}`, type: 'custom' as const, content: <RetryCard state={state} question={activeQuestion} dispatch={dispatch} onCheck={checkRetry} /> }] : []),
     ...(!state.complete && !activeQuestion && activeTransfer ? [{ id: `transfer-${activeTransfer}`, type: 'custom' as const, content: <TransferCard tag={activeTransfer} feedback={state.transferFeedback} wrong={state.transferWrong} onChoose={chooseTransfer} /> }] : []),
     ...(state.complete ? [{ id: 'complete', type: 'custom' as const, content: <CompleteSummary /> }] : []),
-    { id: 'celebration', type: 'custom', content: <Celebration active={showConfetti} onComplete={() => setShowConfetti(false)} /> },
+    ...(showConfetti ? [{ id: 'celebration', type: 'custom' as const, content: <Celebration active={showConfetti} onComplete={() => setShowConfetti(false)} /> }] : []),
   ]
 
   return (
