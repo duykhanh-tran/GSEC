@@ -65,12 +65,20 @@ export async function uploadAudioToAssemblyAI(
   apiKey: string,
   onProgress?: (progress: TranscriptionProgress) => void
 ): Promise<string> {
+  // Kiểm tra kích thước file ghi âm: nếu < 1500 byte (~0.5s), file gần như rỗng và sẽ bị AssemblyAI từ chối
+  if (!audioBlob || audioBlob.size < 1500) {
+    throw new Error(
+      'Bản ghi âm quá ngắn hoặc micro chưa thu được tiếng (kích thước quá nhỏ). Vui lòng nhấn thu âm lại và đọc to, rõ ràng cả câu (tối thiểu 1-2 giây) rồi mới bấm Dừng.'
+    )
+  }
+
   onProgress?.({ stage: 'uploading', message: 'Đang tải âm thanh lên máy chủ AssemblyAI...', percent: 20 })
 
   const response = await fetch('https://api.assemblyai.com/v2/upload', {
     method: 'POST',
     headers: {
       Authorization: apiKey,
+      'Content-Type': 'application/octet-stream',
     },
     body: audioBlob,
   })
@@ -174,7 +182,13 @@ export async function pollAssemblyAITranscription(
     }
 
     if (data.status === 'error') {
-      throw new Error(`Lỗi xử lý âm thanh từ AssemblyAI: ${data.error || 'Unknown error'}`)
+      const rawError = data.error || 'Unknown error'
+      if (rawError.includes('Transcoding failed') || rawError.includes('application/octet-stream') || rawError.includes('unsupported')) {
+        throw new Error(
+          'Bản ghi âm không có dữ liệu âm thanh hoặc định dạng bị lỗi do thu âm quá ngắn. Vui lòng kiểm tra lại micro, bấm thu âm và đọc to rõ ràng ít nhất 1-2 giây rồi bấm Dừng.'
+        )
+      }
+      throw new Error(`Lỗi xử lý âm thanh từ AssemblyAI: ${rawError}`)
     }
 
     // Đợi 1 giây trước khi thăm dò tiếp

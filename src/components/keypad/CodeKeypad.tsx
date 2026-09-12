@@ -9,7 +9,7 @@ import {
 } from 'react'
 
 import { getTask } from '../../app/registry'
-import { supabase } from '../../lib/supabaseClient'
+import { taskCacheService } from '../../lib/taskCacheService'
 
 const MAX_CODE_LENGTH = 5
 const AUTO_SUBMIT_DELAY = 120
@@ -63,16 +63,18 @@ export function CodeKeypad({
         return
       }
 
-      // Tra cứu xem có phải task do Admin tạo trong cơ sở dữ liệu Supabase không
-      try {
-        const { data: dbTask } = await supabase
-          .from('tasks')
-          .select('code')
-          .eq('code', code)
-          .maybeSingle()
+      // 1. Kiểm tra RAM cache trước (0ms)
+      const mem = taskCacheService.getFromMemory(code)
+      if (mem?.dynamicTask || mem?.rawDbTask) {
+        onNavigate(code)
+        return
+      }
 
-        if (dbTask) {
-          onNavigate(dbTask.code)
+      // 2. Tra cứu & tải ngay qua taskCacheService (RAM -> IndexedDB -> Supabase Network)
+      try {
+        const result = await taskCacheService.getTaskFast(code)
+        if (result.dynamicTask || result.rawDbTask) {
+          onNavigate(code)
           return
         }
       } catch {
@@ -108,6 +110,10 @@ export function CodeKeypad({
   }, [clearError, isModal, onRequestClose])
 
   useEffect(() => {
+    // Dự đoán & tải ngầm bài tập khi học sinh gõ từ 3 chữ số trở lên
+    if (value.length >= 3 && import.meta.env.MODE !== 'test') {
+      taskCacheService.prefetchTask(value)
+    }
     if (value.length !== MAX_CODE_LENGTH) return
     const timer = window.setTimeout(() => submit(value), AUTO_SUBMIT_DELAY)
     return () => window.clearTimeout(timer)

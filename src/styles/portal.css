@@ -1,9 +1,20 @@
-/* Portal Layout & Header */
+/* ====================================================================
+   Portal Layout & Shared Components - GSEC AI Tutor
+   Clean, modern, educational UI for Student, Teacher & Admin
+   ==================================================================== */
+
 .portal-shell {
-  max-width: 980px;
-  margin: 24px auto 48px;
-  padding: 0 20px;
+  max-width: 1240px;
+  margin: 20px auto 48px;
+  padding: 0 16px;
   box-sizing: border-box;
+}
+
+@media (min-width: 768px) {
+  .portal-shell {
+    padding: 0 24px;
+    margin: 28px auto 60px;
+  }
 }
 
 .portal-header {
@@ -13,21 +24,29 @@
   flex-wrap: wrap;
   gap: 16px;
   margin-bottom: 24px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid var(--color-line);
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--color-line, #e2e8f0);
 }
 
 .portal-title-group h1 {
   margin: 0 0 6px;
-  font-size: 26px;
-  font-weight: 800;
-  color: var(--color-text);
+  font-size: 24px;
+  font-weight: 850;
+  color: var(--color-text, #0f172a);
+  letter-spacing: -0.4px;
+}
+
+@media (min-width: 768px) {
+  .portal-title-group h1 {
+    font-size: 28px;
+  }
 }
 
 .portal-title-group p {
   margin: 0;
   font-size: 14px;
-  color: var(--color-muted);
+  color: var(--color-muted, #64748b);
+  line-height: 1.5;
 }
 
 /* Tabs */
@@ -35,59 +54,64 @@
   display: flex;
   gap: 8px;
   margin-bottom: 24px;
-  border-bottom: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line, #e2e8f0);
   padding-bottom: 12px;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .portal-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   padding: 9px 18px;
   font-size: 14px;
   font-weight: 700;
   font-family: inherit;
-  border-radius: var(--radius-control);
+  border-radius: var(--radius-control, 10px);
   border: 1px solid transparent;
   background: transparent;
-  color: var(--color-muted);
+  color: var(--color-muted, #64748b);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all var(--transition-fast, 180ms ease);
   white-space: nowrap;
 }
 
 .portal-tab-btn:hover {
-  color: var(--color-text);
-  background: #f1f5f9;
+  color: var(--color-text, #0f172a);
+  background: var(--color-line-light, #f1f5f9);
 }
 
 .portal-tab-btn.is-active {
-  color: var(--color-primary);
-  background: var(--color-primary-soft);
-  border-color: var(--color-primary-border);
+  color: var(--color-primary, #4f46e5);
+  background: var(--color-primary-soft, #eef2ff);
+  border-color: var(--color-primary-border, #c7d2fe);
 }
 
 /* Class Grid & Cards */
 .class-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 20px;
   margin-top: 16px;
 }
 
 .class-card {
-  padding: 22px;
-  border-radius: var(--radius-card);
-  border: 1px solid var(--color-line);
-  background: var(--color-surface);
+  padding: 22px 24px;
+  border-radius: var(--radius-card, 16px);
+  border: 1px solid var(--color-line, #e2e8f0);
+  background: var(--color-surface, #ffffff);
   box-shadow: var(--shadow-card);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  transition: transform var(--transition-fast, 180ms ease), box-shadow var(--transition-fast, 180ms ease), border-color var(--transition-fast, 180ms ease);
 }
 
 .class-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+  box-shadow: var(--shadow-card-hover);
+  border-color: #cbd5e1;
 }
 
 .class-card-header {
@@ -101,47 +125,47 @@
   margin: 0 0 4px;
   font-size: 18px;
   font-weight: 800;
-  color: var(--color-text);
+  color: var(--color-text, #0f172a);
 }
 
 .class-card-meta {
   font-size: 13px;
-  color: var(--color-muted);
+  color: var(--color-muted, #64748b);
 }
 
 .class-code-badge {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   padding: 8px 14px;
-  border-radius: var(--radius-small);
-  background: #f8fafc;
-  border: 1.5px dashed var(--color-primary);
+  border-radius: var(--radius-small, 8px);
+  background: var(--color-surface-soft, #f8fafc);
+  border: 1.5px dashed var(--color-primary-border, #c7d2fe);
   margin: 12px 0;
 }
 
 .class-code-value {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 850;
   letter-spacing: 2px;
-  color: var(--color-primary);
-  font-family: monospace, sans-serif;
+  color: var(--color-primary, #4f46e5);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .btn-copy-code {
-  padding: 4px 8px;
+  padding: 5px 10px;
   font-size: 11px;
   font-weight: 700;
   border-radius: 6px;
-  background: var(--color-primary);
+  background: var(--color-primary, #4f46e5);
   color: #ffffff;
   border: none;
   cursor: pointer;
-  transition: background var(--transition-fast);
+  transition: background var(--transition-fast, 180ms ease);
 }
 
 .btn-copy-code:hover {
-  background: var(--color-primary-hover);
+  background: var(--color-primary-hover, #4338ca);
 }
 
 /* Modals & Forms */
@@ -230,12 +254,12 @@
 
 /* Student class list badge in Home */
 .student-classes-card {
-  width: min(420px, calc(100% - 32px));
-  margin: 16px auto 0;
-  padding: 16px;
-  border-radius: var(--radius-control);
-  background: #ffffff;
-  border: 1px solid var(--color-line);
+  width: 100%;
+  padding: 18px 20px;
+  border-radius: var(--radius-card, 16px);
+  background: var(--color-surface, #ffffff);
+  border: 1px solid var(--color-line, #e2e8f0);
+  box-shadow: var(--shadow-card);
   text-align: left;
 }
 
@@ -243,41 +267,43 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
 .student-classes-head strong {
-  font-size: 14px;
-  color: var(--color-text);
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--color-text, #0f172a);
 }
 
 .btn-join-class {
-  padding: 5px 10px;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--color-primary);
-  background: var(--color-primary-soft);
-  border: 1px solid var(--color-primary-border);
-  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 12.5px;
+  font-weight: 750;
+  color: var(--color-primary, #4f46e5);
+  background: var(--color-primary-soft, #eef2ff);
+  border: 1px solid var(--color-primary-border, #c7d2fe);
+  border-radius: 8px;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all var(--transition-fast, 180ms ease);
 }
 
 .btn-join-class:hover {
-  background: #f3c7dc;
+  background: #e0e7ff;
+  border-color: #a5b4fc;
 }
 
 /* ====================================================================
    Student Homework & Assigned Tasks Card
    ==================================================================== */
 .student-assignments-card {
-  width: min(560px, calc(100% - 32px));
-  margin: 16px auto 0;
-  padding: 18px;
-  border-radius: var(--radius-card);
-  background: #ffffff;
-  border: 1px solid var(--color-line);
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+  width: 100%;
+  padding: 22px;
+  border-radius: var(--radius-card, 16px);
+  background: var(--color-surface, #ffffff);
+  border: 1px solid var(--color-line, #e2e8f0);
+  box-shadow: var(--shadow-card);
   text-align: left;
 }
 
@@ -286,17 +312,17 @@
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 10px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--color-line);
-  margin-bottom: 12px;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--color-line, #e2e8f0);
+  margin-bottom: 16px;
 }
 
 .assignment-badge {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 10px;
+  gap: 6px;
+  padding: 4px 12px;
   border-radius: 20px;
   font-size: 12px;
   font-weight: 750;
@@ -304,39 +330,40 @@
 }
 
 .assignment-badge--pending {
-  background: #fff4ed;
-  color: #c4320a;
-  border: 1px solid #fedf89;
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
 }
 
 .assignment-badge--completed {
-  background: #effaf3;
-  color: #147a46;
-  border: 1px solid #aaf0c4;
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
 }
 
 .student-assignments-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .student-assignment-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 14px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px solid var(--color-line);
-  background: #fbfcfe;
-  transition: all var(--transition-fast);
+  gap: 16px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--color-line, #e2e8f0);
+  background: var(--color-surface, #ffffff);
+  transition: all var(--transition-fast, 180ms ease);
 }
 
 .student-assignment-row:hover {
   border-color: #cbd5e1;
   background: #f8fafc;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-card);
+  transform: translateY(-1px);
 }
 
 .student-assignment-row.is-completed {
@@ -345,8 +372,8 @@
 }
 
 .student-assignment-row.is-overdue {
-  border-color: #fecdca;
-  background: #fffbfc;
+  border-color: #fecaca;
+  background: #fffafa;
 }
 
 .student-assignment-info {
@@ -355,36 +382,38 @@
 }
 
 .task-code-pill {
-  font-family: monospace;
-  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11.5px;
   font-weight: 800;
-  padding: 2px 7px;
+  padding: 3px 8px;
   border-radius: 6px;
-  background: #8b0450;
-  color: #ffffff;
+  background: var(--color-primary-soft, #eef2ff);
+  color: var(--color-primary, #4f46e5);
+  border: 1px solid var(--color-primary-border, #c7d2fe);
 }
 
 .assignment-class-tag {
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 700;
-  padding: 2px 7px;
+  padding: 3px 8px;
   border-radius: 6px;
   background: #f1f5f9;
   color: #334155;
+  border: 1px solid #e2e8f0;
 }
 
 .assignment-task-title {
   margin: 0;
-  font-size: 14px;
-  font-weight: 750;
-  color: var(--color-text);
-  line-height: 1.3;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--color-text, #0f172a);
+  line-height: 1.35;
 }
 
 .assignment-task-subtitle {
-  margin: 2px 0 0;
-  font-size: 12px;
-  color: var(--color-muted);
+  margin: 3px 0 0;
+  font-size: 12.5px;
+  color: var(--color-muted, #64748b);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -395,31 +424,34 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  margin-top: 6px;
+  margin-top: 8px;
 }
 
 .assignment-due-tag {
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 600;
-  padding: 2px 8px;
+  padding: 3px 9px;
   border-radius: 6px;
   background: #f1f5f9;
   color: #475467;
+  border: 1px solid #e2e8f0;
 }
 
 .assignment-due-tag.is-overdue {
-  background: #fee4e2;
-  color: #b42318;
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
   font-weight: 750;
 }
 
 .assignment-score-tag {
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 750;
-  padding: 2px 8px;
+  padding: 3px 9px;
   border-radius: 6px;
-  background: #dcfce7;
-  color: #15803d;
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
 }
 
 .student-assignment-action {
@@ -429,45 +461,359 @@
 .btn-task-action {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 8px 14px;
-  font-size: 12px;
+  gap: 6px;
+  padding: 9px 16px;
+  font-size: 13px;
   font-weight: 750;
-  border-radius: 8px;
+  border-radius: 10px;
   text-decoration: none;
   white-space: nowrap;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all var(--transition-fast, 180ms ease);
 }
 
 .btn-task-action--start {
-  background: #8b0450;
+  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
   color: #ffffff;
-  box-shadow: 0 2px 6px rgba(139, 4, 80, 0.25);
+  border: none;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.28);
 }
 
 .btn-task-action--start:hover {
-  background: #72033f;
+  background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%);
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
 }
 
 .btn-task-action--continue {
-  background: #fef3c7;
-  color: #92400e;
+  background: #fffbeb;
+  color: #b45309;
   border: 1px solid #fde68a;
 }
 
 .btn-task-action--continue:hover {
-  background: #fde68a;
-  color: #78350f;
+  background: #fef3c7;
+  color: #92400e;
 }
 
 .btn-task-action--review {
-  background: #effaf3;
-  color: #147a46;
-  border: 1px solid #aaf0c4;
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
 }
 
 .btn-task-action--review:hover {
   background: #d1fae5;
 }
+
+/* ====================================================================
+   Student Dashboard Responsive 2-Column Grid
+   ==================================================================== */
+.student-dashboard-layout {
+  max-width: 1200px;
+  width: calc(100% - 32px);
+  margin: 20px auto 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+@media (min-width: 960px) {
+  .student-dashboard-layout {
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    gap: 24px;
+    align-items: start;
+    margin: 28px auto 48px;
+  }
+}
+
+.student-sidebar-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.student-main-col {
+  min-width: 0;
+}
+
+.student-welcome-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: var(--radius-card, 16px);
+  background: linear-gradient(135deg, #eef2ff 0%, #f0f9ff 100%);
+  border: 1px solid #c7d2fe;
+  box-shadow: var(--shadow-sm);
+}
+
+.student-welcome-icon {
+  font-size: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.12);
+  flex-shrink: 0;
+}
+
+.student-welcome-text h3 {
+  margin: 0 0 3px;
+  font-size: 15.5px;
+  font-weight: 800;
+  color: #1e1b4b;
+}
+
+.student-welcome-text p {
+  margin: 0;
+  font-size: 12.5px;
+  color: #4338ca;
+  line-height: 1.45;
+}
+
+/* =========================================================
+/* =========================================================
+   UNIFIED CENTERED HERO KEYPAD LAYOUT (ALL ROLES)
+   ========================================================= */
+.student-centered-hero,
+.teacher-keypad-hero,
+.unified-keypad-hero {
+  max-width: 580px;
+  margin: 36px auto 60px;
+  padding: 0 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.student-centered-card,
+.teacher-keypad-card,
+.unified-keypad-card {
+  background: #ffffff;
+  border: 1px solid var(--color-line, #e2e8f0);
+  border-radius: 24px;
+  padding: 36px 28px;
+  box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.08), 0 4px 6px -2px rgba(15, 23, 42, 0.03);
+  text-align: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.student-centered-badge,
+.teacher-keypad-badge,
+.unified-keypad-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 14px;
+  border-radius: 20px;
+  background: #eef2ff;
+  color: #4f46e5;
+  font-size: 12px;
+  font-weight: 750;
+  margin-bottom: 14px;
+  border: 1px solid #c7d2fe;
+}
+
+.student-centered-title,
+.teacher-keypad-title,
+.unified-keypad-title {
+  margin: 0 0 8px;
+  font-size: 26px;
+  font-weight: 900;
+  color: #0f172a;
+  letter-spacing: -0.5px;
+}
+
+.student-centered-subtitle,
+.teacher-keypad-desc,
+.unified-keypad-subtitle {
+  margin: 0 auto 24px;
+  font-size: 14px;
+  color: var(--color-muted, #64748b);
+  max-width: 440px;
+  line-height: 1.5;
+}
+
+.student-centered-subtitle code,
+.unified-keypad-subtitle code {
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-weight: 700;
+  color: #4f46e5;
+}
+
+.student-keypad-box,
+.teacher-keypad-container,
+.unified-keypad-box {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+  width: 100%;
+}
+
+.student-header-hint-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  text-align: left;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  margin-top: 18px;
+}
+
+.student-header-hint-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.student-header-hint-content {
+  font-size: 13px;
+  color: #334155;
+  line-height: 1.5;
+}
+
+/* =========================================================
+   ADMIN SIDEBAR 2-COLUMN DASHBOARD LAYOUT
+   ========================================================= */
+.admin-dashboard-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px 20px 60px;
+}
+
+.admin-layout-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+@media (min-width: 960px) {
+  .admin-layout-grid {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+}
+
+.admin-sidebar {
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid var(--color-line, #e2e8f0);
+  border-radius: 18px;
+  padding: 16px;
+  box-shadow: var(--shadow-card);
+}
+
+@media (min-width: 960px) {
+  .admin-sidebar {
+    width: 270px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 84px;
+  }
+}
+
+.admin-sidebar-header {
+  padding: 8px 8px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 12px;
+}
+
+.admin-sidebar-title {
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+@media (max-width: 959px) {
+  .admin-sidebar-nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+.admin-nav-item-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #475569;
+  font-size: 13.5px;
+  font-weight: 650;
+  cursor: pointer;
+  text-align: left;
+  transition: all 160ms ease;
+  font-family: inherit;
+}
+
+.admin-nav-item-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.admin-nav-item-btn.is-active {
+  background: #eef2ff;
+  color: #4f46e5;
+  border-color: #c7d2fe;
+  font-weight: 800;
+  box-shadow: 0 1px 3px rgba(79, 70, 229, 0.1);
+}
+
+.admin-nav-item-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-nav-item-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.admin-nav-item-btn.is-active .admin-nav-item-badge {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+.admin-content-area {
+  flex: 1;
+  min-width: 0;
+  background: #ffffff;
+  border: 1px solid var(--color-line, #e2e8f0);
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: var(--shadow-card);
+}
+
+

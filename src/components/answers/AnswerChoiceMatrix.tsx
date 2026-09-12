@@ -13,14 +13,81 @@ interface AnswerChoiceMatrixProps {
 export function AnswerChoiceMatrix({ rows, values, layout = 'cards', ariaLabel = 'Answer choices', disabled = false, onChange }: AnswerChoiceMatrixProps) {
   if (layout === 'table') {
     const columns = rows[0]?.options ?? []
+    const isCompactPrompt = rows.every((r) => {
+      if (typeof r.prompt === 'number') return true
+      if (typeof r.prompt === 'string') {
+        const s = r.prompt.trim()
+        return s.length <= 8 || /^(câu\s*\d+|question\s*\d+|\d+)$/i.test(s)
+      }
+      return false
+    })
+    const isManyOptions = columns.length >= 5
+    const optionCount = columns.length
+
     return (
-      <div className="answer-choice-matrix answer-choice-matrix--table matrix-wrap" data-answer-matrix>
+      <div
+        className={`answer-choice-matrix answer-choice-matrix--table matrix-wrap ${
+          isCompactPrompt ? 'matrix-compact-prompt' : 'matrix-text-prompt'
+        } ${isManyOptions ? 'matrix-many-options' : ''}`.trim()}
+        data-answer-matrix
+        data-columns={optionCount}
+      >
         <table className="matrix" aria-label={ariaLabel}>
-          <thead><tr><th scope="col"></th>{columns.map((option) => <th scope="col" key={option.value}>{option.label}</th>)}</tr></thead>
+          <colgroup>
+            <col
+              className="matrix-col-prompt"
+              style={{
+                width: isCompactPrompt
+                  ? optionCount >= 7
+                    ? '40px'
+                    : optionCount >= 5
+                    ? '46px'
+                    : '52px'
+                  : undefined,
+              }}
+            />
+            {columns.map((option) => (
+              <col key={option.value} className="matrix-col-option" />
+            ))}
+          </colgroup>
+          <thead>
+            <tr>
+              <th scope="col" className="matrix-prompt-header">
+                <span className="sr-only">#</span>
+              </th>
+              {columns.map((option) => (
+                <th scope="col" key={option.value} className="matrix-option-header">
+                  {option.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
           <tbody>
             {rows.map((row) => {
               const id = String(row.id)
-              return <tr data-question={id} key={id}><th scope="row">{row.prompt}</th>{row.options.map((option) => <td key={option.value}><button type="button" className={`cell ${values[id] === option.value ? 'sel' : ''}`.trim()} data-answer-index={id} data-answer-value={option.value} aria-label={`Question ${id}: ${option.value}`} aria-pressed={values[id] === option.value} disabled={disabled || option.disabled} onClick={() => onChange(id, option.value)}><span className="choice-dot" aria-hidden="true" /></button></td>)}</tr>
+              return (
+                <tr data-question={id} key={id}>
+                  <th scope="row" className="matrix-prompt-cell">
+                    {row.prompt}
+                  </th>
+                  {row.options.map((option) => (
+                    <td key={option.value} className="matrix-option-cell">
+                      <button
+                        type="button"
+                        className={`cell ${values[id] === option.value ? 'sel' : ''}`.trim()}
+                        data-answer-index={id}
+                        data-answer-value={option.value}
+                        aria-label={`Question ${id}: ${option.value}`}
+                        aria-pressed={values[id] === option.value}
+                        disabled={disabled || option.disabled}
+                        onClick={() => onChange(id, option.value)}
+                      >
+                        <span className="choice-dot" aria-hidden="true" />
+                      </button>
+                    </td>
+                  ))}
+                </tr>
+              )
             })}
           </tbody>
         </table>

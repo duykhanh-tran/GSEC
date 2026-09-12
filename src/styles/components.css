@@ -65,13 +65,15 @@
 .task .app {
   display: flex;
   min-height: 100dvh;
+  width: 100%;
   max-width: var(--shell-width);
   flex-direction: column;
   margin: 0 auto;
   overflow: visible;
-  border-right: 1px solid #eef0f3;
-  border-left: 1px solid #eef0f3;
+  border-right: 1px solid var(--color-line);
+  border-left: 1px solid var(--color-line);
   background: var(--color-surface);
+  transition: max-width var(--transition-fast);
 }
 
 .topbar {
@@ -112,10 +114,16 @@
 
 .chat {
   flex: 1;
-  padding: 16px 12px 180px;
+  padding: 16px 14px 190px;
   overflow: auto;
   scroll-behavior: smooth;
-  scroll-padding-bottom: 160px;
+  scroll-padding-bottom: 170px;
+}
+
+@media (min-width: 640px) {
+  .chat {
+    padding: 24px 28px 190px;
+  }
 }
 
 .ui-avatar {
@@ -171,12 +179,20 @@
 
 .task-card,
 .result-summary {
-  margin: 2px 0 16px 43px;
+  margin: 8px 0 16px 0;
   overflow: hidden;
   border: 1px solid var(--color-line);
   border-radius: var(--radius-card);
   background: var(--color-surface);
   box-shadow: var(--shadow-card);
+  transition: all var(--transition-fast);
+}
+
+@media (min-width: 640px) {
+  .task-card,
+  .result-summary {
+    margin: 8px 0 20px 46px;
+  }
 }
 
 .task-card__head,
@@ -507,16 +523,17 @@
 /* Table Layout for Choice Matrix */
 .matrix-wrap,
 .answer-choice-matrix--table.matrix-wrap {
-  overflow: auto;
+  overflow-x: auto;
+  overflow-y: hidden;
   border: 1px solid var(--color-line);
   border-radius: 14px;
   background: var(--color-surface, #ffffff);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 }
 
 .matrix,
 .answer-choice-matrix--table .matrix {
   width: 100%;
-  min-width: 300px;
   border-collapse: collapse;
   table-layout: fixed;
 }
@@ -528,22 +545,103 @@
   padding: 0;
   border-bottom: 1px solid #eef1f4;
   text-align: center;
+  vertical-align: middle;
 }
 
 .matrix th,
 .answer-choice-matrix--table .matrix th {
-  padding: 12px 8px;
-  color: #556070;
+  padding: 10px 4px;
+  color: #4b5563;
   background: #f8fafc;
   font-size: 13px;
   font-weight: 700;
+  letter-spacing: 0.2px;
 }
 
+/* Cột số câu hỏi đầu tiên (Prompt) - mặc định cân đối, không chiếm quá nhiều diện tích */
 .matrix th:first-child,
-.answer-choice-matrix--table .matrix th:first-child {
+.answer-choice-matrix--table .matrix th:first-child,
+.matrix .matrix-prompt-cell,
+.matrix .matrix-prompt-header {
+  text-align: center;
+  padding: 10px 4px;
+  width: 48px;
+  max-width: 52px;
+  color: #374151;
+  background: #f8fafc;
+  font-size: 13.5px;
+  font-weight: 700;
+  border-right: 1px solid #eef1f4;
+}
+
+/* Khi prompt là câu hỏi dài / văn bản (matrix-text-prompt) */
+.answer-choice-matrix--table.matrix-text-prompt .matrix th:first-child,
+.answer-choice-matrix--table.matrix-text-prompt .matrix .matrix-prompt-cell {
   text-align: left;
   padding: 12px 14px;
-  width: 60%;
+  width: 50%;
+  max-width: none;
+  border-right: none;
+}
+
+/* Khi bài trắc nghiệm có nhiều đáp án (>= 5 lựa chọn, đặc biệt là 6-8 đáp án A, B, C, D, E, F, G, H) */
+.answer-choice-matrix--table.matrix-many-options .matrix th:first-child,
+.answer-choice-matrix--table.matrix-many-options .matrix .matrix-prompt-cell,
+.answer-choice-matrix--table.matrix-many-options .matrix .matrix-prompt-header {
+  width: 38px;
+  max-width: 42px;
+  padding: 8px 2px;
+  font-size: 12.5px;
+}
+
+.answer-choice-matrix--table.matrix-many-options .matrix th {
+  padding: 8px 2px;
+  font-size: 12px;
+}
+
+.answer-choice-matrix--table.matrix-many-options .cell {
+  height: 40px;
+}
+
+.answer-choice-matrix--table.matrix-many-options .choice-dot {
+  width: 20px;
+  height: 20px;
+}
+
+.answer-choice-matrix--table.matrix-many-options .cell.sel .choice-dot::after {
+  width: 9px;
+  height: 9px;
+}
+
+/* Tối ưu hiển thị responsive trên mobile cho bài nhiều đáp án */
+@media (max-width: 480px) {
+  .answer-choice-matrix--table.matrix-many-options .matrix th:first-child,
+  .answer-choice-matrix--table.matrix-many-options .matrix .matrix-prompt-cell,
+  .answer-choice-matrix--table.matrix-many-options .matrix .matrix-prompt-header {
+    width: 32px;
+    max-width: 35px;
+    padding: 6px 1px;
+    font-size: 11px;
+  }
+
+  .answer-choice-matrix--table.matrix-many-options .matrix th {
+    padding: 6px 1px;
+    font-size: 11px;
+  }
+
+  .answer-choice-matrix--table.matrix-many-options .cell {
+    height: 36px;
+  }
+
+  .answer-choice-matrix--table.matrix-many-options .choice-dot {
+    width: 18px;
+    height: 18px;
+  }
+
+  .answer-choice-matrix--table.matrix-many-options .cell.sel .choice-dot::after {
+    width: 8px;
+    height: 8px;
+  }
 }
 
 .cell,

@@ -1,4 +1,4 @@
-﻿import { render, screen } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { SentenceWritingRenderer } from '../../src/task-engine/renderers/SentenceWritingRenderer'
@@ -57,8 +57,8 @@ describe('Form 3 Writing & Guided Repair Flow', () => {
     expect(inputs[0]).toBeDisabled()
     expect(inputs[1]).toBeDisabled()
 
-    // Question 1 is currently active below
-    expect(screen.getByText('Đang sửa bên dưới ⬇️')).toBeInTheDocument()
+    // Question 1 has no yellow warning tag
+    expect(screen.queryByText('Đang sửa bên dưới ⬇️')).not.toBeInTheDocument()
     // Question 2 is already correct
     expect(screen.getByText('Correct ✓')).toBeInTheDocument()
 
@@ -114,9 +114,69 @@ describe('Form 3 Writing & Guided Repair Flow', () => {
       />
     )
 
-    expect(screen.getByText(/Độ dài yêu cầu: 10 - 30 từ/i)).toBeInTheDocument()
+    expect(screen.getByText(/Min: 10 \| Max: 30/i)).toBeInTheDocument()
     expect(screen.getByText('morning')).toBeInTheDocument()
     expect(screen.getByText('breakfast')).toBeInTheDocument()
     expect(screen.getByText('Use present simple tense')).toBeInTheDocument()
   })
+
+  it('renders sentence starter and ending in SentenceWritingRenderer', () => {
+    const starterConfig: Form3WritingConfig = {
+      intro: 'Sentence starters test',
+      sub_mode: 'FREE_SENTENCE',
+      items: [
+        {
+          id: 1,
+          label: 'Question 1',
+          sentence_starter: 'My school is',
+          sentence_ending: 'every day.',
+        },
+        {
+          id: 2,
+          label: 'Question 2',
+          sentence_starter: 'In my bag, I have',
+        },
+      ],
+    }
+
+    render(
+      <SentenceWritingRenderer
+        config={starterConfig}
+        answers={{ '1': 'very big and clean', '2': '' }}
+        onAnswerChange={vi.fn()}
+      />
+    )
+
+    expect(screen.getByText('My school is')).toBeInTheDocument()
+    expect(screen.getByText('every day.')).toBeInTheDocument()
+    expect(screen.getByText('In my bag, I have')).toBeInTheDocument()
+
+    const input1 = screen.getByDisplayValue('very big and clean')
+    expect(input1).toHaveAttribute('placeholder', 'viết tiếp câu của bạn...')
+  })
+
+  it('buildFullSentence correctly combines prefix, student input, and suffix without duplication', async () => {
+    const { buildFullSentence } = await import('../../src/task-engine/DynamicTaskRunner')
+
+    // Case 1: normal continuation
+    expect(buildFullSentence('very beautiful', 'My school is')).toBe('My school is very beautiful')
+
+    // Case 2: student re-typed the starter accidentally
+    expect(buildFullSentence('My school is very beautiful', 'My school is')).toBe('My school is very beautiful')
+    expect(buildFullSentence('my school is very beautiful', 'My school is')).toBe('my school is very beautiful')
+
+    // Case 3: starter and ending combined
+    expect(buildFullSentence('very clean', 'My classroom is', 'every morning.')).toBe(
+      'My classroom is very clean every morning.'
+    )
+
+    // Case 4: ending already typed
+    expect(buildFullSentence('very clean every morning.', 'My classroom is', 'every morning.')).toBe(
+      'My classroom is very clean every morning.'
+    )
+
+    // Case 5: no starter or ending
+    expect(buildFullSentence('I love studying English.')).toBe('I love studying English.')
+  })
 })
+

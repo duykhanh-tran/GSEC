@@ -95,6 +95,12 @@ export function LoginPage() {
         </div>
       ) : null}
 
+      {(location.state as any)?.message && !error ? (
+        <div className="auth-message auth-message--success" role="status">
+          {(location.state as any).message}
+        </div>
+      ) : null}
+
       <div className="auth-social-group">
         <button
           type="button"
@@ -157,7 +163,20 @@ export function LoginPage() {
         </div>
 
         <div className="form-group">
-          <label htmlFor="login-password">Mật khẩu</label>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+            <label htmlFor="login-password" style={{ margin: 0 }}>Mật khẩu</label>
+            <Link
+              to="/forgot-password"
+              style={{
+                fontSize: '12.5px',
+                color: 'var(--color-primary)',
+                textDecoration: 'none',
+                fontWeight: 600,
+              }}
+            >
+              Quên mật khẩu?
+            </Link>
+          </div>
           <input
             id="login-password"
             type="password"

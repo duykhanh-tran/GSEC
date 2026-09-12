@@ -22,7 +22,7 @@ export function Task60131({ task }: TaskComponentProps) {
   const schedule = useTaskTimers()
   const activeQuestion = state.wrongQueue[0]
   const activeTransfer = state.transferQueue[0]
-  const { chatRef } = useAutoScroll(`${state.notices.length}-${state.retryAttempt}-${state.retryFeedback}-${state.transferFeedback}-${state.complete}`)
+  const { chatRef } = useAutoScroll(`${state.notices.length}-${state.retryAttempt}-${state.complete}`)
 
   const startRetry = (id: number) => {
     dispatch({ type: 'notice', notice: { kind: 'question', question: id } })

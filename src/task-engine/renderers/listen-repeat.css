@@ -454,34 +454,110 @@
 }
 
 .lr-word-chip.correct {
-  background: #dcfce7;
-  color: #166534;
-  border: 1px solid #86efac;
+  background: #dcfce7 !important;
+  color: #166534 !important;
+  border: 1.5px solid #86efac !important;
 }
 
 .lr-word-chip.unclear {
-  background: #fef9c3;
-  color: #854d0e;
-  border: 1px solid #fde047;
+  background: #fef9c3 !important;
+  color: #a16207 !important;
+  border: 1.5px solid #fde047 !important;
 }
 
 .lr-word-chip.mispronounced {
-  background: #fee2e2;
-  color: #991b1b;
-  border: 1px solid #fca5a5;
+  background: #fee2e2 !important;
+  color: #b91c1c !important;
+  border: 1.5px solid #fca5a5 !important;
 }
 
+/* Chưa đọc hoặc bỏ qua -> XÁM / TỐI MÀU */
 .lr-word-chip.missing {
-  background: #f3e8ff;
-  color: #6b21a8;
-  border: 1px dashed #d8b4fe;
-  text-decoration: line-through;
+  background: #f1f5f9 !important;
+  color: #64748b !important;
+  border: 1.5px dashed #cbd5e1 !important;
+  opacity: 0.85;
 }
 
 .lr-word-chip.extra {
-  background: #f1f5f9;
+  background: #fee2e2 !important;
+  color: #b91c1c !important;
+  border: 1.5px solid #f87171 !important;
+  text-decoration: line-through 2px #dc2626 !important;
+}
+
+/* Spoken Sentence in Form 5 */
+.lr-spoken-sentence-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.lr-spoken-sentence-title {
+  font-size: 12px;
+  font-weight: 700;
   color: #475569;
-  border: 1px solid #cbd5e1;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.lr-spoken-words-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 6px;
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.lr-spoken-word-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  border-radius: 6px;
+  font-weight: 600;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #1e293b;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  user-select: none;
+}
+
+.lr-spoken-word-chip.correct {
+  background: #f0fdf4;
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+
+.lr-spoken-word-chip.unclear {
+  background: #fefce8;
+  color: #a16207;
+  border-color: #fef08a;
+}
+
+.lr-spoken-word-chip.mispronounced {
+  background: #fff1f2;
+  color: #be123c;
+  border-color: #fecdd3;
+}
+
+/* ĐỌC THỪA TỪ: GẠCH ĐỎ NỔI BẬT */
+.lr-spoken-word-chip.extra {
+  background: #fee2e2 !important;
+  color: #b91c1c !important;
+  border: 1.5px solid #f87171 !important;
+  text-decoration: line-through 2px #dc2626 !important;
+  font-weight: 700 !important;
 }
 
 /* Gate Alert Box */
@@ -567,4 +643,269 @@
 .lr-summary-row.passed {
   background: #f0fdf4;
   border-color: #bbf7d0;
+}
+
+
+/* ==========================================================================
+   COMPACT AUDIO PLAYER & MINIMALIST SCORE STYLES (NEW)
+   ========================================================================== */
+
+.lr-compact-audio-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 8px 14px;
+}
+
+.lr-compact-play-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.lr-compact-play-btn:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.lr-compact-play-btn.playing {
+  background: #dc2626;
+}
+
+.lr-compact-audio-track {
+  flex: 1;
+  height: 6px;
+  background: #cbd5e1;
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.lr-compact-audio-fill {
+  height: 100%;
+  background: #2563eb;
+  border-radius: 999px;
+  transition: width 0.1s linear;
+}
+
+.lr-compact-speed-box {
+  display: flex;
+  gap: 4px;
+}
+
+.lr-speed-pill {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+}
+
+.lr-speed-pill.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+/* Compact Recorder Bar */
+.lr-compact-recorder-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  background: #ffffff;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 12px 16px;
+  transition: all 0.2s ease;
+}
+
+.lr-compact-recorder-bar.is-recording {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
+.lr-recorder-main-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.lr-compact-mic-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+  flex-shrink: 0;
+}
+
+.lr-compact-mic-btn.recording {
+  background: #dc2626;
+  animation: lrPulse 1.2s infinite;
+  box-shadow: 0 0 0 6px rgba(220, 38, 38, 0.2);
+}
+
+.lr-recorder-review-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.lr-eval-submit-btn {
+  background: #16a34a;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.lr-eval-submit-btn:hover:not(:disabled) {
+  background: #15803d;
+}
+
+/* Minimalist Score Box */
+.lr-minimal-score-box {
+  border-radius: 12px;
+  padding: 14px 16px;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lr-minimal-score-box.passed {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.lr-minimal-score-box.failed {
+  border-color: #fca5a5;
+  background: #fef2f2;
+}
+
+.lr-minimal-score-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.lr-minimal-score-tag {
+  display: inline-flex;
+  align-items: baseline;
+  background: #ffffff;
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  font-weight: 800;
+}
+
+.lr-minimal-score-box.passed .lr-minimal-score-tag {
+  border-color: #86efac;
+  color: #15803d;
+}
+
+.lr-minimal-score-box.failed .lr-minimal-score-tag {
+  border-color: #fca5a5;
+  color: #b91c1c;
+}
+
+.lr-minimal-score-val {
+  font-size: 18px;
+}
+
+.lr-minimal-score-denom {
+  font-size: 11px;
+  color: #64748b;
+  margin-left: 2px;
+}
+
+.lr-minimal-score-desc {
+  flex: 1;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.lr-minimal-words-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.lr-minimal-action-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.lr-action-next-btn {
+  background: #16a34a;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.lr-action-next-btn:hover {
+  background: #15803d;
+}
+
+.lr-action-retry-btn {
+  background: #ffffff;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.lr-action-retry-btn:hover {
+  background: #fee2e2;
+}
+
+.lr-step-pill.locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f1f5f9;
 }

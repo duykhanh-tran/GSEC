@@ -28,7 +28,7 @@ export function Task60164({ task }: TaskComponentProps) {
   const [complete, setComplete] = useState(false)
   const [notices, setNotices] = useState<Notice[]>([])
   const schedule = useTaskTimers()
-  const { chatRef } = useAutoScroll(`${order.join('-')}-${attempt}-${feedback}-${complete}-${notices.length}`)
+  const { chatRef } = useAutoScroll(`${order.join('-')}-${attempt}-${complete}-${notices.length}`)
   const addNotice = (content: ReactNode) => setNotices((current) => [...current, { id: current.length + 1, content }])
   const firstWrong = () => order.findIndex((value, index) => index > 0 && value !== PARAGRAPH_ORDER_KEY[index])
 

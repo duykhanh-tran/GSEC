@@ -25,6 +25,8 @@ export interface AuthContextType {
     fullName: string,
     role?: UserRole,
   ) => Promise<{ error: Error | null; needsEmailConfirmation?: boolean }>
+  resetPasswordForEmail: (email: string) => Promise<{ error: Error | null }>
+  updatePassword: (newPassword: string) => Promise<{ error: Error | null }>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
 }

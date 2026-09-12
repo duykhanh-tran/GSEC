@@ -24,12 +24,13 @@ export function BlankFillRenderer({
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-        {config.fields.map((field) => {
-          const result = results?.[field.id] || null
+        {(config.fields || config.items || []).map((field, idx) => {
+          const fieldKey = String(field.id !== undefined && field.id !== null ? field.id : idx + 1)
+          const result = results?.[fieldKey] || null
 
           return (
             <div
-              key={field.id}
+              key={fieldKey}
               style={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -42,10 +43,10 @@ export function BlankFillRenderer({
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <label
-                  htmlFor={`field-${field.id}`}
+                  htmlFor={`field-${fieldKey}`}
                   style={{ fontWeight: 700, fontSize: '14px' }}
                 >
-                  Câu {field.label}:
+                  Câu {field.label || fieldKey}:
                 </label>
                 {result && (
                   <span
@@ -61,15 +62,15 @@ export function BlankFillRenderer({
               </div>
 
               <input
-                id={`field-${field.id}`}
+                id={`field-${fieldKey}`}
                 type="text"
                 autoComplete="off"
                 inputMode={field.inputMode}
                 className="form-input"
                 disabled={disabled}
                 placeholder={field.placeholder || 'Nhập câu trả lời...'}
-                value={answers[field.id] || ''}
-                onChange={(e) => onAnswerChange(field.id, e.target.value)}
+                value={answers[fieldKey] || ''}
+                onChange={(e) => onAnswerChange(fieldKey, e.target.value)}
                 style={{
                   borderColor:
                     !result

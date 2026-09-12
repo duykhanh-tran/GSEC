@@ -44,7 +44,7 @@ export function SentenceWritingRenderer({
   isCompleted = false,
   onNavigateHome,
   phase = 'entry',
-  activeRetryId = null,
+  activeRetryId: _activeRetryId = null,
 }: SentenceWritingRendererProps) {
   const subMode = config.sub_mode || 'FREE_SENTENCE'
 
@@ -144,26 +144,10 @@ export function SentenceWritingRenderer({
     }
 
     // 2. Giao diện soạn thảo đoạn văn
-    const isWordCountGood = wordCount >= minWords && wordCount <= maxWords
-    const isWordCountShort = wordCount < minWords
-
     return (
       <div className="form-3-writing-container">
         <section className="card" id="captureCard">
-          <div className="ch">
-            <h2>{config.intro || 'Paragraph Writing'}</h2>
-            <p>{paragraphConfig.prompt}</p>
-          </div>
-          <div className="cb">
-            {/* Meta bar: Độ dài yêu cầu */}
-            <div className="paragraph-meta-bar">
-              <span className={`paragraph-badge ${isWordCountGood ? 'success' : isWordCountShort ? 'warning' : ''}`}>
-                🎯 Độ dài yêu cầu: {minWords} - {maxWords} từ
-              </span>
-              <span className="paragraph-badge">
-                📝 Số từ hiện tại: {wordCount} từ
-              </span>
-            </div>
+          <div className="cb" style={{ paddingTop: '16px' }}>
 
             {/* Helper Word Bank (Vốn từ trợ giúp) */}
             {helperWords.length > 0 && (
@@ -326,9 +310,23 @@ export function SentenceWritingRenderer({
             <div className="reuse">
               {items.map((item, index) => {
                 const itemId = String(item.id || index + 1)
+                const studentVal = (answers[itemId] || '').trim()
+                const prefix = (item.sentence_starter || '').trim()
+                const suffix = (item.sentence_ending || '').trim()
+                let displaySentence = studentVal || '—'
+                if (studentVal && prefix) {
+                  if (studentVal.toLowerCase().startsWith(prefix.toLowerCase())) {
+                    displaySentence = studentVal
+                  } else {
+                    displaySentence = `${prefix} ${studentVal}`
+                  }
+                }
+                if (studentVal && suffix && !displaySentence.toLowerCase().endsWith(suffix.toLowerCase())) {
+                  displaySentence = `${displaySentence} ${suffix}`
+                }
                 return (
-                  <div key={itemId}>
-                    {index + 1}. <strong>{answers[itemId] || '—'}</strong>
+                  <div key={itemId} style={{ marginBottom: '8px', lineHeight: 1.6 }}>
+                    {index + 1}. <strong>{displaySentence}</strong>
                   </div>
                 )
               })}
@@ -357,15 +355,11 @@ export function SentenceWritingRenderer({
       <section className="card" id="captureCard">
         <div className="ch">
           <h2>{config.intro || 'Your answers'}</h2>
-          <p>
-            {phase === 'guided'
-              ? 'Khung đáp án ban đầu của bạn. Đang sửa từng câu cùng AI ở bên dưới ⬇️'
-              : subMode === 'BOOK_KEYWORD'
-              ? 'Viết các câu theo yêu cầu và sử dụng các từ gợi ý trong sách bài tập.'
-              : subMode === 'FREE_SENTENCE'
-              ? 'Nhập các câu của bạn từ phiếu bài tập để AI kiểm tra ngữ pháp.'
-              : config.note || 'Write your sentences below.'}
-          </p>
+          {phase === 'guided' ? (
+            <p>Khung đáp án ban đầu của bạn. Đang sửa từng câu cùng AI ở bên dưới ⬇️</p>
+          ) : subMode === 'BOOK_KEYWORD' ? (
+            <p>Viết các câu theo yêu cầu và sử dụng các từ gợi ý trong sách bài tập.</p>
+          ) : null}
         </div>
         <div className="cb">
           {items.map((item, index) => {
@@ -379,23 +373,25 @@ export function SentenceWritingRenderer({
             const isRowDisabled = disabled || isChecking || phase === 'guided' || phase === 'complete'
             const isCorrect = itemResult?.correct === true || phase === 'complete'
             const isWrong = !isCorrect && itemResult && !itemResult.correct
+            const hasCustomPrompt = subMode !== 'FREE_SENTENCE' && Boolean(item.prompt)
+            const showStatusTag = phase === 'guided' || phase === 'complete'
 
             return (
               <div className="capture-row" key={itemId}>
                 <span className="num-badge">{index + 1}</span>
                 <div className="capture-input-col">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                    {subMode !== 'FREE_SENTENCE' && item.prompt ? (
-                      <div className="prompt-label" style={{ margin: 0 }}>{item.prompt}</div>
-                    ) : (
-                      <div className="prompt-label" style={{ margin: 0, fontWeight: 600 }}>{item.label || `Question ${index + 1}`}</div>
-                    )}
-                    {(phase === 'guided' || phase === 'complete') && (
-                      <StatusTag tone={isCorrect ? 'success' : 'warning'}>
-                        {isCorrect ? 'Correct ✓' : itemId === activeRetryId ? 'Đang sửa bên dưới ⬇️' : 'Cần sửa'}
-                      </StatusTag>
-                    )}
-                  </div>
+                  {(hasCustomPrompt || (showStatusTag && isCorrect)) && (
+                    <div style={{ display: 'flex', justifyContent: hasCustomPrompt ? 'space-between' : 'flex-end', alignItems: 'center', marginBottom: '4px' }}>
+                      {hasCustomPrompt && (
+                        <div className="prompt-label" style={{ margin: 0 }}>{item.prompt}</div>
+                      )}
+                      {showStatusTag && isCorrect && (
+                        <StatusTag tone="success">
+                          Correct ✓
+                        </StatusTag>
+                      )}
+                    </div>
+                  )}
 
                   {/* Tag gợi ý xem sách cho dạng 3.2 */}
                   {subMode === 'BOOK_KEYWORD' && (
@@ -423,21 +419,35 @@ export function SentenceWritingRenderer({
                     </div>
                   )}
 
-                  <input
-                    id={`writing-input-${itemId}`}
-                    type="text"
-                    disabled={isRowDisabled}
-                    placeholder="Type what you wrote"
-                    value={currentAnswer}
-                    onChange={(e) => onAnswerChange(itemId, e.target.value)}
-                    className={
-                      isCorrect
-                        ? 'is-correct'
-                        : isWrong
-                        ? 'is-wrong'
-                        : ''
-                    }
-                  />
+                  <div className="sentence-input-wrapper">
+                    {item.sentence_starter && (
+                      <span className="sentence-starter-prefix" title="Phần đầu câu cho trước">
+                        {item.sentence_starter}
+                      </span>
+                    )}
+                    <input
+                      id={`writing-input-${itemId}`}
+                      type="text"
+                      disabled={isRowDisabled}
+                      placeholder={item.sentence_starter ? 'viết tiếp câu của bạn...' : 'Type what you wrote'}
+                      value={currentAnswer}
+                      onChange={(e) => onAnswerChange(itemId, e.target.value)}
+                      className={`sentence-writing-input ${
+                        item.sentence_starter ? 'has-prefix' : ''
+                      } ${item.sentence_ending ? 'has-suffix' : ''} ${
+                        isCorrect
+                          ? 'is-correct'
+                          : isWrong
+                          ? 'is-wrong'
+                          : ''
+                      }`}
+                    />
+                    {item.sentence_ending && (
+                      <span className="sentence-starter-suffix" title="Phần kết câu cho trước">
+                        {item.sentence_ending}
+                      </span>
+                    )}
+                  </div>
 
                   {/* Khi ở phase 'guided': KHÔNG hiển thị hint-box trong khung Your answers này! */}
                   {/* Vì câu sai sẽ được mang xuống dưới và sửa ở khung riêng cùng AI! */}
@@ -468,12 +478,6 @@ export function SentenceWritingRenderer({
                           💡 <strong>Gợi ý:</strong> {itemResult.hint}
                         </div>
                       ) : null}
-                    </div>
-                  )}
-
-                  {phase === 'guided' && !isCorrect && itemId === activeRetryId && (
-                    <div style={{ fontSize: '11px', color: '#b45309', marginTop: '2px', fontStyle: 'italic' }}>
-                      ⬇️ Đang mang câu này xuống dưới để sửa cùng AI Tutor...
                     </div>
                   )}
                 </div>

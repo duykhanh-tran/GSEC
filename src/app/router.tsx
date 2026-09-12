@@ -8,8 +8,12 @@ import { NotFoundPage } from './pages/NotFoundPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { LegacyTaskRoute, TaskRoute } from './pages/TaskRoutes'
 
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage'
+import { ResetPasswordPage } from './pages/ResetPasswordPage'
+
 import { TeacherPortalPage } from './pages/TeacherPortalPage'
 import { AdminDashboardPage } from './pages/AdminDashboardPage'
+import { AdminTaskStudioPage } from './pages/AdminTaskStudioPage'
 
 export const router = createBrowserRouter([
   {
@@ -37,6 +41,22 @@ export const router = createBrowserRouter([
     ),
   },
   {
+    path: '/admin/studio',
+    element: (
+      <ProtectedRoute>
+        <AdminTaskStudioPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/studio/:code',
+    element: (
+      <ProtectedRoute>
+        <AdminTaskStudioPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: '/teacher',
     element: (
       <ProtectedRoute>
@@ -46,6 +66,8 @@ export const router = createBrowserRouter([
   },
   { path: '/login', element: <LoginPage /> },
   { path: '/register', element: <RegisterPage /> },
+  { path: '/forgot-password', element: <ForgotPasswordPage /> },
+  { path: '/reset-password', element: <ResetPasswordPage /> },
   { path: '/auth/callback', element: <AuthCallbackPage /> },
   {
     path: '/tasks/:code',

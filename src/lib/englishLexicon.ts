@@ -151,7 +151,8 @@ export const COMMON_ENGLISH_WORDS = new Set<string>([
   'spring', 'summer', 'autumn', 'fall', 'winter',
 
   // Tính từ mô tả & Cảm xúc (Adjectives & Feelings)
-  'good', 'great', 'fine', 'nice', 'bad', 'terrible', 'awful',
+  'good', 'better', 'best', 'great', 'fine', 'nice', 'bad', 'worse', 'worst', 'terrible', 'awful',
+  'favorite', 'favourite', 'friendly', 'kind', 'helpful', 'polite', 'clever', 'smart',
   'big', 'small', 'large', 'little', 'huge', 'tiny', 'short', 'tall', 'long',
   'happy', 'sad', 'excited', 'tired', 'bored', 'busy', 'hungry', 'thirsty', 'ready',
   'angry', 'scared', 'afraid', 'proud', 'nervous', 'lucky',
@@ -186,13 +187,48 @@ export const COMMON_ENGLISH_WORDS = new Set<string>([
   'water', 'milk', 'tea', 'coffee', 'juice', 'apple', 'banana', 'orange', 'pizza', 'cake',
 ])
 
-// Tên riêng tiếng Việt hợp lệ được chấp nhận trong bài làm
+// Tên riêng tiếng Việt & Tên nhân vật SGK tiếng Anh hợp lệ được chấp nhận trong bài làm
 export const ACCEPTABLE_PROPER_NOUNS = new Set<string>([
-  'tran', 'quoc', 'nguyen', 'du', 'le', 'loi', 'minh', 'khai', 'ha', 'noi',
-  'da', 'nang', 'hue', 'saigon', 'viet', 'nam', 'vietnam', 'ho', 'chi',
-  'quang', 'trung', 'phan', 'chu', 'trinh', 'vo', 'thi', 'sau', 'kim', 'dong',
-  'an', 'binh', 'chi', 'dung', 'giang', 'hoa', 'hung', 'khanh', 'linh', 'mai',
-  'nam', 'nga', 'phuong', 'quan', 'son', 'thao', 'tuan', 'viet', 'yen',
+  // Tên người tiếng Việt phổ biến (Given names & Middle names)
+  'an', 'anh', 'ba', 'bach', 'bao', 'bich', 'binh', 'buu',
+  'canh', 'cao', 'cam', 'chau', 'chi', 'chien', 'chinh', 'chung', 'cuong',
+  'dac', 'dai', 'dan', 'dang', 'dao', 'dat', 'diem', 'diep', 'dieu', 'dinh', 'dien',
+  'do', 'doan', 'don', 'dong', 'duc', 'dung', 'duong', 'duy', 'duyen',
+  'giang', 'giao',
+  'ha', 'hai', 'han', 'hang', 'hanh', 'hao', 'hau', 'hien', 'hiep', 'hieu',
+  'hoa', 'hoai', 'hoan', 'hoang', 'hong', 'hop', 'hue', 'hung', 'huong', 'huyen', 'huy', 'huynh',
+  'khai', 'khang', 'khanh', 'khiem', 'khoa', 'khoi', 'khoan', 'khuong', 'kien', 'kiet', 'kieu', 'kim', 'ky',
+  'lam', 'lan', 'lanh', 'lap', 'le', 'liem', 'lien', 'lieu', 'linh', 'loan', 'loc', 'loi', 'long', 'luan', 'luat', 'luong', 'luu', 'ly',
+  'mai', 'man', 'manh', 'mi', 'minh', 'mo', 'my',
+  'nam', 'nang', 'nga', 'ngan', 'nghia', 'nghi', 'ngoc', 'ngon', 'nguyet', 'nhan', 'nhat', 'nhi', 'nhien', 'nhu', 'nhuan', 'nhung', 'ninh', 'nu',
+  'oanh',
+  'phat', 'phi', 'phong', 'phu', 'phuc', 'phung', 'phuoc', 'phuong',
+  'quan', 'quang', 'que', 'quoc', 'quyen', 'quynh',
+  'sang', 'sau', 'sen', 'son', 'sinh', 'si',
+  'tai', 'tam', 'tan', 'thach', 'thai', 'thang', 'thanh', 'thao', 'the', 'thi', 'thiet', 'thien', 'thinh',
+  'thoa', 'tho', 'thoai', 'thong', 'thu', 'thuc', 'thuan', 'thuy', 'thuyet', 'thuyen', 'tien', 'tiep', 'tin', 'tinh',
+  'toan', 'tra', 'tram', 'trang', 'tri', 'triet', 'trieu', 'trinh', 'trong', 'truc', 'trung', 'tu', 'tuan', 'tung', 'tuong', 'tuyen', 'tuyet',
+  'uyen',
+  'van', 'vi', 'vien', 'viet', 'vinh', 'vu', 'vuong', 'vui',
+  'xuan', 'xuyen',
+  'yen',
+
+  // Họ phổ biến (Surnames)
+  'bui', 'dang', 'dinh', 'do', 'doan', 'duong', 'ha', 'ho', 'hoang', 'huynh',
+  'le', 'luong', 'ly', 'mai', 'ngo', 'nguyen', 'pham', 'phan', 'ta', 'thach',
+  'to', 'ton', 'tran', 'trinh', 'truong', 'vo', 'vu', 'vuong',
+
+  // Tên nhân vật phổ biến trong SGK Tiếng Anh (Global Success, Friends Plus, Smart World...)
+  'peter', 'mary', 'linda', 'tom', 'tony', 'david', 'john', 'alex', 'sarah', 'lucy',
+  'ben', 'bill', 'anna', 'emma', 'sam', 'dan', 'nick', 'jane', 'jack', 'james',
+  'paul', 'mark', 'mike', 'bob', 'alice', 'lucas', 'oliver', 'charlie', 'henry',
+  'leo', 'max', 'sophie', 'grace', 'chloe', 'zoe', 'lily', 'mia', 'ellie',
+
+  // Tên địa danh & Nhân vật lịch sử thông dụng
+  'vietnam', 'hanoi', 'saigon', 'danang', 'hue', 'nhatrang', 'dalat', 'cantho', 'haiphong',
+  'quangninh', 'vungtau', 'hochiminh',
+  'tran quoc', 'nguyen du', 'le loi', 'minh khai', 'ha noi', 'da nang', 'sai gon',
+  'quang trung', 'phan chu trinh', 'vo thi sau', 'kim dong', 'ho chi minh',
 ])
 
 /**
@@ -259,6 +295,17 @@ export function checkConcatenatedToken(token: string): LexiconCheckResult {
     const part1 = clean.slice(0, i)
     const part2 = clean.slice(i)
     if (isKnownWord(part1) && isKnownWord(part2)) {
+      // Bảo vệ tên riêng tiếng Việt: Không tách nếu là các cặp giới từ/trợ động từ + mạo từ
+      // dễ bị nhầm với tên người như 'to' + 'an' (Toan), 'do' + 'an' (Doan)
+      if (
+        ((part1 === 'to' || part1 === 'do') && part2 === 'an') ||
+        (part1 === 'as' && part2 === 'an')
+      ) {
+        if (ACCEPTABLE_PROPER_NOUNS.has(clean) || /^[A-Z]/.test(token)) {
+          continue
+        }
+      }
+
       return {
         hasError: true,
         errorType: 'concatenated',
@@ -329,12 +376,25 @@ export function checkSentenceLexicon(sentence: string): LexiconCheckResult {
 
   // 2. Tách từng từ trong câu để kiểm tra từ điển và dính chữ
   const tokens = trimmed.split(/\s+/).filter(Boolean)
-  for (const rawToken of tokens) {
+  for (let idx = 0; idx < tokens.length; idx++) {
+    const rawToken = tokens[idx]
     const clean = rawToken.replace(/^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$/g, '')
     if (!clean || clean.length <= 1 || /^\d+$/.test(clean)) continue
 
-    const check = checkConcatenatedToken(clean)
+    const check = checkConcatenatedToken(rawToken)
     if (check.hasError) {
+      // Nếu là lỗi spelling (từ không có trong từ điển tiếng Anh cơ bản):
+      // Nếu từ này được viết hoa (proper noun) và không phải ở đầu câu
+      // (hoặc ở đầu câu nhưng là tên riêng trong ACCEPTABLE_PROPER_NOUNS),
+      // thì không nên coi là lỗi chính tả nghiêm trọng chặn câu của học sinh.
+      if (check.errorType === 'spelling') {
+        const isCapitalized = /^[A-Z]/.test(clean)
+        const isKnownProper = ACCEPTABLE_PROPER_NOUNS.has(clean.toLowerCase())
+        if (isKnownProper || (isCapitalized && idx > 0)) {
+          continue
+        }
+      }
+
       return check
     }
   }

@@ -427,3 +427,96 @@
   box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.15) !important;
 }
 
+/* Sentence Input Wrapper with Starter / Ending for Form 3.1 & 3.2 */
+.form-3-writing-container .sentence-input-wrapper,
+.guided-sentence-repair-card .sentence-input-wrapper {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #d9dde4;
+  border-radius: 12px;
+  background: var(--color-surface, #ffffff);
+  overflow: hidden;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  box-sizing: border-box;
+}
+
+.form-3-writing-container .sentence-input-wrapper:focus-within {
+  border-color: #c982a7;
+  box-shadow: 0 0 0 3px var(--color-primary-soft, rgba(201, 130, 167, 0.15));
+}
+
+.guided-sentence-repair-card .sentence-input-wrapper:focus-within {
+  border-color: #f43f5e !important;
+  box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.15) !important;
+}
+
+.sentence-starter-prefix {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 14px;
+  background: #f0fdf4;
+  border-right: 1px solid #bbf7d0;
+  font-weight: 700;
+  font-size: 14px;
+  color: #166534;
+  white-space: nowrap;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.sentence-starter-suffix {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border-left: 1px solid #e2e8f0;
+  font-weight: 600;
+  font-size: 14px;
+  color: #64748b;
+  white-space: nowrap;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.sentence-input-wrapper input {
+  flex: 1;
+  min-width: 0;
+  border: none !important;
+  border-radius: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding: 11px 12px !important;
+}
+
+.sentence-input-wrapper:has(input.is-correct) {
+  border-color: #86efac;
+  background: #fcfdfd;
+}
+
+.sentence-input-wrapper:has(input.is-wrong) {
+  border-color: #fca5a5;
+  background: #fffafa;
+}
+
+@media (max-width: 500px) {
+  .sentence-input-wrapper {
+    flex-wrap: wrap;
+  }
+  .sentence-starter-prefix {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #bbf7d0;
+    padding: 8px 12px;
+  }
+  .sentence-starter-suffix {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid #e2e8f0;
+    padding: 8px 12px;
+  }
+}
+
+

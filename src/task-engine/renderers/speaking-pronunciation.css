@@ -237,72 +237,76 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px 6px;
-  margin-top: 16px;
-  padding: 16px;
-  background: #f8fafc;
+  margin-top: 12px;
+  padding: 14px;
+  background: #ffffff;
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
-  line-height: 2;
+  border: 1.5px solid #e2e8f0;
+  line-height: 1.8;
 }
 
+.pronunciation-word-chip,
 .word-chip {
   position: relative;
   display: inline-flex;
   align-items: center;
-  padding: 4px 9px;
+  gap: 5px;
+  padding: 5px 10px;
   border-radius: 8px;
   font-size: 14.5px;
-  font-weight: 600;
-  border: 1px solid transparent;
+  font-weight: 700;
+  border: 1.5px solid transparent;
   cursor: pointer;
   transition: all 0.15s ease;
+  user-select: none;
 }
 
+/* 1. Đọc đúng -> XANH LÁ CÂY */
+.pronunciation-word-chip.correct,
 .word-chip.correct {
-  background: #dcfce7;
-  color: #15803d;
-  border-color: #86efac;
+  background: #dcfce7 !important;
+  color: #15803d !important;
+  border-color: #86efac !important;
 }
 
+/* 2. Đọc gần đúng -> VÀNG / HỔ PHÁCH */
+.pronunciation-word-chip.unclear,
 .word-chip.unclear {
-  background: #fef9c3;
-  color: #854d0e;
-  border-color: #fde047;
+  background: #fef9c3 !important;
+  color: #a16207 !important;
+  border-color: #fde047 !important;
 }
 
+/* 3. Đọc sai -> ĐỎ */
+.pronunciation-word-chip.mispronounced,
 .word-chip.mispronounced {
-  background: #fee2e2;
-  color: #991b1b;
-  border-color: #fca5a5;
+  background: #fee2e2 !important;
+  color: #b91c1c !important;
+  border-color: #fca5a5 !important;
 }
 
+/* 4. Chưa đọc hoặc bỏ qua -> XÁM / TỐI MÀU */
+.pronunciation-word-chip.missing,
 .word-chip.missing {
-  background: #fee2e2;
-  color: #991b1b;
-  border-color: #fca5a5;
-  text-decoration: line-through;
+  background: #f1f5f9 !important;
+  color: #64748b !important;
+  border: 1.5px dashed #cbd5e1 !important;
   opacity: 0.85;
 }
 
-.word-chip.extra {
-  background: #f3e8ff;
-  color: #6b21a8;
-  border-color: #d8b4fe;
-  font-style: italic;
-}
-
+.pronunciation-word-chip:hover,
 .word-chip:hover {
   transform: translateY(-1px);
   filter: brightness(0.96);
 }
 
-/* Chú thích màu */
+/* Chú thích màu trực quan */
 .color-legend-row {
   display: flex;
   align-items: center;
   gap: 14px;
   flex-wrap: wrap;
-  margin-top: 12px;
+  margin-top: 6px;
   font-size: 12px;
   color: #64748b;
 }
@@ -311,6 +315,7 @@
   display: flex;
   align-items: center;
   gap: 5px;
+  font-weight: 600;
 }
 
 .legend-dot {
@@ -322,6 +327,110 @@
 .legend-dot.correct { background: #22c55e; }
 .legend-dot.unclear { background: #eab308; }
 .legend-dot.mispronounced { background: #ef4444; }
+.legend-dot.missing { background: #94a3b8; }
+.legend-dot.extra { background: #dc2626; }
+
+/* ==========================================================
+   KHUNG CÂU NGƯỜI DÙNG ĐÃ ĐỌC & GẠCH ĐỎ TỪ THỪA
+   ========================================================== */
+.spoken-sentence-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.spoken-sentence-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.spoken-words-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 6px;
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.spoken-word-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  border-radius: 6px;
+  font-weight: 600;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #1e293b;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  user-select: none;
+}
+
+.spoken-word-chip.correct {
+  background: #f0fdf4;
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+
+.spoken-word-chip.unclear {
+  background: #fefce8;
+  color: #a16207;
+  border-color: #fef08a;
+}
+
+.spoken-word-chip.mispronounced {
+  background: #fff1f2;
+  color: #be123c;
+  border-color: #fecdd3;
+}
+
+/* ĐỌC THỪA TỪ: GẠCH ĐỎ NỔI BẬT */
+.spoken-word-chip.extra {
+  background: #fee2e2 !important;
+  color: #b91c1c !important;
+  border: 1.5px solid #f87171 !important;
+  text-decoration: line-through 2px #dc2626 !important;
+  font-weight: 700 !important;
+}
+
+.extra-word-tag {
+  font-size: 10px;
+  background: #dc2626;
+  color: #ffffff;
+  padding: 1px 4px;
+  border-radius: 4px;
+  text-decoration: none;
+  font-style: normal;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.extra-words-warning-alert {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  border-radius: 8px;
+  color: #9f1239;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 4px;
+}
 
 /* Thông báo liên kết Form 3 */
 .linked-task-callout {
@@ -337,4 +446,257 @@
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+
+/* ==========================================================================
+   COMPACT SINGLE-SENTENCE SPEAKING & MINIMALIST SCORE STYLES (NEW)
+   ========================================================================== */
+
+.speaking-compact-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 14px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #166534;
+}
+
+.speaking-step-nav {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.speaking-step-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  color: #64748b;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.speaking-step-pill:hover:not(:disabled) {
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.speaking-step-pill.active {
+  background: #eff6ff;
+  border-color: #3b82f6;
+  color: #1d4ed8;
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.15);
+}
+
+.speaking-step-pill.passed {
+  background: #f0fdf4;
+  border-color: #86efac;
+  color: #15803d;
+}
+
+.speaking-step-pill.locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f8fafc;
+}
+
+/* Single Sentence Card */
+.speaking-single-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+}
+
+.speaking-sentence-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px 18px;
+}
+
+.speaking-current-text {
+  font-size: 17px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.45;
+  flex: 1;
+}
+
+/* Compact Recorder Bar for Form 4 */
+.speaking-compact-recorder {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  background: #ffffff;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 12px 16px;
+  transition: all 0.2s ease;
+}
+
+.speaking-compact-recorder.recording {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
+.speaking-recorder-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.speaking-mic-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+  flex-shrink: 0;
+}
+
+.speaking-mic-btn.active-rec {
+  background: #dc2626;
+  animation: pulse-ring 1.2s infinite;
+  box-shadow: 0 0 0 6px rgba(220, 38, 38, 0.2);
+}
+
+.speaking-recorder-review {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Minimalist Score Box for Form 4 */
+.speaking-minimal-score {
+  border-radius: 12px;
+  padding: 14px 16px;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.speaking-minimal-score.passed {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.speaking-minimal-score.failed {
+  border-color: #fca5a5;
+  background: #fef2f2;
+}
+
+.speaking-score-top-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.speaking-score-val-tag {
+  display: inline-flex;
+  align-items: baseline;
+  background: #ffffff;
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  font-weight: 800;
+}
+
+.speaking-minimal-score.passed .speaking-score-val-tag {
+  border-color: #86efac;
+  color: #15803d;
+}
+
+.speaking-minimal-score.failed .speaking-score-val-tag {
+  border-color: #fca5a5;
+  color: #b91c1c;
+}
+
+.speaking-action-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.speaking-next-btn {
+  background: #16a34a;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.speaking-next-btn:hover {
+  background: #15803d;
+}
+
+.speaking-retry-btn {
+  background: #ffffff;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.speaking-retry-btn:hover {
+  background: #fee2e2;
+}
+
+/* Summary Box for all sentences */
+.speaking-all-summary {
+  background: #ffffff;
+  border: 1.5px solid #86efac;
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
 }

@@ -97,7 +97,7 @@ export function GuidedChoiceTask({ task, config }: TaskComponentProps & { config
   const [showCelebration, setShowCelebration] = useState(false)
   const [notices, setNotices] = useState<Notice[]>([])
   const schedule = useTaskTimers()
-  const { chatRef } = useAutoScroll(`${entryVisible}-${resultWrong?.join(',')}-${activeId}-${attempt}-${feedback}-${complete}-${notices.length}`)
+  const { chatRef } = useAutoScroll(`${entryVisible}-${resultWrong?.join(',')}-${activeId}-${attempt}-${complete}-${notices.length}`)
 
   const addNotice = (content: ReactNode) => setNotices((current) => [...current, { id: current.length + 1, content }])
   const itemById = (id: number) => config.items.find((item) => item.id === id)!

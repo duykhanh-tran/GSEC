@@ -6,12 +6,16 @@ export type StandardFormType =
   | 'FORM_4_SPEAKING'
   | 'FORM_5_SEQUENCE'
   | 'FORM_5_LISTEN_REPEAT'
+  | 'FORM_6_1_PROFILE_QA'
+  | 'FORM_6_2_INTERVIEW_PROFILE'
 
 export interface ChoiceItemConfig {
   id: number | string
   label: string
   cue?: string
   prompt?: string
+  audio_url?: string
+  audioUrl?: string
   firstHint?: string
   secondHint?: string
   hints?: string[]
@@ -28,16 +32,23 @@ export interface Form1ChoiceConfig {
 }
 
 export interface BlankFieldConfig {
-  id: string
+  id: string | number
   label: string
   placeholder?: string
   inputMode?: 'text' | 'numeric'
+  correct?: string
+  accepted?: string[]
+  hints?: string[]
+  firstHint?: string
+  secondHint?: string
+  cue?: string
 }
 
 export interface Form2FillConfig {
   intro: string
   note?: string
-  fields: BlankFieldConfig[]
+  fields?: BlankFieldConfig[]
+  items?: BlankFieldConfig[]
   audioUrl?: string
   audio_url?: string
 }
@@ -48,11 +59,14 @@ export interface WritingItemConfig {
   id: string | number
   label: string
   prompt?: string
+  sentence_starter?: string // Từ/cụm từ cho trước ở đầu câu (ví dụ: "My school is", "In my school bag, I have")
+  sentence_ending?: string // Cụm từ cho trước ở cuối câu nếu có (ví dụ: "at school.")
   required_words?: string[]
   reference_sentence?: string
   hints?: string[]
   cue?: string
   min_words?: number
+  scoring_criteria?: string // Tiêu chí chấm điểm riêng cho câu này (nếu có)
 }
 
 export interface Form3ParagraphConfig {
@@ -68,6 +82,7 @@ export interface Form3WritingConfig {
   intro: string
   note?: string
   sub_mode?: Form3SubMode
+  scoring_criteria?: string // Tiêu chí chấm điểm của giáo viên/admin để AI chấm sát hơn cho Form 3 (3.1 & 3.2)
   items?: WritingItemConfig[]
   paragraph?: Form3ParagraphConfig
   audioUrl?: string
@@ -94,6 +109,7 @@ export interface Form4SpeakingConfig {
   mode?: 'SENTENCES' | 'PARAGRAPH'
   pass_score?: number // Ngưỡng điểm hoàn thành (mặc định 80/100)
   allow_model_listen?: boolean // Cho phép nghe giọng đọc mẫu (TTS)
+  scoring_criteria?: string // Tiêu chí chấm điểm của giáo viên/admin để AI chấm sát hơn
 }
 
 export interface Form5SequenceConfig {
@@ -119,6 +135,41 @@ export interface Form5ListenRepeatConfig {
   items: ListenRepeatItemConfig[]
 }
 
+export interface Form61ProfileFieldItem {
+  id: string
+  label: string
+  profile_value: string
+  audio_url?: string
+  accepted_answers: string[]
+  hints?: string[]
+}
+
+export interface Form61ProfileConfig {
+  intro: string
+  note?: string
+  profile_title?: string
+  is_fixed_first_field?: boolean
+  items: Form61ProfileFieldItem[]
+}
+
+export interface Form62InterviewFieldItem {
+  id: string
+  label: string
+  target_answer: string
+  accepted_values?: string[]
+  answer_audio_url?: string
+  answer_text_display?: string
+  question_bank: string[]
+  hints?: string[]
+}
+
+export interface Form62InterviewConfig {
+  intro: string
+  note?: string
+  pass_score?: number
+  items: Form62InterviewFieldItem[]
+}
+
 export interface DynamicTaskRecord {
   code: string
   unit?: number
@@ -137,6 +188,8 @@ export interface DynamicTaskRecord {
     | Form4SpeakingConfig
     | Form5SequenceConfig
     | Form5ListenRepeatConfig
+    | Form61ProfileConfig
+    | Form62InterviewConfig
     | Record<string, any>
 }
 

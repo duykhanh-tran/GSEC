@@ -19,6 +19,8 @@ import { SequenceOrderingRenderer } from './renderers/SequenceOrderingRenderer'
 import { SentenceWritingRenderer } from './renderers/SentenceWritingRenderer'
 import { SpeakingPronunciationRenderer } from './renderers/SpeakingPronunciationRenderer'
 import { ListenRepeatRenderer } from './renderers/ListenRepeatRenderer'
+import { ProfileListenAnswerRenderer } from './renderers/ProfileListenAnswerRenderer'
+import { InterviewFillProfileRenderer } from './renderers/InterviewFillProfileRenderer'
 import {
   checkRequiredKeywords,
   evaluateSentenceWithAI,
@@ -32,11 +34,14 @@ import type {
   DynamicTaskRecord,
   Form1ChoiceConfig,
   Form2FillConfig,
+  BlankFieldConfig,
   Form3WritingConfig,
   Form4SentenceRepairConfig,
   Form5SequenceConfig,
   Form4SpeakingConfig,
   Form5ListenRepeatConfig,
+  Form61ProfileConfig,
+  Form62InterviewConfig,
   GradingResponse,
 } from './dynamic-schema'
 
@@ -48,6 +53,173 @@ interface DynamicTaskRunnerProps {
 interface NoticeItem {
   id: number
   content: ReactNode
+}
+
+/**
+ * Ghép từ/cụm từ cho trước (Sentence Starter/Ending) với phần học sinh viết tiếp thành 1 câu hoàn chỉnh để AI chấm điểm
+ */
+export function buildFullSentence(
+  studentInput: string,
+  starter?: string,
+  ending?: string,
+): string {
+  const rawInput = (studentInput || '').trim()
+  const prefix = (starter || '').trim()
+  const suffix = (ending || '').trim()
+
+  if (!prefix && !suffix) return rawInput
+
+  let full = rawInput
+  if (prefix) {
+    if (rawInput.toLowerCase().startsWith(prefix.toLowerCase())) {
+      full = rawInput
+    } else {
+      full = `${prefix} ${rawInput}`
+    }
+  }
+  if (suffix) {
+    if (!full.toLowerCase().endsWith(suffix.toLowerCase())) {
+      full = `${full} ${suffix}`
+    }
+  }
+  return full.trim()
+}
+
+function gradeAnswersLocally(
+  taskData: DynamicTaskRecord,
+  answers: Record<string, string>,
+  attemptCount: number,
+): GradingResponse {
+  const formType = taskData.form_type
+  const content = taskData.content as any
+  let itemsList: any[] = []
+
+  if (formType === 'FORM_1_CHOICE') {
+    itemsList = content?.items || []
+  } else if (formType === 'FORM_2_FILL') {
+    itemsList = content?.fields || content?.items || []
+  }
+
+  const results: Record<string, { correct: boolean; hint?: string }> = {}
+  let correctCount = 0
+
+  itemsList.forEach((it: any, idx: number) => {
+    const rawId = String(it.id !== undefined && it.id !== null ? it.id : idx + 1)
+    const userVal = (answers[rawId] || '').trim().toLowerCase().replace(/\s+/g, ' ')
+
+    // Tập hợp tất cả các đáp án chấp nhận (chữ cái a, b, c, d hoặc từ, cụm từ)
+    const acceptedList: string[] = []
+
+    if (Array.isArray(it.accepted)) {
+      acceptedList.push(...it.accepted)
+    }
+    if (it.correct) {
+      acceptedList.push(String(it.correct))
+    }
+    if (it.correctAnswers && typeof it.correctAnswers === 'string') {
+      acceptedList.push(...it.correctAnswers.split(',').map((s: string) => s.trim()))
+    }
+    if (it.key) {
+      if (Array.isArray(it.key)) acceptedList.push(...it.key)
+      else acceptedList.push(String(it.key))
+    }
+
+    // Tra cứu thêm từ từ điển bài học gốc nếu chưa có cấu hình trong DB
+    if (acceptedList.length === 0) {
+      const staticDefaults: Record<string, Record<string, string[]>> = {
+        '60111': {
+          'q1': ['school', 'a school'], '1': ['school', 'a school'],
+          'q2': ['3', 'three'], '2': ['3', 'three'],
+          'q3': ['excited'], '3': ['excited'],
+          'q4a': ['ruler', 'compass', 'pencil sharpener', 'rubber', 'pencil case', 'calculator', 'school bag', 'notebook', 'book', 'textbook', 'pen', 'pencil'],
+          'q4b': ['ruler', 'compass', 'pencil sharpener', 'rubber', 'pencil case', 'calculator', 'school bag', 'notebook', 'book', 'textbook', 'pen', 'pencil'],
+          '4a': ['ruler', 'compass', 'pencil sharpener', 'rubber', 'pencil case', 'calculator', 'school bag', 'notebook', 'book', 'textbook', 'pen', 'pencil'],
+          '4b': ['ruler', 'compass', 'pencil sharpener', 'rubber', 'pencil case', 'calculator', 'school bag', 'notebook', 'book', 'textbook', 'pen', 'pencil'],
+        },
+        '60121': {
+          '1': ['study', 'a'],
+          '2': ['have', 'b'],
+          '3': ['play', 'c'],
+          '4': ['study', 'd', 'a'],
+          '5': ['do', 'b', 'd'],
+          '6': ['play', 'c'],
+          '7': ['have', 'd', 'b'],
+          '8': ['do', 'a', 'd'],
+        },
+        '60131': {
+          '1': ['live', 'a'],
+          '2': ['goes', 'b'],
+          '3': ['have', 'c'],
+          '4': ['starts', 'd', 'a'],
+          '5': ["don't study", "do not study", "dont study", "b"],
+          '6': ["doesn't play", "does not play", "doesnt play", "c"],
+          '7': ['do', 'a'],
+          '8': ['wear', 'b'],
+          '9': ['does', 'c', 'a'],
+          '10': ['like', 'd', 'b'],
+        },
+        '60133': {
+          '1': ['a', 'usually do', 'i usually do my homework after dinner', 'i usually do my homework after dinner.'],
+          '2': ['b', 'often uses', 'lan often uses the computer room at break time', 'lan often uses the computer room at break time.'],
+          '3': ['c', 'usually have', 'we do not usually have lessons on saturday', 'we do not usually have lessons on saturday.'],
+          '4': ['a', 'sometimes have', 'does minh sometimes have lunch at school', 'does minh sometimes have lunch at school?'],
+        },
+        '60143': {
+          '1': ['classmates', 'classmate', 'in the same class', 'same class', 'a'],
+          '2': ['favourite subject', 'favorite subject', 'english', 'b'],
+          '3': ['break time', 'at break time', 'c'],
+          '4': ['study together', 'study', 'd'],
+          '5': ['library', 'in the library', 'school library', 'e'],
+          '6': ['share', 'share ideas', 'f'],
+          '7': ['uniform', 'school uniform', 'g'],
+          '8': ['homework', 'do homework', 'h'],
+        },
+        '60144': {
+          '1': ['b, d, a, c', 'b,d,a,c', 'bdac', 'b d a c', 'b-d-a-c', 'a', 'b', '1'],
+          '2': ['c, a, d, b', 'c,a,d,b', 'cadb', 'c a d b', 'c-a-d-b', 'c', 'd', '2'],
+        },
+      }
+      const taskDefaults = staticDefaults[taskData.code]
+      if (taskDefaults && taskDefaults[rawId]) {
+        acceptedList.push(...taskDefaults[rawId])
+      }
+    }
+
+    const isCorrect = acceptedList.length > 0 && acceptedList.some((acc) => {
+      const normAcc = String(acc).trim().toLowerCase().replace(/\s+/g, ' ')
+      if (userVal === normAcc) return true
+      if (userVal.replace(/[.,?!]+$/, '') === normAcc.replace(/[.,?!]+$/, '')) return true
+      if (userVal.replace(/['’]/g, '') === normAcc.replace(/['’]/g, '')) return true
+      return false
+    })
+
+    if (isCorrect) {
+      correctCount++
+      results[rawId] = { correct: true }
+    } else {
+      const hints = it.hints || []
+      const hint = attemptCount <= 1
+        ? hints[0] || it.firstHint || it.h1 || 'Xem lại câu hỏi và kiểm tra dữ kiện trong bài.'
+        : hints[1] || hints[0] || it.secondHint || it.h2 || 'Xem kỹ lại gợi ý và làm lại.'
+      results[rawId] = { correct: false, hint }
+    }
+  })
+
+  const totalCount = itemsList.length || 1
+  const score = Math.round((correctCount / totalCount) * 100)
+
+  return {
+    success: true,
+    task_code: taskData.code,
+    form_type: taskData.form_type,
+    score,
+    max_score: 100,
+    correct_count: correctCount,
+    total_count: totalCount,
+    is_completed: correctCount === totalCount,
+    attempt_count: attemptCount,
+    results,
+  }
 }
 
 export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps) {
@@ -97,7 +269,7 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
 
   useCelebrationSound(showCelebration)
   const { chatRef, scrollToLatest } = useAutoScroll(
-    `${phase}-${activeId}-${attempt}-${feedback}-${currentHint}-${isCompleted}-${notices.length}-${hasStartedWorksheet}-${listenCount}-${isCheckingWriting}`
+    `${phase}-${activeId}-${attempt}-${currentHint}-${isCompleted}-${notices.length}-${hasStartedWorksheet}-${listenCount}-${isCheckingWriting}`
   )
 
   const addNotice = (content: ReactNode) => {
@@ -256,8 +428,9 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
       itemRef = form1Config.items?.find((i) => String(i.id) === id)
       label = itemRef?.label || `Question ${id}`
     } else if (taskData.form_type === 'FORM_2_FILL') {
-      const form2Config = taskData.content as Form2FillConfig
-      itemRef = form2Config.fields?.find((f) => String(f.id) === id)
+      const form2Config = taskData.content as any
+      const rawList = form2Config?.fields || form2Config?.items || []
+      itemRef = rawList.find((f: any, idx: number) => String(f.id !== undefined && f.id !== null ? f.id : idx + 1) === id)
       const cleanNum = (itemRef?.label || id).replace(/^câu\s*/i, '').replace(/^question\s*/i, '').replace(/:\s*$/, '').trim()
       label = `Question ${cleanNum}`
     } else if (taskData.form_type === 'FORM_3_WRITING') {
@@ -277,9 +450,7 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
         {hint}
       </>
     )
-    schedule(() => scrollToLatest(), 60)
-    schedule(() => scrollToLatest(), 200)
-    schedule(() => scrollToLatest(), 400)
+    schedule(() => scrollToLatest(), 80)
   }
 
   // 3. Kết thúc bài tập và lưu điểm
@@ -316,7 +487,8 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
       return (taskData.content as Form1ChoiceConfig).items?.length || 1
     }
     if (taskData.form_type === 'FORM_2_FILL') {
-      return (taskData.content as Form2FillConfig).fields?.length || 1
+      const c = taskData.content as any
+      return (c?.fields || c?.items)?.length || 1
     }
     return 1
   }
@@ -335,11 +507,13 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
         numBadge: String(i.id),
       }))
     } else if (taskData.form_type === 'FORM_2_FILL') {
-      const form2Config = taskData.content as Form2FillConfig
-      itemsList = (form2Config.fields || []).map((f, idx) => {
+      const form2Config = taskData.content as any
+      const rawList = form2Config?.fields || form2Config?.items || []
+      itemsList = rawList.map((f: any, idx: number) => {
+        const rawId = String(f.id !== undefined && f.id !== null ? f.id : idx + 1)
         const cleanNum = (f.label || String(idx + 1)).replace(/^câu\s*/i, '').replace(/^question\s*/i, '').replace(/:\s*$/, '').trim() || String(idx + 1)
         return {
-          id: String(f.id),
+          id: rawId,
           label: `Question ${cleanNum}`,
           numBadge: cleanNum,
         }
@@ -358,59 +532,65 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
     setIsSubmitting(true)
 
     try {
-      const { data, error } = await supabase.rpc('grade_student_attempt', {
-        p_task_code: taskData.code,
-        p_answers: answers,
-        p_attempt_count: 1,
-      })
+      let res: GradingResponse | null = null
 
-      if (error) {
-        addNotice(`Grading error: ${error.message}`)
-        return
+      try {
+        const { data, error } = await supabase.rpc('grade_student_attempt', {
+          p_task_code: taskData.code,
+          p_answers: answers,
+          p_attempt_count: 1,
+        })
+
+        if (!error && data && data.success) {
+          res = data as GradingResponse
+        }
+      } catch (rpcErr) {
+        console.warn('RPC grading error, falling back to local grading:', rpcErr)
       }
 
-      if (data && data.success) {
-        const res = data as GradingResponse
-        setGradingResult(res)
+      if (!res) {
+        res = gradeAnswersLocally(taskData, answers, 1)
+      }
 
-        const wrong = itemsList
-          .filter((item) => !res.results?.[item.id]?.correct)
-          .map((item) => item.id)
+      setGradingResult(res)
 
-        if (wrong.length === 0) {
-          // Làm đúng hết ngay lần đầu tiên!
-          finish(100)
-        } else {
-          // Có câu sai: chuyển sang chế độ Guided Retry từng câu
-          setInitialWrongIds(wrong)
-          setQueue(wrong)
-          setPhase('guided')
+      const wrong = itemsList
+        .filter((item) => !res?.results?.[item.id]?.correct)
+        .map((item) => item.id)
 
-          const firstScore = Math.round(((itemsList.length - wrong.length) / itemsList.length) * 100)
-          saveTaskAttempt({
-            taskCode: task.code,
-            score: firstScore,
-            firstScore: firstScore,
-            status: 'in_progress',
-            supportMode: 'GUIDED',
-            answersPayload: answers,
-          })
+      if (wrong.length === 0) {
+        // Làm đúng hết ngay lần đầu tiên!
+        finish(100)
+      } else {
+        // Có câu sai: chuyển sang chế độ Guided Retry từng câu
+        setInitialWrongIds(wrong)
+        setQueue(wrong)
+        setPhase('guided')
 
-          const wrongBadges = wrong.map((k) => {
-            const match = itemsList.find((i) => i.id === k)
-            return match?.numBadge || k
-          })
+        const firstScore = Math.round(((itemsList.length - wrong.length) / itemsList.length) * 100)
+        saveTaskAttempt({
+          taskCode: task.code,
+          score: firstScore,
+          firstScore: firstScore,
+          status: 'in_progress',
+          supportMode: 'GUIDED',
+          answersPayload: answers,
+        })
 
-          addNotice(
-            <>
-              Questions <strong>{wrongBadges.join(', ')}</strong> need another look. Keep your worksheet open.
-            </>
-          )
+        const wrongBadges = wrong.map((k) => {
+          const match = itemsList.find((i) => i.id === k)
+          return match?.numBadge || k
+        })
 
-          schedule(() => {
-            beginRetry(wrong[0], 1, res.results)
-          }, 350)
-        }
+        addNotice(
+          <>
+            Questions <strong>{wrongBadges.join(', ')}</strong> need another look. Keep your worksheet open.
+          </>
+        )
+
+        schedule(() => {
+          beginRetry(wrong[0], 1, res?.results)
+        }, 350)
       }
     } catch (err: any) {
       addNotice(err?.message || 'Server connection error.')
@@ -434,19 +614,26 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
 
     try {
       const updatedAnswers = { ...answers, [activeId]: valueToTest }
-      const { data, error } = await supabase.rpc('grade_student_attempt', {
-        p_task_code: taskData.code,
-        p_answers: updatedAnswers,
-        p_attempt_count: attempt + 1,
-      })
+      let res: GradingResponse | null = null
 
-      if (error) {
-        addNotice(`Grading error: ${error.message}`)
-        setIsCheckingRetry(false)
-        return
+      try {
+        const { data, error } = await supabase.rpc('grade_student_attempt', {
+          p_task_code: taskData.code,
+          p_answers: updatedAnswers,
+          p_attempt_count: attempt + 1,
+        })
+
+        if (!error && data && data.success) {
+          res = data as GradingResponse
+        }
+      } catch (rpcErr) {
+        console.warn('RPC retry grading error, falling back to local grading:', rpcErr)
       }
 
-      const res = data as GradingResponse
+      if (!res) {
+        res = gradeAnswersLocally(taskData, updatedAnswers, attempt + 1)
+      }
+
       const isCorrect = res.results?.[activeId]?.correct === true
 
       if (isCorrect) {
@@ -460,7 +647,7 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
 
           if (nextQueue.length > 0) {
             // Còn câu sai tiếp theo trong hàng đợi -> chuyển sang câu đó
-            beginRetry(nextQueue[0], 1, res.results)
+            beginRetry(nextQueue[0], 1, res?.results)
           } else {
             // Đã làm đúng hết toàn bộ các câu sai!
             const total = getTotalItems()
@@ -488,13 +675,14 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
             itemRef = form1Config.items?.find((i) => String(i.id) === activeId)
             label = itemRef?.label || `Question ${activeId}`
           } else if (taskData.form_type === 'FORM_2_FILL') {
-            const form2Config = taskData.content as Form2FillConfig
-            itemRef = form2Config.fields?.find((f) => String(f.id) === activeId)
+            const form2Config = taskData.content as any
+            const rawList = form2Config?.fields || form2Config?.items || []
+            itemRef = rawList.find((f: any, idx: number) => String(f.id !== undefined && f.id !== null ? f.id : idx + 1) === activeId)
             const cleanNum = (itemRef?.label || activeId).replace(/^câu\s*/i, '').replace(/^question\s*/i, '').replace(/:\s*$/, '').trim()
             label = `Question ${cleanNum}`
           }
 
-          const deepHint = getRandomHint(activeId, itemRef, res.results)
+          const deepHint = getRandomHint(activeId, itemRef, res?.results)
 
           setCurrentHint(deepHint)
           addNotice(
@@ -702,7 +890,8 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
       for (let idx = 0; idx < items.length; idx++) {
         const item = items[idx]
         const id = String(item.id || idx + 1)
-        const sentence = (answers[id] || '').trim()
+        const rawSentence = (answers[id] || '').trim()
+        const sentence = buildFullSentence(rawSentence, item.sentence_starter, item.sentence_ending)
         const reqWords = item.required_words || []
 
         if (reqWords.length > 0) {
@@ -749,9 +938,12 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
         </>
       )
 
+      const generalCriteria = (taskData.content as Form3WritingConfig)?.scoring_criteria
+
       const itemsToEvaluate = items.map((item, idx) => {
         const id = String(item.id || idx + 1)
-        const sentence = (answers[id] || '').trim()
+        const rawSentence = (answers[id] || '').trim()
+        const sentence = buildFullSentence(rawSentence, item.sentence_starter, item.sentence_ending)
         return {
           id,
           prompt: item.prompt || item.label,
@@ -759,10 +951,16 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
           sentence,
           required_words: item.required_words,
           hints: item.hints,
+          scoring_criteria: item.scoring_criteria,
         }
       })
 
-      const batchResults = await evaluateBatchSentencesWithAI(itemsToEvaluate, subMode)
+      const batchResults = await evaluateBatchSentencesWithAI(
+        itemsToEvaluate,
+        subMode,
+        undefined,
+        generalCriteria,
+      )
 
       let allGrammarCorrect = true
       let totalScore = 0
@@ -801,7 +999,10 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
         setShowCelebration(true)
         setPhase('complete')
         const approvedSentences = items
-          .map((item, idx) => (answers[String(item.id || idx + 1)] || '').trim())
+          .map((item, idx) => {
+            const id = String(item.id || idx + 1)
+            return buildFullSentence(answers[id] || '', item.sentence_starter, item.sentence_ending)
+          })
           .filter(Boolean)
         saveApprovedWriting(task.code, approvedSentences)
         saveTaskAttempt({
@@ -859,8 +1060,7 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
           </>
         )
 
-        schedule(() => scrollToLatest(), 100)
-        schedule(() => scrollToLatest(), 350)
+        schedule(() => scrollToLatest(), 80)
       }
     } catch (err: any) {
       addNotice(`Evaluation error: ${err?.message || 'Unable to check writing.'}`)
@@ -877,18 +1077,20 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
     const activeItem = items.find((i, idx) => String(i.id || idx + 1) === activeId)
     if (!activeItem) return
 
-    const valueToTest = retryChosenValue.trim()
-    if (!valueToTest) {
+    const rawValue = retryChosenValue.trim()
+    if (!rawValue) {
       addNotice('Vui lòng nhập câu đã sửa của bạn.')
       return
     }
+
+    const fullRetrySentence = buildFullSentence(rawValue, activeItem.sentence_starter, activeItem.sentence_ending)
 
     setIsCheckingRetry(true)
 
     try {
       // 1. Kiểm tra từ khóa nếu là BOOK_KEYWORD
       if (form3Config.sub_mode === 'BOOK_KEYWORD' && activeItem.required_words?.length) {
-        const kwCheck = checkRequiredKeywords(valueToTest, activeItem.required_words)
+        const kwCheck = checkRequiredKeywords(fullRetrySentence, activeItem.required_words)
         if (!kwCheck.passed) {
           setFeedback(`Chưa đủ từ gợi ý trong sách: ${kwCheck.missingWords.join(', ')}`)
           setIsCheckingRetry(false)
@@ -897,11 +1099,16 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
       }
 
       // 2. Chấm AI cho câu sửa lại
-      const aiRes = await evaluateSentenceWithAI(valueToTest, activeItem)
+      const aiRes = await evaluateSentenceWithAI(
+        fullRetrySentence,
+        activeItem,
+        undefined,
+        form3Config?.scoring_criteria,
+      )
 
       if (aiRes.is_correct) {
         setFeedback('Correct ✓')
-        const updatedAnswers = { ...answers, [activeId]: valueToTest }
+        const updatedAnswers = { ...answers, [activeId]: rawValue }
         setAnswers(updatedAnswers)
 
         setWritingResults((prev) => ({
@@ -933,8 +1140,7 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
                 🎉 <strong>{activeItem.label || `Question ${activeId}`}:</strong> Đã sửa đúng ✓. Tiếp theo, hãy cùng xem lại <strong>{nextItem?.label || `Question ${nextId}`}</strong> nhé!
               </>
             )
-            schedule(() => scrollToLatest(), 100)
-            schedule(() => scrollToLatest(), 300)
+            schedule(() => scrollToLatest(), 80)
           } else {
             // Đã sửa đúng hết tất cả các câu sai!
             setIsCompleted(true)
@@ -942,7 +1148,11 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
             setPhase('complete')
             setActiveId(null)
             const approvedSentences = items
-              .map((item, idx) => (updatedAnswers[String(item.id || idx + 1)] || '').trim())
+              .map((item, idx) => {
+                const id = String(item.id || idx + 1)
+                const val = (updatedAnswers[id] || '').trim()
+                return buildFullSentence(val, item.sentence_starter, item.sentence_ending)
+              })
               .filter(Boolean)
             saveApprovedWriting(task.code, approvedSentences)
             saveTaskAttempt({
@@ -958,8 +1168,7 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
                 🎉 <strong>Task complete ✓</strong> Bạn đã sửa đúng tất cả các câu! Tuyệt vời!
               </>
             )
-            schedule(() => scrollToLatest(), 100)
-            schedule(() => scrollToLatest(), 300)
+            schedule(() => scrollToLatest(), 80)
           }
         }, 800)
       } else {
@@ -1043,19 +1252,30 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
 
   const form1Items = form1Config?.items || []
   const form1Options = form1Config?.options || ['A', 'B', 'C']
-  const form2Fields = form2Config?.fields || []
+  const rawForm2Fields = (form2Config as any)?.fields || (form2Config as any)?.items || []
+  const form2Fields: BlankFieldConfig[] = Array.isArray(rawForm2Fields) ? rawForm2Fields : []
 
-  // Chuẩn hóa danh sách câu hỏi cho cả Form 1 và Form 2
-  const allQuestionItems: { id: string; label: string; numBadge: string; cue?: string }[] =
+  // Chuẩn hóa danh sách câu hỏi cho cả Form 1, Form 2 và Form 3
+  const allQuestionItems: {
+    id: string
+    label: string
+    numBadge: string
+    cue?: string
+    audio_url?: string
+    sentence_starter?: string
+    sentence_ending?: string
+  }[] =
     taskData.form_type === 'FORM_1_CHOICE'
       ? form1Items.map((i) => ({
           id: String(i.id),
           label: i.label || `Question ${i.id}`,
           numBadge: String(i.id),
           cue: i.cue,
+          audio_url: i.audio_url || i.audioUrl,
         }))
       : taskData.form_type === 'FORM_2_FILL'
       ? form2Fields.map((f, idx) => {
+          const rawId = String(f.id !== undefined && f.id !== null ? f.id : idx + 1)
           const cleanNum =
             (f.label || String(idx + 1))
               .replace(/^câu\s*/i, '')
@@ -1063,10 +1283,10 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
               .replace(/:\s*$/, '')
               .trim() || String(idx + 1)
           return {
-            id: String(f.id),
+            id: rawId,
             label: `Question ${cleanNum}`,
             numBadge: cleanNum,
-            cue: `Look back at Question ${cleanNum} from the worksheet.`,
+            cue: f.cue || `Look back at Question ${cleanNum} from the worksheet.`,
           }
         })
       : taskData.form_type === 'FORM_3_WRITING'
@@ -1075,6 +1295,8 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
           label: item.label || `Question ${idx + 1}`,
           numBadge: String(idx + 1),
           cue: item.cue || `Look back at Question ${idx + 1} from your worksheet.`,
+          sentence_starter: item.sentence_starter,
+          sentence_ending: item.sentence_ending,
         }))
       : []
 
@@ -1106,7 +1328,17 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
       ? 'Read aloud the sentences you wrote in the previous writing task. AI will evaluate your pronunciation clarity.'
       : taskData.form_type === 'FORM_5_LISTEN_REPEAT'
       ? 'Listen to each audio clip carefully. Repeat aloud into your microphone to get scored.'
+      : taskData.form_type === 'FORM_6_1_PROFILE_QA'
+      ? "Look at your new classmate's profile. Listen to the AI Coach and answer."
+      : taskData.form_type === 'FORM_6_2_INTERVIEW_PROFILE'
+      ? 'Ask AI Tutor, fill in the profile, and hit Submit!'
       : 'Enter your answers below.')
+
+  const isCustomInteractiveForm =
+    taskData.form_type === 'FORM_4_SPEAKING' ||
+    taskData.form_type === 'FORM_5_LISTEN_REPEAT' ||
+    taskData.form_type === 'FORM_6_1_PROFILE_QA' ||
+    taskData.form_type === 'FORM_6_2_INTERVIEW_PROFILE'
 
   return (
     <InteractiveTaskFrame
@@ -1129,6 +1361,10 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
               ? (isCompleted ? 'Speaking complete ✓' : 'Practice speaking aloud')
               : taskData.form_type === 'FORM_5_LISTEN_REPEAT'
               ? (isCompleted ? 'Listen & Repeat complete ✓' : 'Listen & repeat each sentence (> 80% to pass)')
+              : taskData.form_type === 'FORM_6_1_PROFILE_QA'
+              ? (isCompleted ? 'Profile Q&A complete ✓' : 'Listen & answer questions about classmate')
+              : taskData.form_type === 'FORM_6_2_INTERVIEW_PROFILE'
+              ? (isCompleted ? 'Profile filled ✓' : 'Ask AI Tutor to fill in the profile')
               : taskData.form_type === 'FORM_3_WRITING'
               ? `${(taskData.content as Form3WritingConfig)?.items?.length || 1} writing questions`
               : `${totalItemsCount} questions`
@@ -1142,14 +1378,14 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
               ? '🔄 Try again'
               : phase === 'guided'
               ? 'Reviewing...'
-              : (taskData.form_type === 'FORM_4_SPEAKING' || taskData.form_type === 'FORM_5_LISTEN_REPEAT')
-              ? (isCompleted ? '🎉 Complete ✓' : 'Speak & Score above')
+              : isCustomInteractiveForm
+              ? (isCompleted ? '🎉 Complete ✓' : 'Complete in task above')
               : isSubmitting || isCheckingWriting
               ? 'Checking...'
               : 'Check'
           }
           actionId="footerActionBtn"
-          disabled={!isAudioUnlocked || phase === 'guided' || isSubmitting || isCheckingWriting || ((taskData.form_type === 'FORM_4_SPEAKING' || taskData.form_type === 'FORM_5_LISTEN_REPEAT') && !isCompleted)}
+          disabled={!isAudioUnlocked || phase === 'guided' || isSubmitting || isCheckingWriting || (isCustomInteractiveForm && !isCompleted)}
           onAction={
             isCompleted
               ? handleRestart
@@ -1162,7 +1398,7 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
               ? handleInitialCheck
               : taskData.form_type === 'FORM_3_WRITING'
               ? handleWritingSubmit
-              : (taskData.form_type === 'FORM_4_SPEAKING' || taskData.form_type === 'FORM_5_LISTEN_REPEAT')
+              : isCustomInteractiveForm
               ? () => navigate('/?mode=code')
               : handleGenericSubmit
           }
@@ -1231,7 +1467,7 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
           <section className="task-panel card" style={{ padding: '16px', position: 'relative' }}>
             <div className="ch" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
               <h2 style={{ margin: 0, fontSize: '15px' }}>Your answers</h2>
-              <span style={{ fontSize: '12px', color: 'var(--color-muted)' }}>{form2Fields.length} items</span>
+              <span style={{ fontSize: '12px', color: 'var(--color-muted)' }}>{allQuestionItems.length} items</span>
             </div>
             <form
               className="form"
@@ -1241,7 +1477,7 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
               }}
             >
               {allQuestionItems.map((item) => {
-                const fieldCfg = form2Fields.find((f) => String(f.id) === item.id)
+                const fieldCfg = form2Fields.find((f, idx) => String(f.id !== undefined && f.id !== null ? f.id : idx + 1) === item.id) || form2Fields[parseInt(item.id, 10) - 1]
                 return (
                   <div
                     key={item.id}
@@ -1274,7 +1510,7 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
                       id={item.id}
                       autoComplete="off"
                       value={answers[item.id] || ''}
-                      placeholder={fieldCfg?.placeholder || 'Your answer'}
+                      placeholder={fieldCfg?.placeholder || 'Your answer (a, b, c, d or word/phrase)'}
                       onChange={(e) => handleAnswerChange(item.id, e.target.value)}
                       disabled={isSubmitting}
                       style={{
@@ -1297,7 +1533,7 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
                 </ActionButton>
               </div>
               <div className="note" style={{ marginTop: '12px', fontSize: '12px', color: 'var(--color-muted)' }}>
-                Use the worksheet questions while entering your answers.
+                Use the worksheet questions while entering your answers (letters a, b, c, d or words/phrases).
               </div>
             </form>
           </section>
@@ -1353,7 +1589,7 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
 
         {/* 5A. FORM 1 RETRY CARD */}
         {taskData.form_type === 'FORM_1_CHOICE' && phase === 'guided' && activeId !== null && (
-          <section className="retry guided-choice-retry" data-stage="retry" data-attempt={attempt}>
+          <section className="retry guided-choice-retry is-active-guided" data-stage="retry" data-attempt={attempt}>
             <div className="retry-head">
               <strong>{currentRetryItem?.label || `Question ${activeId}`}</strong>
               <StatusTag tone="warning">Attempt {attempt}</StatusTag>
@@ -1361,6 +1597,37 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
             <div className="bookcue">
               {currentRetryItem?.cue || `Look back at Question ${activeId}.`}
             </div>
+            {currentRetryItem?.audio_url && (
+              <div
+                className="item-retry-audio-box"
+                style={{
+                  margin: '10px 0 12px',
+                  padding: '10px 14px',
+                  background: 'var(--color-surface, #f8fafc)',
+                  borderRadius: '10px',
+                  border: '1px solid var(--color-line, #e2e8f0)',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    marginBottom: '6px',
+                    fontSize: '12px',
+                    fontWeight: 650,
+                    color: '#334155',
+                  }}
+                >
+                  <span>🎧 Nghe lại đoạn âm thanh của câu này:</span>
+                </div>
+                <audio
+                  controls
+                  src={currentRetryItem.audio_url}
+                  style={{ width: '100%', height: '36px' }}
+                />
+              </div>
+            )}
             <div className={`hint ${attempt > 1 ? 'deep' : ''}`}>
               💡 {currentHint}
             </div>
@@ -1381,7 +1648,7 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
         {/* 5B. FORM 2 RETRY CARD (DỰA THEO 60111: INPUT + CHECK BUTTON + CÂU HỎI TIẾP THEO KHI LÀM ĐÚNG) */}
         {taskData.form_type === 'FORM_2_FILL' && phase === 'guided' && activeId !== null && (
           <section
-            className="retry guided-choice-retry"
+            className="retry guided-choice-retry is-active-guided"
             data-stage="retry"
             data-attempt={attempt}
             style={{
@@ -1433,7 +1700,7 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
                 autoFocus
                 autoComplete="off"
                 value={retryChosenValue}
-                placeholder="Type your answer"
+                placeholder="Type your answer (a, b, c, d or word/phrase)"
                 disabled={Boolean(feedback) || isCheckingRetry}
                 onChange={(e) => setRetryChosenValue(e.target.value)}
                 onKeyDown={(e) => {
@@ -1479,7 +1746,7 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
           phase === 'guided' &&
           activeId !== null && (
             <section
-              className="retry guided-choice-retry guided-sentence-repair-card"
+              className="retry guided-choice-retry guided-sentence-repair-card is-active-guided"
               data-stage="retry"
               data-attempt={attempt}
               style={{
@@ -1540,7 +1807,7 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
                   ✍️ Câu bạn đã viết ban đầu:
                 </span>
                 <span style={{ color: '#374151', fontStyle: 'italic', fontWeight: 500 }}>
-                  "{answers[activeId] || '—'}"
+                  "{buildFullSentence(answers[activeId] || '', currentRetryItem?.sentence_starter, currentRetryItem?.sentence_ending) || '—'}"
                 </span>
               </div>
 
@@ -1597,31 +1864,63 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
 
               {/* Ô nhập câu đã sửa và nút Kiểm tra */}
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                <input
-                  id={`retry-writing-${activeId}`}
-                  autoFocus
-                  autoComplete="off"
-                  value={retryChosenValue}
-                  placeholder="Nhập lại câu hoàn chỉnh sau khi sửa..."
-                  disabled={feedback === 'Correct ✓' || isCheckingRetry}
-                  onChange={(e) => setRetryChosenValue(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault()
-                      handleWritingRetrySubmit()
-                    }
-                  }}
+                <div
+                  className="sentence-input-wrapper"
                   style={{
                     flex: 1,
                     minWidth: '240px',
-                    padding: '11px 14px',
+                    display: 'flex',
+                    alignItems: 'center',
                     border: '1.5px solid #d9dde4',
                     borderRadius: '12px',
-                    fontSize: '15px',
-                    outline: 'none',
                     background: '#ffffff',
+                    overflow: 'hidden',
                   }}
-                />
+                >
+                  {currentRetryItem?.sentence_starter && (
+                    <span
+                      className="sentence-starter-prefix"
+                      title="Phần đầu câu cho trước"
+                    >
+                      {currentRetryItem.sentence_starter}
+                    </span>
+                  )}
+                  <input
+                    id={`retry-writing-${activeId}`}
+                    autoFocus
+                    autoComplete="off"
+                    value={retryChosenValue}
+                    placeholder={
+                      currentRetryItem?.sentence_starter
+                        ? 'viết tiếp phần còn lại của câu...'
+                        : 'Nhập lại câu hoàn chỉnh sau khi sửa...'
+                    }
+                    disabled={feedback === 'Correct ✓' || isCheckingRetry}
+                    onChange={(e) => setRetryChosenValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        handleWritingRetrySubmit()
+                      }
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '11px 14px',
+                      border: 'none',
+                      outline: 'none',
+                      fontSize: '15px',
+                      background: 'transparent',
+                    }}
+                  />
+                  {currentRetryItem?.sentence_ending && (
+                    <span
+                      className="sentence-starter-suffix"
+                      title="Phần kết câu cho trước"
+                    >
+                      {currentRetryItem.sentence_ending}
+                    </span>
+                  )}
+                </div>
                 <ActionButton
                   id="submitWritingRetryBtn"
                   disabled={feedback === 'Correct ✓' || isCheckingRetry || !retryChosenValue.trim()}
@@ -1650,7 +1949,7 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
         {/* 6. GIAI ĐOẠN 3: BẢNG TỔNG KẾT KHI TẤT CẢ ĐÃ LÀM ĐÚNG */}
         {(isGuidedForm || (taskData.form_type === 'FORM_3_WRITING' && (taskData.content as Form3WritingConfig)?.sub_mode !== 'PARAGRAPH')) &&
           phase === 'complete' && (
-          <section className="task-panel summary card">
+          <section className="task-panel summary card completion-actions-card">
             <div className="ch">
               <h2>Task complete ✓</h2>
               <span>All {allQuestionItems.length} answers are correct</span>
@@ -1747,9 +2046,65 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
           </section>
         )}
 
+        {/* FORM 6.1: PROFILE LISTEN & ANSWER */}
+        {taskData.form_type === 'FORM_6_1_PROFILE_QA' && (
+          <section className="task-panel" style={{ background: '#ffffff', padding: '20px', borderRadius: '16px', border: '1px solid var(--color-line, #e5e7eb)', boxShadow: '0 4px 16px rgba(0,0,0,0.04)' }}>
+            <ProfileListenAnswerRenderer
+              config={taskData.content as Form61ProfileConfig}
+              taskCode={task.code}
+              onComplete={(score, details) => {
+                setIsCompleted(true)
+                setShowCelebration(true)
+                saveTaskAttempt({
+                  taskCode: task.code,
+                  score,
+                  firstScore: score,
+                  status: 'completed',
+                  supportMode: 'INDEPENDENT',
+                  answersPayload: details,
+                })
+              }}
+              onRestart={() => {
+                setIsCompleted(false)
+                setShowCelebration(false)
+              }}
+              onNavigateHome={() => navigate('/?mode=code')}
+              disabled={isCompleted}
+            />
+          </section>
+        )}
+
+        {/* FORM 6.2: INTERVIEW AI TUTOR & FILL PROFILE */}
+        {taskData.form_type === 'FORM_6_2_INTERVIEW_PROFILE' && (
+          <section className="task-panel" style={{ background: '#ffffff', padding: '20px', borderRadius: '16px', border: '1px solid var(--color-line, #e5e7eb)', boxShadow: '0 4px 16px rgba(0,0,0,0.04)' }}>
+            <InterviewFillProfileRenderer
+              config={taskData.content as Form62InterviewConfig}
+              taskCode={task.code}
+              onComplete={(score, details) => {
+                setIsCompleted(true)
+                setShowCelebration(true)
+                saveTaskAttempt({
+                  taskCode: task.code,
+                  score,
+                  firstScore: score,
+                  status: 'completed',
+                  supportMode: 'INDEPENDENT',
+                  answersPayload: details,
+                })
+              }}
+              onRestart={() => {
+                setIsCompleted(false)
+                setShowCelebration(false)
+              }}
+              onNavigateHome={() => navigate('/?mode=code')}
+              disabled={isCompleted}
+            />
+          </section>
+        )}
+
         {/* CÁC DẠNG BÀI KHÁC (FORM 4 REPAIR, FORM 5 SEQUENCE) */}
-        {!isGuidedForm && taskData.form_type !== 'FORM_3_WRITING' && taskData.form_type !== 'FORM_4_SPEAKING' && taskData.form_type !== 'FORM_5_LISTEN_REPEAT' && isWorksheetVisible && (
-          <section className="task-panel card" style={{ background: '#ffffff', padding: '20px', borderRadius: '12px', border: '1px solid var(--color-line, #e5e7eb)' }}>
+        {!isGuidedForm && taskData.form_type !== 'FORM_3_WRITING' && taskData.form_type !== 'FORM_4_SPEAKING' && taskData.form_type !== 'FORM_5_LISTEN_REPEAT' && taskData.form_type !== 'FORM_6_1_PROFILE_QA' && taskData.form_type !== 'FORM_6_2_INTERVIEW_PROFILE' && isWorksheetVisible && (
+          <section className={`task-panel card ${isCompleted ? 'completion-actions-card' : ''}`} style={{ background: '#ffffff', padding: '20px', borderRadius: '12px', border: '1px solid var(--color-line, #e5e7eb)' }}>
             {taskData.form_type === 'FORM_4_SENTENCE_REPAIR' && (
               <SentenceRepairRenderer
                 config={taskData.content as Form4SentenceRepairConfig}

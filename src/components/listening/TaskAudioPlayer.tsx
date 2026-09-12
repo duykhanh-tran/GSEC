@@ -1,5 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useMemo } from 'react'
 import { StatusTag } from '../task/StatusTag'
+import { getOptimizedAudioSrc } from '../../lib/taskCacheService'
 
 interface TaskAudioPlayerProps {
   src: string
@@ -29,6 +30,7 @@ export function TaskAudioPlayer({
   onStartWorksheet,
 }: TaskAudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const optimizedSrc = useMemo(() => getOptimizedAudioSrc(src), [src])
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
@@ -120,7 +122,7 @@ export function TaskAudioPlayer({
         gap: '12px',
       }}
     >
-      <audio ref={audioRef} src={src} preload="metadata" />
+      <audio ref={audioRef} src={optimizedSrc} preload="metadata" />
 
       {/* Header: Title & Listen Count Tag */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>

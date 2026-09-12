@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import type { TaskDefinition } from '../app/task-types'
 import { InteractiveTaskFrame } from '../components/shell/InteractiveTaskFrame'
 import { ActionButton } from '../components/task/ActionButton'
+import { useAutoScroll } from '../hooks/useAutoScroll'
 import { saveTaskAttempt } from '../lib/taskAttemptService'
 import type { TaskFlowBlock } from './schema'
 import { TaskFlowRenderer } from './TaskFlowRenderer'
@@ -20,13 +21,15 @@ interface TaskRendererProps {
 export function TaskRenderer({
   task,
   className,
-  chatRef,
+  chatRef: externalChatRef,
   footer,
   blocks,
   disableAutoSave = false,
 }: TaskRendererProps) {
   const navigate = useNavigate()
   const hasAutoSavedRef = useRef(false)
+  const { chatRef: internalChatRef } = useAutoScroll(blocks.length)
+  const effectiveChatRef = externalChatRef || internalChatRef
 
   // Tự động phát hiện khi bài tập đạt trạng thái hoàn thành (cả 32 bài static):
   // Chỉ hiển thị khối hành động hoàn thành (Làm lại & Quay lại trang nhập mã) khi:
@@ -79,7 +82,7 @@ export function TaskRenderer({
   }
 
   return (
-    <InteractiveTaskFrame task={task} className={className} chatRef={chatRef} footer={footer}>
+    <InteractiveTaskFrame task={task} className={className} chatRef={effectiveChatRef} footer={footer}>
       <TaskFlowRenderer blocks={blocks} />
 
       {/* KHỐI HÀNH ĐỘNG KHI HOÀN THÀNH BÀI TẬP (LÀM LẠI & QUAY LẠI TRANG GÕ MÃ) */}

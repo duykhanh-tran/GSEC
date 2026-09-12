@@ -1,10 +1,10 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../auth'
 import { TASKS } from '../registry'
-import type { Form3SubMode } from '../../task-engine/dynamic-schema'
 import { AppHeader } from '../../components/shell/AppHeader'
+import { InlineCodeKeypad } from '../../components/keypad/InlineCodeKeypad'
 import '../../styles/portal.css'
 import '../../styles/auth.css'
 
@@ -30,6 +30,12 @@ interface ClassOption {
   teacher_email?: string
   student_count?: number
   created_at?: string
+}
+
+interface TeacherOption {
+  id: string
+  full_name: string
+  email: string
 }
 
 interface AssignmentItem {
@@ -65,11 +71,14 @@ export function AdminDashboardPage() {
   const navigate = useNavigate()
   const { user, profile } = useAuth()
 
-  const [activeTab, setActiveTab] = useState<'tasks' | 'assignments' | 'gradebook' | 'classes' | 'ai_config'>('tasks')
+  const [activeTab, setActiveTab] = useState<'overview' | 'tasks' | 'classes' | 'assignments' | 'gradebook' | 'keypad'>('overview')
 
   // Tasks state
   const [tasks, setTasks] = useState<TaskListItem[]>([])
   const [loadingTasks, setLoadingTasks] = useState(true)
+  const [showStandardTasks, setShowStandardTasks] = useState<boolean>(() => {
+    return localStorage.getItem('gsec_show_standard_tasks') === 'true' // Mặc định: false (ẩn 32 bài mẫu)
+  })
   const [taskFilterWs, setTaskFilterWs] = useState<string>('ALL')
   const [taskFilterForm, setTaskFilterForm] = useState<string>('ALL')
   const [taskSearch, setTaskSearch] = useState<string>('')
@@ -92,278 +101,141 @@ export function AdminDashboardPage() {
   const [gradebookSearch, setGradebookSearch] = useState<string>('')
   const [isRefreshingGradebook, setIsRefreshingGradebook] = useState(false)
 
-  // Authoring Modal states
-  const [isAuthoringOpen, setIsAuthoringOpen] = useState(false)
-  const [authoringFormType, setAuthoringFormType] = useState<string>('FORM_1_CHOICE')
-  const [taskCode, setTaskCode] = useState('')
-  const [taskUnit, setTaskUnit] = useState<number | string>(1)
-  const [taskLesson, setTaskLesson] = useState<number | string>(1)
-  const [taskNumber, setTaskNumber] = useState<number | string>(1)
-  const [taskTitle, setTaskTitle] = useState('AI Tutor • WS 1 - Task 1')
-  const [taskSubtitle, setTaskSubtitle] = useState('Unit 1')
-  const [taskIntro, setTaskIntro] = useState('')
+  // Studio & Edit task states
+  const [editingTaskCode, setEditingTaskCode] = useState<string | null>(null)
+  const [isLoadingEditTask] = useState(false)
 
-  // Audio Upload states
-  const [taskAudioUrl, setTaskAudioUrl] = useState('')
-  const [taskAudioName, setTaskAudioName] = useState('')
-  const [isUploadingAudio, setIsUploadingAudio] = useState(false)
-  const audioInputRef = useRef<HTMLInputElement>(null)
+  // Cấp tài khoản học sinh hàng loạt (Chuyển quyền toàn bộ cho Admin)
+  const [isBatchModalOpen, setIsBatchModalOpen] = useState(false)
+  const [batchClassId, setBatchClassId] = useState<string>('')
+  const [batchNamesText, setBatchNamesText] = useState('')
+  const [createdBatch, setCreatedBatch] = useState<Array<{ username: string; name: string; pass: string }>>([])
+  const [isSubmittingBatch, setIsSubmittingBatch] = useState(false)
+  const [batchResult, setBatchResult] = useState<{ success: boolean; message: string } | null>(null)
 
-  const handleAudioFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+  const handleOpenBatchModal = (classId?: string) => {
+    const targetId = classId || selectedClassId || (classes.length > 0 ? classes[0].id : '')
+    setBatchClassId(targetId)
+    setBatchNamesText('')
+    setCreatedBatch([])
+    setBatchResult(null)
+    setIsBatchModalOpen(true)
+  }
 
-    setTaskAudioName(file.name)
-    setIsUploadingAudio(true)
+  const handleGenerateBatchPreview = () => {
+    const lines = batchNamesText.split('\n').map((l) => l.trim()).filter(Boolean)
+    const currentClass = classes.find((c) => c.id === batchClassId)
+    const classPrefix = currentClass ? currentClass.name.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 4) : 'gsec'
 
-    // 1. Đọc data URL làm bản lưu an toàn
-    const reader = new FileReader()
-    reader.onload = async (ev) => {
-      const base64Url = ev.target?.result as string
-      setTaskAudioUrl(base64Url)
-
-      // 2. Thử upload lên Supabase Storage bucket 'task-audio' nếu có
-      try {
-        const fileExt = file.name.split('.').pop() || 'mp3'
-        const filePath = `tasks/${Date.now()}_${Math.random().toString(36).slice(2, 7)}.${fileExt}`
-        const { data, error } = await supabase.storage.from('task-audio').upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: true,
-        })
-        if (!error && data) {
-          const { data: pubUrl } = supabase.storage.from('task-audio').getPublicUrl(data.path)
-          if (pubUrl?.publicUrl) {
-            setTaskAudioUrl(pubUrl.publicUrl)
-          }
-        }
-      } catch (err) {
-        console.warn('Storage upload error, using base64 fallback:', err)
-      } finally {
-        setIsUploadingAudio(false)
+    const generated = lines.map((name, index) => {
+      const parts = name.split(' ')
+      const lastName = parts[parts.length - 1].toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '')
+      const username = `${classPrefix}.${lastName}${index + 1}`
+      return {
+        username,
+        name,
+        pass: '123456',
       }
+    })
+
+    setCreatedBatch(generated)
+    setBatchResult(null)
+  }
+
+  const handleCommitBatchCreation = async () => {
+    if (!batchClassId || createdBatch.length === 0) return
+    setIsSubmittingBatch(true)
+    setBatchResult(null)
+
+    try {
+      const { data, error } = await supabase.rpc('create_managed_students_batch', {
+        p_class_id: batchClassId,
+        p_students: createdBatch,
+      })
+
+      if (error) {
+        setBatchResult({ success: false, message: error.message })
+      } else if (data && !data.success) {
+        setBatchResult({ success: false, message: data.message })
+      } else {
+        setBatchResult({
+          success: true,
+          message: data?.message || `Đã cấp thành công ${createdBatch.length} tài khoản vào lớp!`,
+        })
+        await loadClassesAndAssignments()
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Có lỗi xảy ra khi tạo tài khoản.'
+      setBatchResult({ success: false, message: msg })
+    } finally {
+      setIsSubmittingBatch(false)
     }
-    reader.readAsDataURL(file)
   }
 
-  const handleRemoveAudio = () => {
-    setTaskAudioUrl('')
-    setTaskAudioName('')
-    if (audioInputRef.current) {
-      audioInputRef.current.value = ''
+  // Quản lý tạo & xóa lớp học trực tiếp cho Admin
+  const [teachers, setTeachers] = useState<TeacherOption[]>([])
+  const [isCreateClassModalOpen, setIsCreateClassModalOpen] = useState(false)
+  const [newClassName, setNewClassName] = useState('')
+  const [newClassTeacherId, setNewClassTeacherId] = useState('')
+  const [isSubmittingClass, setIsSubmittingClass] = useState(false)
+  const [createClassError, setCreateClassError] = useState('')
+
+  const handleAdminCreateClass = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newClassName.trim() || !user) return
+    setIsSubmittingClass(true)
+    setCreateClassError('')
+
+    const randomChars = Math.random().toString(36).substring(2, 6).toUpperCase()
+    const generatedCode = `GSEC${randomChars}`
+
+    try {
+      const { error } = await supabase.from('classes').insert({
+        teacher_id: newClassTeacherId || user.id,
+        name: newClassName.trim(),
+        code: generatedCode,
+      })
+
+      if (error) {
+        setCreateClassError(error.message)
+      } else {
+        setIsCreateClassModalOpen(false)
+        setNewClassName('')
+        setNewClassTeacherId('')
+        setCreateClassError('')
+        await loadClassesAndAssignments()
+      }
+    } catch (err: unknown) {
+      setCreateClassError(err instanceof Error ? err.message : 'Có lỗi xảy ra khi tạo lớp.')
+    } finally {
+      setIsSubmittingClass(false)
     }
   }
 
-  // Helper sinh tiêu đề tự động theo Lesson và Số thứ tự bài (AI Tutor • WS {lesson} - Task {task_number})
-  const getAutoTaskTitle = (l: number | string, n: number | string) => {
-    const lDisplay = l === '' ? '...' : l
-    const nDisplay = n === '' ? '...' : n
-    return `AI Tutor • WS ${lDisplay} - Task ${nDisplay}`
-  }
-
-  const handleUnitChange = (val: string) => {
-    setTaskUnit(val)
-    if (val.trim()) {
-      setTaskSubtitle(`Unit ${val.trim()}`)
+  const handleDeleteClass = async (classId: string, className: string) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa lớp "${className}" không? Toàn bộ phân công của lớp này cũng sẽ bị gỡ.`)) return
+    try {
+      const { error } = await supabase.from('classes').delete().eq('id', classId)
+      if (error) {
+        alert(`Không thể xóa lớp: ${error.message}`)
+      } else {
+        await loadClassesAndAssignments()
+      }
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Lỗi khi xóa lớp')
     }
-  }
-
-  const handleLessonChange = (newLesson: string) => {
-    setTaskLesson(newLesson)
-    setTaskTitle(getAutoTaskTitle(newLesson, taskNumber))
-  }
-
-  const handleTaskNumberChange = (newNum: string) => {
-    setTaskNumber(newNum)
-    setTaskTitle(getAutoTaskTitle(taskLesson, newNum))
   }
 
   const openAuthoringModal = () => {
-    const nextLesson = 1
-    const nextNum = 1
-    setTaskUnit(1)
-    setTaskLesson(nextLesson)
-    setTaskNumber(nextNum)
-    setTaskCode(`601${tasks.length + 1}`)
-    setTaskTitle(getAutoTaskTitle(nextLesson, nextNum))
-    setTaskSubtitle('Unit 1')
-    setTaskIntro('Check Task 1. Enter your answers.')
-    setTaskAudioUrl('')
-    setTaskAudioName('')
-    setForm3SubMode('FREE_SENTENCE')
-    setParagraphPrompt('Write a short paragraph (40-60 words) about your school.')
-    setParagraphMinWords(40)
-    setParagraphMaxWords(80)
-    setParagraphHelperWords('library, playground, friendly teachers, classmates')
-    setParagraphCriteria([
-      'Giới thiệu tên trường và vị trí',
-      'Kể ít nhất 2 phòng học hoặc tiện ích trong trường',
-      'Nêu cảm nghĩ của bạn về trường',
-    ])
-    setParagraphHints([
-      'Sử dụng thì hiện tại đơn (Present Simple)',
-      'Chú ý viết hoa đầu câu và dấu chấm câu kết thúc',
-    ])
-    setWritingItems([
-      {
-        label: 'Question 1',
-        prompt: '',
-        requiredWords: 'usually, badminton',
-        hints: ['Đặt trạng từ tần suất trước động từ thường.', 'Kiểm tra chủ ngữ và chia động từ phù hợp.'],
-      },
-    ])
-    setSpeakingLinkedTaskCode('60115')
-    setSpeakingPassScore(80)
-    setSpeakingFallbackSentences(
-      'I usually play badminton after school.\nMy brother often reads comic books in the library.\nWe sometimes ride bicycles around the park.\nThey never skip homework before going to bed.'
-    )
-    setForm5PassScore(80)
-    setForm5Items([
-      {
-        id: 'item-1',
-        label: 'Sentence 1',
-        target_text: 'I usually play badminton after school.',
-        audio_url: '',
-        hints: ['Nghe kỹ phát âm âm đuôi và ngữ điệu.'],
-      },
-      {
-        id: 'item-2',
-        label: 'Sentence 2',
-        target_text: 'My brother often reads comic books in the library.',
-        audio_url: '',
-        hints: ['Chú ý phát âm đuôi s ở reads.'],
-      },
-    ])
-    if (audioInputRef.current) {
-      audioInputRef.current.value = ''
-    }
-    setIsAuthoringOpen(true)
+    navigate('/admin/studio')
   }
 
-  // Question builders
-  const [choiceItems, setChoiceItems] = useState<
-    Array<{ label: string; cue: string; correct: string; hints: string[] }>
-  >([
-    { label: 'Question 1', cue: 'Look back at Question 1.', correct: 'A', hints: ['', ''] },
-    { label: 'Question 2', cue: 'Look back at Question 2.', correct: 'B', hints: ['', ''] },
-  ])
-  const [choiceOptionsText, setChoiceOptionsText] = useState('A, B, C')
-
-  const [fillItems, setFillItems] = useState<Array<{
-    label: string
-    placeholder?: string
-    correctAnswers: string
-    hints: string[]
-    h1?: string
-    h2?: string
-  }>>([
-    { label: '1', placeholder: 'Your answer', correctAnswers: 'school, a school', hints: ['', ''] },
-  ])
-
-  // Form 3 Writing items & sub-mode state
-  const [form3SubMode, setForm3SubMode] = useState<Form3SubMode>('FREE_SENTENCE')
-  const [paragraphPrompt, setParagraphPrompt] = useState('Write a short paragraph (40-60 words) about your school.')
-  const [paragraphMinWords, setParagraphMinWords] = useState(40)
-  const [paragraphMaxWords, setParagraphMaxWords] = useState(80)
-  const [paragraphHelperWords, setParagraphHelperWords] = useState('library, playground, friendly teachers, classmates')
-  const [paragraphCriteria, setParagraphCriteria] = useState<string[]>([
-    'Giới thiệu tên trường và vị trí',
-    'Kể ít nhất 2 phòng học hoặc tiện ích trong trường',
-    'Nêu cảm nghĩ của bạn về trường',
-  ])
-  const [paragraphHints, setParagraphHints] = useState<string[]>([
-    'Sử dụng thì hiện tại đơn (Present Simple)',
-    'Chú ý viết hoa đầu câu và dấu chấm câu kết thúc',
-  ])
-
-  const [writingItems, setWritingItems] = useState<Array<{
-    label: string
-    prompt: string
-    requiredWords: string
-    hints: string[]
-  }>>([
-    {
-      label: 'Question 1',
-      prompt: '',
-      requiredWords: 'usually, badminton',
-      hints: ['Đặt trạng từ tần suất trước động từ thường.', 'Kiểm tra chủ ngữ và chia động từ phù hợp.'],
-    },
-  ])
-
-  // Form 4 Speaking items state
-  const [speakingLinkedTaskCode, setSpeakingLinkedTaskCode] = useState('60115')
-  const [speakingPassScore, setSpeakingPassScore] = useState(80)
-  const [speakingFallbackSentences, setSpeakingFallbackSentences] = useState(
-    'I usually play badminton after school.\nMy brother often reads comic books in the library.\nWe sometimes ride bicycles around the park.\nThey never skip homework before going to bed.'
-  )
-
-  // Form 5 Listen & Repeat items state
-  const [form5PassScore, setForm5PassScore] = useState(80)
-  const [form5Items, setForm5Items] = useState<
-    Array<{ id: string; label: string; target_text: string; audio_url?: string; hints?: string[] }>
-  >([
-    {
-      id: 'item-1',
-      label: 'Sentence 1',
-      target_text: 'I usually play badminton after school.',
-      audio_url: '',
-      hints: ['Nghe kỹ phát âm âm đuôi và ngữ điệu.'],
-    },
-    {
-      id: 'item-2',
-      label: 'Sentence 2',
-      target_text: 'My brother often reads comic books in the library.',
-      audio_url: '',
-      hints: ['Chú ý phát âm đuôi s ở reads.'],
-    },
-  ])
-
-  const handleItemAudioUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = async (ev) => {
-      const base64Url = ev.target?.result as string
-      setForm5Items((prev) => {
-        const next = [...prev]
-        next[index] = { ...next[index], audio_url: base64Url }
-        return next
-      })
-
-      try {
-        const fileExt = file.name.split('.').pop() || 'mp3'
-        const filePath = `tasks/${Date.now()}_${Math.random().toString(36).slice(2, 7)}.${fileExt}`
-        const { data, error } = await supabase.storage.from('task-audio').upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: true,
-        })
-        if (!error && data) {
-          const { data: pubUrl } = supabase.storage.from('task-audio').getPublicUrl(data.path)
-          if (pubUrl?.publicUrl) {
-            setForm5Items((prev) => {
-              const next = [...prev]
-              next[index] = { ...next[index], audio_url: pubUrl.publicUrl }
-              return next
-            })
-          }
-        }
-      } catch (err) {
-        console.warn('Item audio upload error, using base64 fallback:', err)
-      }
-    }
-    reader.readAsDataURL(file)
+  // Chỉnh sửa bài tập: Điều hướng sang trang Studio toàn màn hình
+  const handleOpenEditTask = async (taskItem: TaskListItem) => {
+    setEditingTaskCode(taskItem.code)
+    navigate(`/admin/studio?edit=${taskItem.code}`)
   }
 
-  // AI Keys Config states
-  const [assemblyAiKeyInput, setAssemblyAiKeyInput] = useState<string>(() => {
-    return typeof window !== 'undefined' ? localStorage.getItem('gsec_assemblyai_api_key') || '' : ''
-  })
-  const [geminiKeyInput, setGeminiKeyInput] = useState<string>(() => {
-    return typeof window !== 'undefined' ? localStorage.getItem('gsec_gemini_api_key') || '' : ''
-  })
-  const [apiKeySaveMsg, setApiKeySaveMsg] = useState<{ success: boolean; text: string } | null>(null)
-
-  const [savingTask, setSavingTask] = useState(false)
-  const [authoringStatus, setAuthoringStatus] = useState<{ success: boolean; text: string } | null>(null)
 
   const isAdmin = profile?.role === 'ADMIN'
 
@@ -382,49 +254,52 @@ export function AdminDashboardPage() {
       dbTasks.forEach((t) => dbMap.set(t.code, t))
     }
 
-    // Gộp bài từ TASKS registry
-    const catalogList: TaskListItem[] = TASKS.map((t) => {
-      const dbItem = dbMap.get(t.code)
-      if (dbItem) {
-        const itemLesson = dbItem.worksheet || 1
-        const unitMatch = (dbItem.subtitle || '').match(/Unit\s*(\d+)/i)
-        const itemUnit = unitMatch ? parseInt(unitMatch[1], 10) : 1
-        return {
-          code: dbItem.code,
-          unit: itemUnit,
-          worksheet: dbItem.worksheet,
-          lesson: itemLesson,
-          task_number: dbItem.task_number,
-          title: dbItem.title,
-          subtitle: dbItem.subtitle || t.subtitle,
-          form_type: dbItem.form_type || 'FORM_1_CHOICE',
-          is_published: dbItem.is_published ?? true,
-          is_custom: false,
-          updated_at: dbItem.updated_at,
+    const catalogList: TaskListItem[] = []
+
+    // 1. Nếu Admin bật hiển thị bài mẫu tiêu chuẩn (32 bài)
+    if (showStandardTasks) {
+      TASKS.forEach((t) => {
+        const dbItem = dbMap.get(t.code)
+        if (dbItem) {
+          const itemLesson = dbItem.worksheet || 1
+          const unitMatch = (dbItem.subtitle || '').match(/Unit\s*(\d+)/i)
+          const itemUnit = unitMatch ? parseInt(unitMatch[1], 10) : 1
+          catalogList.push({
+            code: dbItem.code,
+            unit: itemUnit,
+            worksheet: dbItem.worksheet,
+            lesson: itemLesson,
+            task_number: dbItem.task_number,
+            title: dbItem.title,
+            subtitle: dbItem.subtitle || t.subtitle,
+            form_type: dbItem.form_type || 'FORM_1_CHOICE',
+            is_published: dbItem.is_published ?? true,
+            is_custom: false,
+            updated_at: dbItem.updated_at,
+          })
+        } else {
+          let formType = 'FORM_1_CHOICE'
+          if (t.archetypes.includes('answer-entry')) formType = 'FORM_2_FILL'
+          else if (t.archetypes.includes('writing-repair')) formType = 'FORM_4_SENTENCE_REPAIR'
+          else if (t.archetypes.includes('sequence-ordering')) formType = 'FORM_5_SEQUENCE'
+
+          catalogList.push({
+            code: t.code,
+            unit: 1,
+            worksheet: t.worksheet,
+            lesson: t.worksheet,
+            task_number: t.taskNumber,
+            title: t.title,
+            subtitle: t.subtitle,
+            form_type: formType,
+            is_published: true,
+            is_custom: false,
+          })
         }
-      }
+      })
+    }
 
-      // Xác định form_type từ archetypes
-      let formType = 'FORM_1_CHOICE'
-      if (t.archetypes.includes('answer-entry')) formType = 'FORM_2_FILL'
-      else if (t.archetypes.includes('writing-repair')) formType = 'FORM_4_SENTENCE_REPAIR'
-      else if (t.archetypes.includes('sequence-ordering')) formType = 'FORM_5_SEQUENCE'
-
-      return {
-        code: t.code,
-        unit: 1,
-        worksheet: t.worksheet,
-        lesson: t.worksheet,
-        task_number: t.taskNumber,
-        title: t.title,
-        subtitle: t.subtitle,
-        form_type: formType,
-        is_published: true,
-        is_custom: false,
-      }
-    })
-
-    // Thêm các task mới do Admin tạo mà không có trong TASKS registry (ví dụ: 60171)
+    // 2. Thêm toàn bộ các bài tập thực tế từ Supabase CSDL
     if (dbTasks) {
       dbTasks.forEach((dbT) => {
         if (!catalogList.some((c) => c.code === dbT.code)) {
@@ -464,7 +339,7 @@ export function AdminDashboardPage() {
 
     setTasks(finalCatalog)
     setLoadingTasks(false)
-  }, [])
+  }, [showStandardTasks])
 
   // 2. Tải danh sách lớp và bài tập được giao (Có fallback chống lỗi PGRST201)
   const loadClassesAndAssignments = useCallback(async () => {
@@ -574,6 +449,17 @@ export function AdminDashboardPage() {
         }
       })
       setAssignments(formattedAssignments)
+
+      // 2.4. Lấy danh sách giáo viên để Admin phân công khi tạo lớp
+      const { data: teacherList } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .eq('role', 'TEACHER')
+        .order('full_name')
+
+      if (teacherList) {
+        setTeachers(teacherList)
+      }
     } catch (err) {
       console.error('Lỗi loadClassesAndAssignments:', err)
     }
@@ -732,15 +618,41 @@ export function AdminDashboardPage() {
       // 2. Nếu RPC chưa chạy trên DB, thực hiện xóa trực tiếp từng bảng từ client
       if (!rpcSuccess) {
         // Xóa lần nộp của học sinh
-        await supabase.from('student_attempts').delete().eq('task_code', taskItem.code)
+        const { error: attErr } = await supabase.from('student_attempts').delete().eq('task_code', taskItem.code)
+        if (attErr && attErr.code !== 'PGRST116') {
+          console.warn('Xóa student_attempts:', attErr)
+        }
+
         // Xóa các lượt giao bài cho lớp
-        await supabase.from('assignments').delete().eq('task_code', taskItem.code)
+        const { error: asgErr } = await supabase.from('assignments').delete().eq('task_code', taskItem.code)
+        if (asgErr && asgErr.code !== 'PGRST116') {
+          console.warn('Xóa assignments:', asgErr)
+        }
+
         // Xóa chính sách chấm điểm
-        await supabase.from('task_assessment_policies').delete().eq('task_code', taskItem.code)
+        const { error: polErr } = await supabase.from('task_assessment_policies').delete().eq('task_code', taskItem.code)
+        if (polErr && polErr.code !== 'PGRST116') {
+          console.warn('Xóa task_assessment_policies:', polErr)
+        }
+
         // Xóa bài tập trong bảng tasks
         const { error: delError } = await supabase.from('tasks').delete().eq('code', taskItem.code)
         if (delError && delError.code !== 'PGRST116') {
-          console.warn('Xóa bảng tasks:', delError)
+          throw new Error(`CSDL Supabase từ chối xóa bài tập trong bảng 'tasks': ${delError.message}`)
+        }
+
+        // Kiểm tra xác thực xem bản ghi còn tồn tại trong DB không
+        const { data: checkRemain } = await supabase
+          .from('tasks')
+          .select('code')
+          .eq('code', taskItem.code)
+          .maybeSingle()
+
+        if (checkRemain) {
+          throw new Error(
+            `Bài tập ${taskItem.code} vẫn còn trong CSDL Supabase do ràng buộc bảo mật (RLS) hoặc ràng buộc khóa ngoại (Foreign Key) chưa cho phép xóa. ` +
+            `Vui lòng thực thi migration RPC 'delete_task_by_admin' trong Supabase SQL Editor.`
+          )
         }
       }
 
@@ -757,7 +669,7 @@ export function AdminDashboardPage() {
 
       setTaskActionFeedback({
         success: true,
-        text: `Đã xóa bài tập ${taskItem.code} (${taskItem.title}) khỏi hệ thống và CSDL Supabase.`,
+        text: `Đã xóa bài tập ${taskItem.code} (${taskItem.title}) khỏi hệ thống và CSDL Supabase thành công.`,
       })
 
       setTimeout(() => {
@@ -771,291 +683,6 @@ export function AdminDashboardPage() {
     }
   }
 
-  // Soạn bài tập mới
-  const handleSaveNewTask = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!taskCode.trim() || !taskTitle.trim()) return
-
-    setSavingTask(true)
-    setAuthoringStatus(null)
-
-    try {
-      let contentPayload: any = {}
-      let keysPayload: any = {}
-      let hintsPayload: any = {}
-
-      if (authoringFormType === 'FORM_1_CHOICE') {
-        const opts = choiceOptionsText.split(',').map((o) => o.trim()).filter(Boolean)
-        contentPayload = {
-          intro: taskIntro || 'Enter your A, B or C answers.',
-          options: opts.length > 0 ? opts : ['A', 'B', 'C'],
-          items: choiceItems.map((item, index) => {
-            const cleanHints = (item.hints || []).map((h) => h.trim()).filter(Boolean)
-            return {
-              id: index + 1,
-              label: item.label,
-              cue: item.cue,
-              hints: cleanHints,
-              firstHint: cleanHints[0] || 'Check the question again.',
-              secondHint: cleanHints[1] || cleanHints[0] || 'Look back at your worksheet.',
-            }
-          }),
-        }
-
-        choiceItems.forEach((item, index) => {
-          const key = String(index + 1)
-          const cleanHints = (item.hints || []).map((h) => h.trim()).filter(Boolean)
-          keysPayload[key] = item.correct.trim().toUpperCase()
-          hintsPayload[key] = {
-            hints: cleanHints,
-            h1: cleanHints[0] || 'Check the question again.',
-            h2: cleanHints[1] || cleanHints[0] || 'Look back at your worksheet.',
-          }
-        })
-      } else if (authoringFormType === 'FORM_2_FILL') {
-        contentPayload = {
-          intro: taskIntro || 'Check Task 1. Enter your answers from the worksheet.',
-          fields: fillItems.map((f, index) => {
-            const rawHints = f.hints && Array.isArray(f.hints) ? f.hints : [(f as any).h1, (f as any).h2]
-            const cleanHints = rawHints.map((h: string) => (h || '').trim()).filter(Boolean)
-            if (cleanHints.length === 0) {
-              cleanHints.push('Check the word or phrase in your worksheet.')
-              cleanHints.push('Look closely at the lesson context and spelling.')
-            }
-            return {
-              id: `q${index + 1}`,
-              label: f.label,
-              placeholder: f.placeholder || 'Your answer',
-              hints: cleanHints,
-              hint: cleanHints[0],
-              second: cleanHints[1] || cleanHints[0],
-              cue: `Look back at Question ${f.label || index + 1} from the worksheet.`,
-            }
-          }),
-        }
-
-        fillItems.forEach((f, index) => {
-          const key = `q${index + 1}`
-          const accepted = f.correctAnswers.split(',').map((a) => a.trim().toLowerCase()).filter(Boolean)
-          keysPayload[key] = accepted.length === 1 ? accepted[0] : accepted
-
-          const rawHints = f.hints && Array.isArray(f.hints) ? f.hints : [(f as any).h1, (f as any).h2]
-          const cleanHints = rawHints.map((h: string) => (h || '').trim()).filter(Boolean)
-          hintsPayload[key] = {
-            hints: cleanHints,
-            h1: cleanHints[0] || 'Check the word or phrase in your worksheet.',
-            h2: cleanHints[1] || cleanHints[0] || 'Look closely at the lesson context and spelling.',
-          }
-        })
-      } else if (authoringFormType === 'FORM_3_WRITING') {
-        if (form3SubMode === 'PARAGRAPH') {
-          const cleanCriteria = paragraphCriteria.map((c) => c.trim()).filter(Boolean)
-          const cleanHints = paragraphHints.map((h) => h.trim()).filter(Boolean)
-          const cleanHelperWords = paragraphHelperWords.split(',').map((w) => w.trim()).filter(Boolean)
-
-          contentPayload = {
-            intro: taskIntro.trim() || 'Write a paragraph.',
-            sub_mode: 'PARAGRAPH',
-            paragraph: {
-              prompt: paragraphPrompt.trim() || 'Write a short paragraph about your school.',
-              min_words: paragraphMinWords || 30,
-              max_words: paragraphMaxWords || 100,
-              helper_words: cleanHelperWords,
-              criteria: cleanCriteria,
-              hints: cleanHints,
-            },
-          }
-
-          keysPayload = {
-            min_words: paragraphMinWords || 30,
-            max_words: paragraphMaxWords || 100,
-            helper_words: cleanHelperWords,
-            criteria: cleanCriteria,
-          }
-
-          hintsPayload = {
-            hints: cleanHints,
-            h1: cleanHints[0] || 'Make sure your paragraph has enough words and clear sentences.',
-            h2: cleanHints[1] || cleanHints[0] || 'Check grammar, spelling, and punctuation.',
-          }
-        } else {
-          // 'FREE_SENTENCE' hoặc 'BOOK_KEYWORD'
-          contentPayload = {
-            intro: taskIntro.trim() || (form3SubMode === 'BOOK_KEYWORD' ? 'Check your book. Write sentences using the target words.' : 'Write your sentences below.'),
-            sub_mode: form3SubMode,
-            items: writingItems.map((item, index) => {
-              const reqWords = form3SubMode === 'BOOK_KEYWORD'
-                ? item.requiredWords.split(',').map((w) => w.trim()).filter(Boolean)
-                : []
-              const rawHints = item.hints && Array.isArray(item.hints) ? item.hints : []
-              const cleanHints = rawHints.map((h: string) => (h || '').trim()).filter(Boolean)
-              if (cleanHints.length === 0) {
-                cleanHints.push('Check the word order and verb form.')
-              }
-              return {
-                id: `q${index + 1}`,
-                label: item.label || `Question ${index + 1}`,
-                prompt: item.prompt || (form3SubMode === 'BOOK_KEYWORD' ? 'Xem gợi ý từ trong sách bài tập' : ''),
-                required_words: reqWords.length > 0 ? reqWords : undefined,
-                hints: cleanHints,
-                cue: reqWords.length > 0 ? `Target words from book: ${reqWords.join(', ')}` : undefined,
-              }
-            }),
-          }
-
-          writingItems.forEach((item, index) => {
-            const key = `q${index + 1}`
-            const reqWords = form3SubMode === 'BOOK_KEYWORD'
-              ? item.requiredWords.split(',').map((w) => w.trim()).filter(Boolean)
-              : []
-            keysPayload[key] = {
-              required_words: reqWords,
-            }
-
-            const rawHints = item.hints && Array.isArray(item.hints) ? item.hints : []
-            const cleanHints = rawHints.map((h: string) => (h || '').trim()).filter(Boolean)
-            hintsPayload[key] = {
-              hints: cleanHints,
-              h1: cleanHints[0] || 'Check your sentence grammar.',
-              h2: cleanHints[1] || cleanHints[0] || 'Check subject-verb agreement and word order.',
-            }
-          })
-        }
-      } else if (authoringFormType === 'FORM_4_SPEAKING') {
-        const cleanFallbacks = speakingFallbackSentences
-          .split('\n')
-          .map((s) => s.trim())
-          .filter(Boolean)
-
-        contentPayload = {
-          intro: taskIntro.trim() || 'Read aloud the sentences you wrote. AI will evaluate your pronunciation clarity.',
-          linked_task_code: speakingLinkedTaskCode.trim() || '60115',
-          pass_score: Number(speakingPassScore) || 80,
-          fallback_sentences: cleanFallbacks.length > 0 ? cleanFallbacks : [
-            'I usually play badminton after school.',
-            'My brother often reads comic books in the library.',
-            'We sometimes ride bicycles around the park.',
-            'They never skip homework before going to bed.',
-          ],
-        }
-
-        keysPayload = {
-          linked_task_code: speakingLinkedTaskCode.trim() || '60115',
-          pass_score: Number(speakingPassScore) || 80,
-        }
-
-        hintsPayload = {
-          h1: 'Speak clearly into your microphone at a steady pace.',
-          h2: 'Listen to the audio guide or try again if words are unclear.',
-        }
-      } else if (authoringFormType === 'FORM_5_LISTEN_REPEAT') {
-        const cleanItems = form5Items
-          .map((item, index) => {
-            const rawHints = item.hints && Array.isArray(item.hints) ? item.hints : []
-            const cleanHints = rawHints.map((h: string) => (h || '').trim()).filter(Boolean)
-            if (cleanHints.length === 0) {
-              cleanHints.push('Nghe kỹ ngữ điệu và phát âm rõ từng từ.')
-            }
-            return {
-              id: item.id || `item-${index + 1}`,
-              label: item.label || `Sentence ${index + 1}`,
-              target_text: item.target_text.trim(),
-              audio_url: item.audio_url?.trim() || undefined,
-              hints: cleanHints,
-            }
-          })
-          .filter((it) => it.target_text.length > 0)
-
-        contentPayload = {
-          intro: taskIntro.trim() || 'Listen to each audio clip carefully. Repeat aloud into your microphone to get scored.',
-          pass_score: Number(form5PassScore) || 80,
-          items: cleanItems.length > 0 ? cleanItems : [
-            {
-              id: 'item-1',
-              label: 'Sentence 1',
-              target_text: 'I usually play badminton after school.',
-              hints: ['Nghe kỹ ngữ điệu và phát âm rõ từng từ.'],
-            },
-          ],
-        }
-
-        keysPayload = {
-          pass_score: Number(form5PassScore) || 80,
-          items: cleanItems,
-        }
-
-        hintsPayload = {
-          h1: 'Listen carefully to the model voice before recording.',
-          h2: 'Repeat clearly at a steady pace to get over 80%.',
-        }
-      }
-
-      // Bổ sung file âm thanh nếu có (chỉ áp dụng cho Form 1 và Form 2, bỏ hoàn toàn ở Form 3, Form 4 và Form 5)
-      if (authoringFormType !== 'FORM_3_WRITING' && authoringFormType !== 'FORM_4_SPEAKING' && authoringFormType !== 'FORM_5_LISTEN_REPEAT' && taskAudioUrl.trim()) {
-        contentPayload.audioUrl = taskAudioUrl.trim()
-        contentPayload.audio_url = taskAudioUrl.trim()
-      }
-
-      const finalUnit = Math.max(1, parseInt(String(taskUnit), 10) || 1)
-      const finalLesson = Math.max(1, parseInt(String(taskLesson), 10) || 1)
-      const finalNumber = Math.max(1, parseInt(String(taskNumber), 10) || 1)
-
-      // 1. Lưu vào bảng public.tasks
-      const taskContent = {
-        ...contentPayload,
-        audioUrl: (authoringFormType !== 'FORM_3_WRITING' && authoringFormType !== 'FORM_4_SPEAKING' && authoringFormType !== 'FORM_5_LISTEN_REPEAT') ? (taskAudioUrl.trim() || undefined) : undefined,
-        audio_url: (authoringFormType !== 'FORM_3_WRITING' && authoringFormType !== 'FORM_4_SPEAKING' && authoringFormType !== 'FORM_5_LISTEN_REPEAT') ? (taskAudioUrl.trim() || undefined) : undefined,
-        unit: finalUnit,
-        lesson: finalLesson,
-      }
-
-      const baseTaskPayload: any = {
-        code: taskCode.trim(),
-        worksheet: finalLesson, // worksheet lưu số lesson trong DB để tương thích 100%
-        task_number: finalNumber,
-        title: taskTitle.trim(),
-        subtitle: taskSubtitle.trim(),
-        form_type: authoringFormType,
-        archetypes: ['standardized', authoringFormType.toLowerCase()],
-        content: taskContent,
-        is_published: true,
-      }
-
-      // Lưu trực tiếp baseTaskPayload (đã chứa worksheet và content.unit/lesson)
-      const { error: taskErr } = await supabase.from('tasks').upsert(baseTaskPayload)
-      if (taskErr) throw taskErr
-
-      // 2. Lưu vào bảng bảo mật public.task_assessment_policies
-      const { error: policyErr } = await supabase.from('task_assessment_policies').upsert({
-        task_code: taskCode.trim(),
-        max_attempts: 2,
-        keys_data: keysPayload,
-        hints_data: hintsPayload,
-      })
-
-      if (policyErr) throw policyErr
-
-      // Nếu bài này từng nằm trong danh sách bài đã xóa, bỏ ra khỏi danh sách
-      const deletedCodes: string[] = JSON.parse(localStorage.getItem('gsec_deleted_tasks') || '[]')
-      if (deletedCodes.includes(taskCode.trim())) {
-        localStorage.setItem('gsec_deleted_tasks', JSON.stringify(deletedCodes.filter((c) => c !== taskCode.trim())))
-      }
-
-      setAuthoringStatus({ success: true, text: `Đã lưu thành công bài tập ${taskCode.trim()} (Lesson ${finalLesson} - Task ${finalNumber})!` })
-      // Tự động chuyển bộ lọc về ALL và tìm đúng mã bài vừa tạo để bài tập xuất hiện ngay trên bảng
-      setTaskFilterWs('ALL')
-      setTaskSearch(taskCode.trim())
-      loadTasks()
-      setTimeout(() => {
-        setIsAuthoringOpen(false)
-        setAuthoringStatus(null)
-      }, 2000)
-    } catch (err: any) {
-      setAuthoringStatus({ success: false, text: err?.message || 'Có lỗi khi lưu bài tập.' })
-    } finally {
-      setSavingTask(false)
-    }
-  }
 
   // Helper lọc bài tập
   const filteredTasks = tasks.filter((t) => {
@@ -1120,15 +747,14 @@ export function AdminDashboardPage() {
   return (
     <>
       <AppHeader currentPortal="admin" />
-      <div className="portal-shell">
+      <div className="admin-dashboard-container">
         {/* HEADER QUẢN TRỊ ADMIN */}
-        <header className="portal-header">
+        <header className="portal-header" style={{ marginBottom: '24px' }}>
           <div className="portal-title-group">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '24px' }}>🛠️</span>
-              <h1>Trung Tâm Điều Hành Quản Trị (Admin Hub)</h1>
+              <h1>Trung Tâm Điều Hành Quản Trị </h1>
             </div>
-            <p>Quản lý toàn diện ngân hàng đề bài, soạn bài tập mới, lớp học và giám sát bảng điểm toàn trường</p>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -1151,2216 +777,1309 @@ export function AdminDashboardPage() {
           </div>
         </header>
 
-      {/* THỐNG KÊ NHANH KPI */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', marginBottom: '20px' }}>
-        <div style={{ background: '#ffffff', border: '1px solid var(--color-line)', padding: '16px', borderRadius: '10px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-          <div style={{ fontSize: '13px', color: 'var(--color-muted)' }}>📚 Ngân hàng Bài tập</div>
-          <div style={{ fontSize: '24px', fontWeight: 800, marginTop: '4px', color: 'var(--color-primary)' }}>
-            {tasks.length} bài
-          </div>
-        </div>
+        {/* BỐ CỤC 2 CỘT: CỘT TRÁI (SIDEBAR) + CỘT PHẢI (NỘI DUNG) */}
+        <div className="admin-layout-grid">
+          {/* CỘT TRÁI: SIDEBAR ĐIỀU HƯỚNG */}
+          <aside className="admin-sidebar">
+            <div className="admin-sidebar-header">
+              <div className="admin-sidebar-title">
+                <span>⚡</span>
+                <span>Bảng Điều Khiển</span>
+              </div>
+            </div>
 
-        <div style={{ background: '#ffffff', border: '1px solid var(--color-line)', padding: '16px', borderRadius: '10px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-          <div style={{ fontSize: '13px', color: 'var(--color-muted)' }}>🏫 Lớp học hoạt động</div>
-          <div style={{ fontSize: '24px', fontWeight: 800, marginTop: '4px', color: '#0284c7' }}>
-            {classes.length} lớp
-          </div>
-        </div>
+            <nav className="admin-sidebar-nav">
+              <button
+                type="button"
+                className={`admin-nav-item-btn ${activeTab === 'overview' ? 'is-active' : ''}`}
+                onClick={() => setActiveTab('overview')}
+              >
+                <div className="admin-nav-item-content">
+                  <span style={{ fontSize: '16px' }}>📊</span>
+                  <span>Thống Kê Số Liệu</span>
+                </div>
+              </button>
 
-        <div style={{ background: '#ffffff', border: '1px solid var(--color-line)', padding: '16px', borderRadius: '10px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-          <div style={{ fontSize: '13px', color: 'var(--color-muted)' }}>📝 Lượt bài tập đã giao</div>
-          <div style={{ fontSize: '24px', fontWeight: 800, marginTop: '4px', color: '#7c3aed' }}>
-            {assignments.length} lượt
-          </div>
-        </div>
+              <button
+                type="button"
+                className={`admin-nav-item-btn ${activeTab === 'tasks' ? 'is-active' : ''}`}
+                onClick={() => setActiveTab('tasks')}
+              >
+                <div className="admin-nav-item-content">
+                  <span style={{ fontSize: '16px' }}>📚</span>
+                  <span>Ngân Hàng Bài Tập</span>
+                </div>
+                <span className="admin-nav-item-badge">{tasks.length}</span>
+              </button>
 
-        <div style={{ background: '#ffffff', border: '1px solid var(--color-line)', padding: '16px', borderRadius: '10px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-          <div style={{ fontSize: '13px', color: 'var(--color-muted)' }}>📊 Bảng điểm theo dõi</div>
-          <div style={{ fontSize: '24px', fontWeight: 800, marginTop: '4px', color: '#16a34a' }}>
-            {attempts.length} bài nộp
-          </div>
+              <button
+                type="button"
+                className={`admin-nav-item-btn ${activeTab === 'classes' ? 'is-active' : ''}`}
+                onClick={() => setActiveTab('classes')}
+              >
+                <div className="admin-nav-item-content">
+                  <span style={{ fontSize: '16px' }}>🏫</span>
+                  <span>Lớp Học & Cấp TK</span>
+                </div>
+                <span className="admin-nav-item-badge">{classes.length}</span>
+              </button>
+
+              <button
+                type="button"
+                className={`admin-nav-item-btn ${activeTab === 'assignments' ? 'is-active' : ''}`}
+                onClick={() => setActiveTab('assignments')}
+              >
+                <div className="admin-nav-item-content">
+                  <span style={{ fontSize: '16px' }}>📝</span>
+                  <span>Giao Bài Theo Lớp</span>
+                </div>
+                <span className="admin-nav-item-badge">{assignments.length}</span>
+              </button>
+
+              <button
+                type="button"
+                className={`admin-nav-item-btn ${activeTab === 'gradebook' ? 'is-active' : ''}`}
+                onClick={() => setActiveTab('gradebook')}
+              >
+                <div className="admin-nav-item-content">
+                  <span style={{ fontSize: '16px' }}>📈</span>
+                  <span>Bảng Điểm Toàn Trường</span>
+                </div>
+                <span className="admin-nav-item-badge">{attempts.length}</span>
+              </button>
+
+              <button
+                type="button"
+                className={`admin-nav-item-btn ${activeTab === 'keypad' ? 'is-active' : ''}`}
+                onClick={() => setActiveTab('keypad')}
+              >
+                <div className="admin-nav-item-content">
+                  <span style={{ fontSize: '16px' }}>⌨️</span>
+                  <span>Nhập Mã Code</span>
+                </div>
+              </button>
+
+            </nav>
+
+            <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #f1f5f9' }}>
+              <button
+                type="button"
+                className="btn-submit"
+                style={{ width: '100%', margin: 0, padding: '10px 14px', fontSize: '13px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}
+                onClick={openAuthoringModal}
+              >
+                <span>✨</span>
+                <span>Soạn Bài Mới</span>
+              </button>
+            </div>
+          </aside>
+
+          {/* CỘT PHẢI: VÙNG NỘI DUNG CHÍNH */}
+          <main className="admin-content-area">
+            {/* TAB MỤC MỚI: 📊 THỐNG KÊ SỐ LIỆU TOÀN TRANG */}
+            {activeTab === 'overview' && (
+              <section>
+                <div style={{ marginBottom: '20px' }}>
+                  <h2 style={{ margin: 0 }}>Thống Kê Số Liệu Toàn Hệ Thống</h2>
+
+                </div>
+
+                {/* 5 THẺ KPI TỔNG QUAN */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', marginBottom: '24px' }}>
+                  <div style={{ background: '#ffffff', border: '1px solid var(--color-line)', padding: '16px', borderRadius: '12px', boxShadow: 'var(--shadow-card)' }}>
+                    <div style={{ fontSize: '13px', color: 'var(--color-muted)', fontWeight: 600 }}>📚 Ngân hàng Bài tập</div>
+                    <div style={{ fontSize: '26px', fontWeight: 800, marginTop: '4px', color: 'var(--color-primary)' }}>
+                      {tasks.length} bài
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
+                      {showStandardTasks ? 'Bao gồm 32 bài mẫu' : 'Bài do Admin quản lý'}
+                    </div>
+                  </div>
+
+                  <div style={{ background: '#ffffff', border: '1px solid var(--color-line)', padding: '16px', borderRadius: '12px', boxShadow: 'var(--shadow-card)' }}>
+                    <div style={{ fontSize: '13px', color: 'var(--color-muted)', fontWeight: 600 }}>🏫 Lớp học hoạt động</div>
+                    <div style={{ fontSize: '26px', fontWeight: 800, marginTop: '4px', color: '#0284c7' }}>
+                      {classes.length} lớp
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
+                      Đang có giáo viên phụ trách
+                    </div>
+                  </div>
+
+                  <div style={{ background: '#ffffff', border: '1px solid var(--color-line)', padding: '16px', borderRadius: '12px', boxShadow: 'var(--shadow-card)' }}>
+                    <div style={{ fontSize: '13px', color: 'var(--color-muted)', fontWeight: 600 }}>📝 Lượt bài đã giao</div>
+                    <div style={{ fontSize: '26px', fontWeight: 800, marginTop: '4px', color: '#7c3aed' }}>
+                      {assignments.length} lượt
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
+                      Theo các lớp học
+                    </div>
+                  </div>
+
+                  <div style={{ background: '#ffffff', border: '1px solid var(--color-line)', padding: '16px', borderRadius: '12px', boxShadow: 'var(--shadow-card)' }}>
+                    <div style={{ fontSize: '13px', color: 'var(--color-muted)', fontWeight: 600 }}>📊 Bài nộp học sinh</div>
+                    <div style={{ fontSize: '26px', fontWeight: 800, marginTop: '4px', color: '#16a34a' }}>
+                      {attempts.length} bài
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
+                      Đã hoàn thành: {completedCount} ({attempts.length > 0 ? Math.round((completedCount / attempts.length) * 100) : 0}%)
+                    </div>
+                  </div>
+
+                  <div style={{ background: '#ffffff', border: '1px solid var(--color-line)', padding: '16px', borderRadius: '12px', boxShadow: 'var(--shadow-card)' }}>
+                    <div style={{ fontSize: '13px', color: 'var(--color-muted)', fontWeight: 600 }}>🎯 Điểm trung bình</div>
+                    <div style={{ fontSize: '26px', fontWeight: 800, marginTop: '4px', color: '#ea580c' }}>
+                      {avgScore}/100
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
+                      Toàn bộ bài tập đã làm
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2 KHỐI CHI TIẾT: PHÂN BỐ DẠNG BÀI & PHÂN BỐ KẾT QUẢ */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', marginBottom: '24px' }}>
+                  {/* PHÂN BỐ DẠNG BÀI */}
+                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '18px' }}>
+                    <h3 style={{ margin: '0 0 14px', fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>
+                      📋 Phân Bố Ngân Hàng Bài Tập Theo Thể Loại
+                    </h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
+                        <span>🔘 Form 1: Trắc nghiệm (A/B/C/D)</span>
+                        <strong>{tasks.filter(t => t.form_type === 'FORM_1_CHOICE').length} bài</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
+                        <span>✏️ Form 2: Điền từ khuyết (Fill-in)</span>
+                        <strong>{tasks.filter(t => t.form_type === 'FORM_2_FILL').length} bài</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
+                        <span>✍️ Form 3: Luyện viết câu (AI Tutor)</span>
+                        <strong>{tasks.filter(t => t.form_type === 'FORM_3_WRITING').length} bài</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
+                        <span>🎙️ Form 4: Speaking & Phát âm</span>
+                        <strong>{tasks.filter(t => t.form_type === 'FORM_4_SPEAKING').length} bài</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
+                        <span>🎧 Form 5: Nghe & Lặp lại câu</span>
+                        <strong>{tasks.filter(t => t.form_type === 'FORM_5_LISTEN_REPEAT').length} bài</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
+                        <span>👥 Form 6: Phỏng vấn & Hồ sơ nhân vật</span>
+                        <strong>{tasks.filter(t => t.form_type?.startsWith('FORM_6')).length} bài</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* PHÂN BỐ KẾT QUẢ ĐIỂM SỐ */}
+                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '18px' }}>
+                    <h3 style={{ margin: '0 0 14px', fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>
+                      ⭐ Phân Bố Điểm Số Của Học Sinh
+                    </h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
+                        <span style={{ color: '#059669', fontWeight: 600 }}>🟢 Xuất sắc (85 - 100 điểm)</span>
+                        <strong>{attempts.filter(a => a.score >= 85).length} lượt</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
+                        <span style={{ color: '#d97706', fontWeight: 600 }}>🟡 Đạt yêu cầu (50 - 84 điểm)</span>
+                        <strong>{attempts.filter(a => a.score >= 50 && a.score < 85).length} lượt</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
+                        <span style={{ color: '#dc2626', fontWeight: 600 }}>🔴 Cần rèn luyện thêm (&lt; 50 điểm)</span>
+                        <strong>{attempts.filter(a => a.score < 50).length} lượt</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', paddingTop: '8px', borderTop: '1px solid #e2e8f0' }}>
+                        <span>⏳ Đang làm dở chưa nộp</span>
+                        <strong>{inProgressCount} lượt</strong>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* BẢNG 5 BÀI NỘP GẦN ĐÂY NHẤT */}
+                <div style={{ marginTop: '20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 800 }}>
+                      ⚡ Hoạt Động Làm Bài Mới Nhất
+                    </h3>
+                    <button
+                      type="button"
+                      className="btn-auth-link btn-auth-link--secondary"
+                      style={{ fontSize: '12px', padding: '4px 10px' }}
+                      onClick={() => setActiveTab('gradebook')}
+                    >
+                      Xem toàn bộ bảng điểm →
+                    </button>
+                  </div>
+
+                  <div className="portal-table-container">
+                    <table className="portal-table">
+                      <thead>
+                        <tr>
+                          <th>Học sinh</th>
+                          <th>Lớp</th>
+                          <th>Mã Task</th>
+                          <th>Điểm</th>
+                          <th>Trạng thái</th>
+                          <th>Thời gian</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {attempts.slice(0, 5).map((a) => (
+                          <tr key={a.id}>
+                            <td><strong>{a.student_name}</strong></td>
+                            <td>{a.class_name}</td>
+                            <td><code>#{a.task_code}</code></td>
+                            <td>
+                              <strong style={{ color: a.score >= 80 ? '#059669' : a.score >= 50 ? '#d97706' : '#dc2626' }}>
+                                {a.score}/{a.max_score}
+                              </strong>
+                            </td>
+                            <td>
+                              <span className={`user-badge ${a.status === 'completed' ? 'user-badge--teacher' : 'user-badge--admin'}`}>
+                                {a.status === 'completed' ? 'Hoàn thành' : 'Đang làm'}
+                              </span>
+                            </td>
+                            <td style={{ fontSize: '12px' }}>{formatAttemptTime(a)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* TAB 1: NGÂN HÀNG BÀI TẬP & SOẠN ĐỀ */}
+            {activeTab === 'tasks' && (
+              <section>
+                {/* Header công cụ */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px', marginBottom: '16px' }}>
+                  <div>
+                    <h2 style={{ margin: 0 }}>Ngân Hàng Bài Tập Hệ Thống</h2>
+
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-submit"
+                    style={{ width: 'auto', padding: '10px 20px', fontWeight: 700 }}
+                    onClick={openAuthoringModal}
+                  >
+                    + Soạn Bài Tập Mới
+                  </button>
+                </div>
+
+                {/* Bộ lọc bài tập */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center', marginBottom: '16px', background: '#ffffff', padding: '12px 16px', borderRadius: '10px', border: '1px solid var(--color-line)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <label htmlFor="filter-ws" style={{ fontSize: '13px', fontWeight: 700 }}>Lesson:</label>
+                    <select
+                      id="filter-ws"
+                      className="form-input"
+                      style={{ width: 'auto', padding: '6px 10px', fontSize: '13px' }}
+                      value={taskFilterWs}
+                      onChange={(e) => setTaskFilterWs(e.target.value)}
+                    >
+                      <option value="ALL">Tất cả Lesson</option>
+                      {Array.from(new Set(tasks.map((t) => t.lesson || t.worksheet)))
+                        .sort((a, b) => a - b)
+                        .map((l) => (
+                          <option key={l} value={String(l)}>Lesson {l}</option>
+                        ))}
+                    </select>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <label htmlFor="filter-form" style={{ fontSize: '13px', fontWeight: 700 }}>Dạng bài:</label>
+                    <select
+                      id="filter-form"
+                      className="form-input"
+                      style={{ width: 'auto', padding: '6px 10px', fontSize: '13px' }}
+                      value={taskFilterForm}
+                      onChange={(e) => setTaskFilterForm(e.target.value)}
+                    >
+                      <option value="ALL">Tất cả dạng bài</option>
+                      <option value="FORM_1_CHOICE">Form 1: Trắc nghiệm (A/B/C hoặc T/F)</option>
+                      <option value="FORM_2_FILL">Form 2: Điền từ vào ô trống</option>
+                      <option value="FORM_3_WRITING">Form 3: Viết câu & Đoạn văn (AI Grammar)</option>
+                      <option value="FORM_4_SPEAKING">Form 4: Luyện nói & Chấm phát âm (AssemblyAI)</option>
+                      <option value="FORM_5_LISTEN_REPEAT">Form 5: Nghe & Ghi âm lặp lại (AssemblyAI &gt; 80%)</option>
+                      <option value="FORM_6_1_PROFILE_QA">Form 6.1: Nghe & Trả lời theo hồ sơ (4 audio)</option>
+                      <option value="FORM_6_2_INTERVIEW_PROFILE">Form 6.2: Phỏng vấn AI Tutor điền hồ sơ (AssemblyAI)</option>
+                    </select>
+                  </div>
+
+                  <div style={{ flex: 1, minWidth: '220px' }}>
+                    <input
+                      type="text"
+                      className="form-input"
+                      style={{ width: '100%', padding: '6px 12px', fontSize: '13px' }}
+                      placeholder="Tìm theo mã bài (60113), tiêu đề, chủ đề..."
+                      value={taskSearch}
+                      onChange={(e) => setTaskSearch(e.target.value)}
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    style={{
+                      padding: '7px 14px',
+                      fontSize: '12.5px',
+                      fontWeight: 650,
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      border: showStandardTasks ? '1px solid #f59e0b' : '1px solid #cbd5e1',
+                      background: showStandardTasks ? '#fef3c7' : '#f8fafc',
+                      color: showStandardTasks ? '#b45309' : '#475569',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      whiteSpace: 'nowrap',
+                      transition: 'all 0.15s ease',
+                    }}
+                    onClick={() => {
+                      const next = !showStandardTasks
+                      setShowStandardTasks(next)
+                      localStorage.setItem('gsec_show_standard_tasks', String(next))
+                    }}
+                    title={showStandardTasks ? 'Bấm để ẩn 32 bài mẫu cũ' : 'Bấm để hiện lại 32 bài tập mẫu cũ của hệ thống'}
+                  >
+                    {showStandardTasks ? '🙈 Ẩn 32 bài mẫu cũ' : '👁️ Hiện 32 bài mẫu cũ'}
+                  </button>
+                </div>
+
+                {taskActionFeedback && (
+                  <div
+                    className={`auth-message ${taskActionFeedback.success ? 'auth-message--success' : 'auth-message--error'}`}
+                    style={{ marginBottom: '16px' }}
+                  >
+                    {taskActionFeedback.text}
+                  </div>
+                )}
+
+                {/* Bảng danh sách bài tập */}
+                <div className="portal-table-container">
+                  <table className="portal-table">
+                    <thead>
+                      <tr>
+                        <th>Mã bài</th>
+                        <th>Vị trí</th>
+                        <th>Tiêu đề & Chủ đề</th>
+                        <th>Dạng bài chuẩn</th>
+                        <th>Nguồn</th>
+                        <th>Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {loadingTasks ? (
+                        <tr>
+                          <td colSpan={6} style={{ textAlign: 'center', padding: '36px', color: 'var(--color-muted)' }}>
+                            Đang tải danh sách bài tập...
+                          </td>
+                        </tr>
+                      ) : filteredTasks.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} style={{ textAlign: 'center', padding: '48px 20px', background: '#fafafa' }}>
+                            <div style={{ fontSize: '36px', marginBottom: '8px' }}>📝</div>
+                            <div style={{ fontSize: '16px', fontWeight: 700, color: '#1e293b', marginBottom: '6px' }}>
+                              {tasks.length === 0
+                                ? 'Ngân hàng bài tập hiện chưa có bài tập nào'
+                                : 'Không tìm thấy bài tập nào khớp với bộ lọc'}
+                            </div>
+                            <p style={{ fontSize: '13px', color: '#64748b', maxWidth: '460px', margin: '0 auto 16px', lineHeight: 1.5 }}>
+                              {tasks.length === 0
+                                ? '32 bài tập mẫu cũ đã được ẩn đi. Bạn hãy bấm nút "+ Soạn Bài Tập Mới" để bắt đầu tạo các bài tập thực tế mới cho học sinh!'
+                                : 'Hãy thử chọn lại Lesson hoặc Dạng bài ở thanh công cụ phía trên.'}
+                            </p>
+                            {tasks.length === 0 && (
+                              <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                                <button
+                                  type="button"
+                                  className="btn-submit"
+                                  style={{ width: 'auto', padding: '9px 18px', fontWeight: 700 }}
+                                  onClick={openAuthoringModal}
+                                >
+                                  + Soạn Bài Tập Mới Ngay
+                                </button>
+                                <button
+                                  type="button"
+                                  style={{
+                                    padding: '9px 16px',
+                                    borderRadius: '8px',
+                                    border: '1px solid #cbd5e1',
+                                    background: '#ffffff',
+                                    fontSize: '13px',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    color: '#475569',
+                                  }}
+                                  onClick={() => {
+                                    setShowStandardTasks(true)
+                                    localStorage.setItem('gsec_show_standard_tasks', 'true')
+                                  }}
+                                >
+                                  👁️ Xem lại 32 bài mẫu cũ
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredTasks.map((t) => (
+                          <tr key={t.code}>
+                            <td>
+                              <strong style={{ fontFamily: 'monospace', fontSize: '15px', color: 'var(--color-primary)' }}>
+                                {t.code}
+                              </strong>
+                            </td>
+                            <td>
+                              <span style={{ fontWeight: 600 }}>Unit {t.unit || 1} • Lesson {t.lesson || t.worksheet}</span>
+                              <div style={{ fontSize: '11px', color: 'var(--color-muted)' }}>Task {t.task_number}</div>
+                            </td>
+                            <td>
+                              <strong>{t.title}</strong>
+                              {t.subtitle && <div style={{ fontSize: '12px', color: 'var(--color-muted)', marginTop: '2px' }}>{t.subtitle}</div>}
+                            </td>
+                            <td>
+                              <span className="user-badge user-badge--student" style={{ fontSize: '11px' }}>
+                                {t.form_type}
+                              </span>
+                            </td>
+                            <td>
+                              {t.is_custom ? (
+                                <span className="user-badge user-badge--admin" style={{ fontSize: '11px' }}>Admin tạo</span>
+                              ) : (
+                                <span className="user-badge" style={{ fontSize: '11px', backgroundColor: '#e0f2fe', color: '#0369a1' }}>Tiêu chuẩn</span>
+                              )}
+                            </td>
+                            <td>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <button
+                                  type="button"
+                                  className="btn-submit"
+                                  style={{
+                                    fontSize: '12px',
+                                    padding: '6px 12px',
+                                    width: 'auto',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                  onClick={() => navigate(`/tasks/${t.code}`)}
+                                >
+                                  ▶ Mở xem bài
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn-edit-task"
+                                  style={{
+                                    fontSize: '12px',
+                                    padding: '6px 12px',
+                                    width: 'auto',
+                                    borderRadius: '6px',
+                                    cursor: isLoadingEditTask && editingTaskCode === t.code ? 'not-allowed' : 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    whiteSpace: 'nowrap',
+                                    backgroundColor: '#eff6ff',
+                                    color: '#1d4ed8',
+                                    border: '1px solid #93c5fd',
+                                    fontWeight: 600,
+                                    transition: 'all 0.15s ease',
+                                  }}
+                                  disabled={isLoadingEditTask && editingTaskCode === t.code}
+                                  onClick={() => handleOpenEditTask(t)}
+                                  title={`Chỉnh sửa nội dung, câu hỏi và cấu hình bài tập ${t.code}`}
+                                >
+                                  {isLoadingEditTask && editingTaskCode === t.code ? 'Đang tải...' : '✏️ Sửa'}
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn-delete-task"
+                                  style={{
+                                    fontSize: '12px',
+                                    padding: '6px 12px',
+                                    width: 'auto',
+                                    borderRadius: '6px',
+                                    cursor: isDeletingTaskCode === t.code ? 'not-allowed' : 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    whiteSpace: 'nowrap',
+                                    backgroundColor: '#fee2e2',
+                                    color: '#dc2626',
+                                    border: '1px solid #fca5a5',
+                                    fontWeight: 600,
+                                    opacity: isDeletingTaskCode === t.code ? 0.6 : 1,
+                                    transition: 'all 0.15s ease',
+                                  }}
+                                  disabled={isDeletingTaskCode === t.code}
+                                  onClick={() => handleDeleteTask(t)}
+                                  title={`Xóa bài tập ${t.code} khỏi hệ thống và CSDL`}
+                                >
+                                  {isDeletingTaskCode === t.code ? 'Đang xóa...' : '🗑️ Xóa'}
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            )}
+
+            {/* TAB 2: GIAO BÀI THEO LỚP */}
+            {activeTab === 'assignments' && (
+              <section>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px' }}>
+                  <div
+                    style={{
+                      background: '#ffffff',
+                      padding: '20px',
+                      borderRadius: '12px',
+                      border: '1px solid var(--color-line)',
+                      height: 'fit-content',
+                    }}
+                  >
+                    <h2 style={{ fontSize: '18px', margin: '0 0 16px' }}>Giao Bài Tập Cho Lớp</h2>
+
+                    {assignMessage && (
+                      <div
+                        className={`auth-message ${assignMessage.success ? 'auth-message--success' : 'auth-message--error'}`}
+                        style={{ marginBottom: '14px' }}
+                      >
+                        {assignMessage.text}
+                      </div>
+                    )}
+
+                    <form onSubmit={handleAssignTask} className="auth-form">
+                      <div className="form-group">
+                        <label htmlFor="assign-class">Chọn Lớp nhận bài:</label>
+                        <select
+                          id="assign-class"
+                          className="form-input"
+                          value={selectedClassId}
+                          onChange={(e) => setSelectedClassId(e.target.value)}
+                          required
+                        >
+                          {classes.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.name} (Mã: {c.code})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="form-group">
+                        <label htmlFor="assign-task">Chọn Bài tập giao:</label>
+                        <select
+                          id="assign-task"
+                          className="form-input"
+                          value={assignTaskCode}
+                          onChange={(e) => setAssignTaskCode(e.target.value)}
+                          required
+                        >
+                          <option value="">-- Chọn bài tập --</option>
+                          {tasks.map((t) => (
+                            <option key={t.code} value={t.code}>
+                              {t.code} - {t.title} ({t.form_type})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="form-group">
+                        <label htmlFor="assign-due">Hạn hoàn thành (Tùy chọn):</label>
+                        <input
+                          id="assign-due"
+                          type="datetime-local"
+                          className="form-input"
+                          value={assignDueDate}
+                          onChange={(e) => setAssignDueDate(e.target.value)}
+                        />
+                      </div>
+
+                      <button type="submit" className="btn-submit" style={{ marginTop: '8px' }}>
+                        🚀 Giao bài tập ngay
+                      </button>
+                    </form>
+                  </div>
+
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                      <h2 style={{ fontSize: '18px', margin: 0 }}>Lịch Sử Bài Tập Đã Giao</h2>
+                      <span style={{ fontSize: '13px', color: 'var(--color-muted)', fontWeight: 600 }}>
+                        {assignments.length} bài đã giao
+                      </span>
+                    </div>
+
+                    <div className="portal-table-container">
+                      <table className="portal-table">
+                        <thead>
+                          <tr>
+                            <th>Lớp học</th>
+                            <th>Bài tập</th>
+                            <th>Hạn nộp</th>
+                            <th>Ngày giao</th>
+                            <th style={{ textAlign: 'center' }}>Thao tác</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {assignments.length === 0 ? (
+                            <tr>
+                              <td colSpan={5} style={{ textAlign: 'center', padding: '36px', color: 'var(--color-muted)' }}>
+                                Chưa có bài tập nào được giao. Hãy dùng khung bên trái để giao bài.
+                              </td>
+                            </tr>
+                          ) : (
+                            assignments.map((item) => {
+                              const isOverdue = item.due_date ? new Date(item.due_date).getTime() < Date.now() : false
+                              return (
+                                <tr key={item.id}>
+                                  <td>
+                                    <strong>{item.classes?.name || 'Lớp'}</strong>
+                                    <div style={{ fontSize: '11px', color: 'var(--color-muted)' }}>{item.classes?.code}</div>
+                                  </td>
+                                  <td>
+                                    <span className="task-code-pill" style={{ display: 'inline-block', marginBottom: '4px' }}>
+                                      {item.task_code}
+                                    </span>
+                                    <div style={{ fontSize: '12px', color: 'var(--color-text)', maxWidth: '240px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                      {item.tasks?.title || `Bài tập ${item.task_code}`}
+                                    </div>
+                                  </td>
+                                  <td>
+                                    {item.due_date ? (
+                                      <span
+                                        style={{
+                                          fontSize: '12px',
+                                          fontWeight: 600,
+                                          padding: '2px 8px',
+                                          borderRadius: '6px',
+                                          background: isOverdue ? '#fee4e2' : '#f0fdf4',
+                                          color: isOverdue ? '#b42318' : '#15803d',
+                                          display: 'inline-block',
+                                          whiteSpace: 'nowrap',
+                                        }}
+                                      >
+                                        {isOverdue ? '⚠️ Quá hạn: ' : '⏰ '}
+                                        {new Date(item.due_date).toLocaleString('vi-VN', {
+                                          hour: '2-digit',
+                                          minute: '2-digit',
+                                          day: '2-digit',
+                                          month: '2-digit',
+                                          year: 'numeric',
+                                        })}
+                                      </span>
+                                    ) : (
+                                      <span style={{ fontSize: '12px', color: 'var(--color-muted)' }}>Không giới hạn</span>
+                                    )}
+                                  </td>
+                                  <td style={{ fontSize: '12px', color: 'var(--color-muted)', whiteSpace: 'nowrap' }}>
+                                    {new Date(item.created_at).toLocaleDateString('vi-VN')}
+                                  </td>
+                                  <td style={{ textAlign: 'center' }}>
+                                    <button
+                                      type="button"
+                                      className="btn-signout"
+                                      style={{ padding: '4px 8px', fontSize: '11px', color: '#b42318', borderColor: '#fecdca' }}
+                                      title="Hủy giao bài tập này"
+                                      disabled={isDeletingAssignId === item.id}
+                                      onClick={() => handleDeleteAssignment(item.id)}
+                                    >
+                                      {isDeletingAssignId === item.id ? '...' : '🗑️ Hủy'}
+                                    </button>
+                                  </td>
+                                </tr>
+                              )
+                            })
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* TAB 3: BẢNG ĐIỂM TOÀN TRƯỜNG */}
+            {activeTab === 'gradebook' && (
+              <section>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
+                  <div>
+                    <h2>Bảng Điểm & Giám Sát Toàn Trường</h2>
+
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span style={{ fontSize: '13px', color: 'var(--color-success)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981' }} />
+                      Realtime kết nối
+                    </span>
+                    <button
+                      type="button"
+                      className="btn-auth-link btn-auth-link--secondary"
+                      style={{ padding: '6px 14px', fontSize: '12px', cursor: 'pointer' }}
+                      disabled={isRefreshingGradebook}
+                      onClick={loadGradebookAttempts}
+                    >
+                      {isRefreshingGradebook ? '⏳ Đang tải...' : '🔄 Làm mới'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Bộ lọc bảng điểm */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center', marginBottom: '16px', background: '#ffffff', padding: '12px 16px', borderRadius: '10px', border: '1px solid var(--color-line)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <label htmlFor="gb-class" style={{ fontSize: '13px', fontWeight: 700 }}>Lớp học:</label>
+                    <select
+                      id="gb-class"
+                      className="form-input"
+                      style={{ width: 'auto', minWidth: '180px', padding: '6px 10px', fontSize: '13px' }}
+                      value={gradebookClassFilter}
+                      onChange={(e) => setGradebookClassFilter(e.target.value)}
+                    >
+                      <option value="ALL">Toàn trường (Tất cả lớp)</option>
+                      {classes.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name} ({c.code})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <label htmlFor="gb-status" style={{ fontSize: '13px', fontWeight: 700 }}>Trạng thái:</label>
+                    <select
+                      id="gb-status"
+                      className="form-input"
+                      style={{ width: 'auto', padding: '6px 10px', fontSize: '13px' }}
+                      value={gradebookStatusFilter}
+                      onChange={(e) => setGradebookStatusFilter(e.target.value as any)}
+                    >
+                      <option value="ALL">Tất cả trạng thái</option>
+                      <option value="completed">Đã hoàn thành ✓</option>
+                      <option value="in_progress">Đang làm dở ⏳</option>
+                    </select>
+                  </div>
+
+                  <div style={{ flex: 1, minWidth: '220px' }}>
+                    <input
+                      type="text"
+                      className="form-input"
+                      style={{ width: '100%', padding: '6px 12px', fontSize: '13px' }}
+                      placeholder="Tìm tên học sinh, mã task (60113), email..."
+                      value={gradebookSearch}
+                      onChange={(e) => setGradebookSearch(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {/* Thẻ thống kê nhanh */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '16px' }}>
+                  <div style={{ background: '#ffffff', border: '1px solid var(--color-line)', padding: '12px', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '12px', color: 'var(--color-muted)' }}>Tổng bài tập</div>
+                    <div style={{ fontSize: '20px', fontWeight: 700, marginTop: '4px' }}>{filteredAttempts.length}</div>
+                  </div>
+                  <div style={{ background: '#ffffff', border: '1px solid var(--color-line)', padding: '12px', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '12px', color: '#16a34a' }}>Đã hoàn thành</div>
+                    <div style={{ fontSize: '20px', fontWeight: 700, color: '#16a34a', marginTop: '4px' }}>{completedCount}</div>
+                  </div>
+                  <div style={{ background: '#ffffff', border: '1px solid var(--color-line)', padding: '12px', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '12px', color: '#d97706' }}>Đang làm dở</div>
+                    <div style={{ fontSize: '20px', fontWeight: 700, color: '#d97706', marginTop: '4px' }}>{inProgressCount}</div>
+                  </div>
+                  <div style={{ background: '#ffffff', border: '1px solid var(--color-line)', padding: '12px', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '12px', color: 'var(--color-muted)' }}>Điểm trung bình</div>
+                    <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--color-primary)', marginTop: '4px' }}>{avgScore}/100</div>
+                  </div>
+                </div>
+
+                {/* Bảng Dữ Liệu Bảng Điểm */}
+                <div className="portal-table-container">
+                  <table className="portal-table">
+                    <thead>
+                      <tr>
+                        <th>Học sinh</th>
+                        <th>Lớp học</th>
+                        <th>Mã Task</th>
+                        <th title="Điểm đạt được ở lần nộp/kiểm tra đầu tiên">Điểm lần 1</th>
+                        <th title="Điểm hiện tại / cao nhất">Điểm hiện tại</th>
+                        <th>Trạng thái</th>
+                        <th>Lần làm</th>
+                        <th>Thời gian cập nhật</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredAttempts.length === 0 ? (
+                        <tr>
+                          <td colSpan={8} style={{ textAlign: 'center', color: 'var(--color-muted)', padding: '36px' }}>
+                            {attempts.length === 0
+                              ? 'Chưa có bài nộp nào từ học sinh.'
+                              : 'Không tìm thấy kết quả nào phù hợp với bộ lọc hiện tại.'}
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredAttempts.map((a) => (
+                          <tr key={a.id}>
+                            <td>
+                              <strong>{a.student_name}</strong>
+                              {(a.student_username || a.student_email) && (
+                                <div style={{ fontSize: '11px', color: 'var(--color-muted)', marginTop: '2px' }}>
+                                  {a.student_username || a.student_email}
+                                </div>
+                              )}
+                            </td>
+                            <td>
+                              {a.class_name ? (
+                                <div>
+                                  <span style={{ fontWeight: 600 }}>{a.class_name}</span>
+                                  {a.class_code && (
+                                    <div style={{ fontSize: '11px', color: 'var(--color-muted)' }}>Mã: {a.class_code}</div>
+                                  )}
+                                </div>
+                              ) : (
+                                <span style={{ color: 'var(--color-muted)', fontSize: '12px' }}>Tự do</span>
+                              )}
+                            </td>
+                            <td>
+                              <span style={{ fontFamily: 'monospace', fontWeight: 700, backgroundColor: 'rgba(99, 102, 241, 0.08)', padding: '2px 6px', borderRadius: '4px', color: 'var(--color-primary)' }}>
+                                {a.task_code}
+                              </span>
+                            </td>
+                            <td>
+                              {a.first_score !== null && a.first_score !== undefined ? (
+                                <strong style={{ color: a.first_score >= 80 ? 'var(--color-success, #16a34a)' : '#6366f1' }}>
+                                  {a.first_score}/100
+                                </strong>
+                              ) : (
+                                <span style={{ color: 'var(--color-muted)' }}>-</span>
+                              )}
+                            </td>
+                            <td>
+                              <strong style={{ color: a.score >= 80 ? 'var(--color-success, #16a34a)' : '#e11d48' }}>
+                                {a.score}/{a.max_score}
+                              </strong>
+                            </td>
+                            <td>
+                              {a.status === 'completed' ? (
+                                <span className="user-badge" style={{ backgroundColor: '#dcfce7', color: '#15803d', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                  ✓ Đã xong
+                                </span>
+                              ) : (
+                                <span className="user-badge" style={{ backgroundColor: '#fef3c7', color: '#b45309', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                  ⏳ Đang làm dở
+                                </span>
+                              )}
+                            </td>
+                            <td>
+                              <span style={{ fontSize: '13px' }}>Lần {a.attempt_count}</span>
+                            </td>
+                            <td style={{ fontSize: '12px' }}>
+                              {formatAttemptTime(a)}
+                              {a.status === 'in_progress' && (
+                                <span style={{ display: 'block', fontSize: '11px', color: '#b45309' }}>Chưa nộp kết thúc</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            )}
+
+            {/* TAB 3: DANH SÁCH LỚP HỌC & CẤP TÀI KHOẢN HỌC SINH */}
+            {activeTab === 'classes' && (
+              <section>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
+                  <div>
+                    <h2 style={{ margin: 0 }}>Danh Sách Lớp Học & Cấp Tài Khoản</h2>
+
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <button
+                      type="button"
+                      className="btn-auth-link btn-auth-link--secondary"
+                      style={{ padding: '8px 16px', fontSize: '13px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                      onClick={() => handleOpenBatchModal()}
+                    >
+                      <span>👥</span>
+                      <span>+ Cấp Tài Khoản Hàng Loạt</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-submit"
+                      style={{ padding: '8px 16px', margin: 0, fontSize: '13px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                      onClick={() => {
+                        setNewClassName('')
+                        setNewClassTeacherId(teachers.length > 0 ? teachers[0].id : '')
+                        setCreateClassError('')
+                        setIsCreateClassModalOpen(true)
+                      }}
+                    >
+                      <span>🏫</span>
+                      <span>+ Tạo Lớp Học Mới</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="portal-table-container">
+                  <table className="portal-table">
+                    <thead>
+                      <tr>
+                        <th>Tên lớp</th>
+                        <th>Mã tham gia</th>
+                        <th>Giáo viên phụ trách</th>
+                        <th>Sĩ số học sinh</th>
+                        <th>Ngày tạo</th>
+                        <th>Hành động</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {classes.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} style={{ textAlign: 'center', padding: '36px', color: 'var(--color-muted)' }}>
+                            Chưa có lớp học nào trong hệ thống.
+                          </td>
+                        </tr>
+                      ) : (
+                        classes.map((c) => (
+                          <tr key={c.id}>
+                            <td><strong style={{ fontSize: '15px' }}>{c.name}</strong></td>
+                            <td>
+                              <code style={{ fontSize: '13px', fontWeight: 700, padding: '4px 8px', background: '#f1f5f9', borderRadius: '4px', color: 'var(--color-primary)' }}>
+                                {c.code}
+                              </code>
+                            </td>
+                            <td>
+                              <strong>{c.teacher_name}</strong>
+                              {c.teacher_email && <div style={{ fontSize: '11px', color: 'var(--color-muted)' }}>{c.teacher_email}</div>}
+                            </td>
+                            <td>
+                              <span className="user-badge user-badge--student" style={{ fontWeight: 600 }}>
+                                {c.student_count} học sinh
+                              </span>
+                            </td>
+                            <td>
+                              {c.created_at ? new Date(c.created_at).toLocaleDateString('vi-VN') : '-'}
+                            </td>
+                            <td>
+                              <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                <button
+                                  type="button"
+                                  className="btn-auth-link btn-auth-link--secondary"
+                                  style={{ padding: '4px 10px', fontSize: '12px', cursor: 'pointer' }}
+                                  onClick={() => handleOpenBatchModal(c.id)}
+                                  title="Cấp tài khoản học sinh hàng loạt cho lớp này"
+                                >
+                                  👥 Cấp TK
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn-auth-link"
+                                  style={{ padding: '4px 10px', fontSize: '12px', cursor: 'pointer', color: '#dc2626', borderColor: '#fecaca', background: '#fff1f2' }}
+                                  onClick={() => handleDeleteClass(c.id, c.name)}
+                                  title="Xóa lớp học này"
+                                >
+                                  🗑️ Xóa
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            )}
+
+            {/* TAB: BÀN PHÍM GÕ MÃ CODE (ĐỒNG NHẤT MỌI ROLE) */}
+            {activeTab === 'keypad' && (
+              <main className="student-centered-hero" id="admin-keypad" style={{ margin: '32px auto' }}>
+                <div className="student-centered-card">
+                  <div className="student-centered-badge">
+                    <span>✨</span>
+                    <span>Hệ Thống Luyện Tập Tiếng Anh Thông Minh</span>
+                  </div>
+
+                  <h1 className="student-centered-title">Nhập Mã Bài Tập</h1>
+                  <p className="student-centered-subtitle">
+                    Nhập mã 5 chữ số từ giáo viên hoặc sách bài tập (ví dụ: <code>60111</code>) để bắt đầu luyện tập cùng AI Tutor.
+                  </p>
+
+                  {/* BÀN PHÍM SỐ Ở CHÍNH GIỮA */}
+                  <div className="student-keypad-box">
+                    <InlineCodeKeypad onNavigate={(code) => navigate(`/tasks/${code}`)} />
+                  </div>
+                </div>
+              </main>
+            )}
+
+          </main>
         </div>
       </div>
 
-      {/* THANH ĐIỀU HƯỚNG TAB CHỨC NĂNG ADMIN */}
-      <nav className="portal-tabs">
-        <button
-          type="button"
-          className={`portal-tab-btn ${activeTab === 'tasks' ? 'is-active' : ''}`}
-          onClick={() => setActiveTab('tasks')}
-        >
-          📚 Quản lý & Soạn Bài Tập ({tasks.length})
-        </button>
-        <button
-          type="button"
-          className={`portal-tab-btn ${activeTab === 'assignments' ? 'is-active' : ''}`}
-          onClick={() => setActiveTab('assignments')}
-        >
-          📝 Giao bài theo Lớp ({assignments.length})
-        </button>
-        <button
-          type="button"
-          className={`portal-tab-btn ${activeTab === 'gradebook' ? 'is-active' : ''}`}
-          onClick={() => setActiveTab('gradebook')}
-        >
-          📊 Bảng Điểm Toàn Trường ({attempts.length})
-        </button>
-        <button
-          type="button"
-          className={`portal-tab-btn ${activeTab === 'classes' ? 'is-active' : ''}`}
-          onClick={() => setActiveTab('classes')}
-        >
-          🏫 Danh Sách Lớp & Giáo Viên ({classes.length})
-        </button>
-        <button
-          type="button"
-          className={`portal-tab-btn ${activeTab === 'ai_config' ? 'is-active' : ''}`}
-          onClick={() => setActiveTab('ai_config')}
-        >
-          ⚙️ Cấu hình AI & API Keys
-        </button>
-      </nav>
-
-      {/* TAB 1: NGÂN HÀNG BÀI TẬP & SOẠN ĐỀ */}
-      {activeTab === 'tasks' && (
-        <section>
-          {/* Header công cụ */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px', marginBottom: '16px' }}>
-            <div>
-              <h2 style={{ margin: 0 }}>Ngân Hàng Bài Tập Hệ Thống</h2>
-              <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--color-muted)' }}>
-                Bao gồm 32 bài tập tiêu chuẩn cùng các bài tập mới được Admin soạn thảo
-              </p>
-            </div>
-            <button
-              type="button"
-              className="btn-submit"
-              style={{ width: 'auto', padding: '10px 20px', fontWeight: 700 }}
-              onClick={openAuthoringModal}
-            >
-              + Soạn Bài Tập Mới
-            </button>
-          </div>
-
-          {/* Bộ lọc bài tập */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center', marginBottom: '16px', background: '#ffffff', padding: '12px 16px', borderRadius: '10px', border: '1px solid var(--color-line)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <label htmlFor="filter-ws" style={{ fontSize: '13px', fontWeight: 700 }}>Lesson:</label>
-              <select
-                id="filter-ws"
-                className="form-input"
-                style={{ width: 'auto', padding: '6px 10px', fontSize: '13px' }}
-                value={taskFilterWs}
-                onChange={(e) => setTaskFilterWs(e.target.value)}
-              >
-                <option value="ALL">Tất cả Lesson</option>
-                {Array.from(new Set(tasks.map((t) => t.lesson || t.worksheet)))
-                  .sort((a, b) => a - b)
-                  .map((l) => (
-                    <option key={l} value={String(l)}>Lesson {l}</option>
-                  ))}
-              </select>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <label htmlFor="filter-form" style={{ fontSize: '13px', fontWeight: 700 }}>Dạng bài:</label>
-              <select
-                id="filter-form"
-                className="form-input"
-                style={{ width: 'auto', padding: '6px 10px', fontSize: '13px' }}
-                value={taskFilterForm}
-                onChange={(e) => setTaskFilterForm(e.target.value)}
-              >
-                <option value="ALL">Tất cả dạng bài</option>
-                <option value="FORM_1_CHOICE">Form 1: Trắc nghiệm (A/B/C hoặc T/F)</option>
-                <option value="FORM_2_FILL">Form 2: Điền từ vào ô trống</option>
-                <option value="FORM_3_WRITING">Form 3: Viết câu & Đoạn văn (AI Grammar)</option>
-                <option value="FORM_4_SPEAKING">Form 4: Luyện nói & Chấm phát âm (AssemblyAI)</option>
-                <option value="FORM_5_LISTEN_REPEAT">Form 5: Nghe & Ghi âm lặp lại (AssemblyAI &gt; 80%)</option>
-                <option value="FORM_4_SENTENCE_REPAIR">Form 4 Legacy: Sửa lỗi câu & Ngữ pháp</option>
-                <option value="FORM_5_SEQUENCE">Form 5 Legacy: Sắp xếp đoạn văn</option>
-              </select>
-            </div>
-
-            <div style={{ flex: 1, minWidth: '220px' }}>
-              <input
-                type="text"
-                className="form-input"
-                style={{ width: '100%', padding: '6px 12px', fontSize: '13px' }}
-                placeholder="Tìm theo mã bài (60113), tiêu đề, chủ đề..."
-                value={taskSearch}
-                onChange={(e) => setTaskSearch(e.target.value)}
-              />
-            </div>
-          </div>
-
-          {taskActionFeedback && (
-            <div
-              className={`auth-message ${taskActionFeedback.success ? 'auth-message--success' : 'auth-message--error'}`}
-              style={{ marginBottom: '16px' }}
-            >
-              {taskActionFeedback.text}
-            </div>
-          )}
-
-          {/* Bảng danh sách bài tập */}
-          <div className="portal-table-container">
-            <table className="portal-table">
-              <thead>
-                <tr>
-                  <th>Mã bài</th>
-                  <th>Vị trí</th>
-                  <th>Tiêu đề & Chủ đề</th>
-                  <th>Dạng bài chuẩn</th>
-                  <th>Nguồn</th>
-                  <th>Thao tác</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loadingTasks ? (
-                  <tr>
-                    <td colSpan={6} style={{ textAlign: 'center', padding: '36px', color: 'var(--color-muted)' }}>
-                      Đang tải danh sách bài tập...
-                    </td>
-                  </tr>
-                ) : filteredTasks.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} style={{ textAlign: 'center', padding: '36px', color: 'var(--color-muted)' }}>
-                      Không tìm thấy bài tập nào khớp với bộ lọc.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredTasks.map((t) => (
-                    <tr key={t.code}>
-                      <td>
-                        <strong style={{ fontFamily: 'monospace', fontSize: '15px', color: 'var(--color-primary)' }}>
-                          {t.code}
-                        </strong>
-                      </td>
-                      <td>
-                        <span style={{ fontWeight: 600 }}>Unit {t.unit || 1} • Lesson {t.lesson || t.worksheet}</span>
-                        <div style={{ fontSize: '11px', color: 'var(--color-muted)' }}>Task {t.task_number}</div>
-                      </td>
-                      <td>
-                        <strong>{t.title}</strong>
-                        {t.subtitle && <div style={{ fontSize: '12px', color: 'var(--color-muted)', marginTop: '2px' }}>{t.subtitle}</div>}
-                      </td>
-                      <td>
-                        <span className="user-badge user-badge--student" style={{ fontSize: '11px' }}>
-                          {t.form_type}
-                        </span>
-                      </td>
-                      <td>
-                        {t.is_custom ? (
-                          <span className="user-badge user-badge--admin" style={{ fontSize: '11px' }}>Admin tạo</span>
-                        ) : (
-                          <span className="user-badge" style={{ fontSize: '11px', backgroundColor: '#e0f2fe', color: '#0369a1' }}>Tiêu chuẩn</span>
-                        )}
-                      </td>
-                      <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <button
-                            type="button"
-                            className="btn-submit"
-                            style={{
-                              fontSize: '12px',
-                              padding: '6px 12px',
-                              width: 'auto',
-                              borderRadius: '6px',
-                              cursor: 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              whiteSpace: 'nowrap',
-                            }}
-                            onClick={() => navigate(`/tasks/${t.code}`)}
-                          >
-                            ▶ Mở xem bài
-                          </button>
-                          <button
-                            type="button"
-                            className="btn-delete-task"
-                            style={{
-                              fontSize: '12px',
-                              padding: '6px 12px',
-                              width: 'auto',
-                              borderRadius: '6px',
-                              cursor: isDeletingTaskCode === t.code ? 'not-allowed' : 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              whiteSpace: 'nowrap',
-                              backgroundColor: '#fee2e2',
-                              color: '#dc2626',
-                              border: '1px solid #fca5a5',
-                              fontWeight: 600,
-                              opacity: isDeletingTaskCode === t.code ? 0.6 : 1,
-                              transition: 'all 0.15s ease',
-                            }}
-                            disabled={isDeletingTaskCode === t.code}
-                            onClick={() => handleDeleteTask(t)}
-                            title={`Xóa bài tập ${t.code} khỏi hệ thống và CSDL`}
-                          >
-                            {isDeletingTaskCode === t.code ? 'Đang xóa...' : '🗑️ Xóa'}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
-
-      {/* TAB 2: GIAO BÀI THEO LỚP */}
-      {activeTab === 'assignments' && (
-        <section>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px' }}>
-            <div
-              style={{
-                background: '#ffffff',
-                padding: '20px',
-                borderRadius: '12px',
-                border: '1px solid var(--color-line)',
-                height: 'fit-content',
-              }}
-            >
-              <h2 style={{ fontSize: '18px', margin: '0 0 16px' }}>Giao Bài Tập Cho Lớp</h2>
-
-              {assignMessage && (
-                <div
-                  className={`auth-message ${assignMessage.success ? 'auth-message--success' : 'auth-message--error'}`}
-                  style={{ marginBottom: '14px' }}
-                >
-                  {assignMessage.text}
-                </div>
-              )}
-
-              <form onSubmit={handleAssignTask} className="auth-form">
-                <div className="form-group">
-                  <label htmlFor="assign-class">Chọn Lớp nhận bài:</label>
-                  <select
-                    id="assign-class"
-                    className="form-input"
-                    value={selectedClassId}
-                    onChange={(e) => setSelectedClassId(e.target.value)}
-                    required
-                  >
-                    {classes.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name} (Mã: {c.code})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="assign-task">Chọn Bài tập giao:</label>
-                  <select
-                    id="assign-task"
-                    className="form-input"
-                    value={assignTaskCode}
-                    onChange={(e) => setAssignTaskCode(e.target.value)}
-                    required
-                  >
-                    <option value="">-- Chọn bài tập --</option>
-                    {tasks.map((t) => (
-                      <option key={t.code} value={t.code}>
-                        {t.code} - {t.title} ({t.form_type})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="assign-due">Hạn hoàn thành (Tùy chọn):</label>
-                  <input
-                    id="assign-due"
-                    type="datetime-local"
-                    className="form-input"
-                    value={assignDueDate}
-                    onChange={(e) => setAssignDueDate(e.target.value)}
-                  />
-                </div>
-
-                <button type="submit" className="btn-submit" style={{ marginTop: '8px' }}>
-                  🚀 Giao bài tập ngay
-                </button>
-              </form>
-            </div>
-
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                <h2 style={{ fontSize: '18px', margin: 0 }}>Lịch Sử Bài Tập Đã Giao</h2>
-                <span style={{ fontSize: '13px', color: 'var(--color-muted)', fontWeight: 600 }}>
-                  {assignments.length} bài đã giao
-                </span>
-              </div>
-
-              <div className="portal-table-container">
-                <table className="portal-table">
-                  <thead>
-                    <tr>
-                      <th>Lớp học</th>
-                      <th>Bài tập</th>
-                      <th>Hạn nộp</th>
-                      <th>Ngày giao</th>
-                      <th style={{ textAlign: 'center' }}>Thao tác</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {assignments.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} style={{ textAlign: 'center', padding: '36px', color: 'var(--color-muted)' }}>
-                          Chưa có bài tập nào được giao. Hãy dùng khung bên trái để giao bài.
-                        </td>
-                      </tr>
-                    ) : (
-                      assignments.map((item) => {
-                        const isOverdue = item.due_date ? new Date(item.due_date).getTime() < Date.now() : false
-                        return (
-                          <tr key={item.id}>
-                            <td>
-                              <strong>{item.classes?.name || 'Lớp'}</strong>
-                              <div style={{ fontSize: '11px', color: 'var(--color-muted)' }}>{item.classes?.code}</div>
-                            </td>
-                            <td>
-                              <span className="task-code-pill" style={{ display: 'inline-block', marginBottom: '4px' }}>
-                                {item.task_code}
-                              </span>
-                              <div style={{ fontSize: '12px', color: 'var(--color-text)', maxWidth: '240px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {item.tasks?.title || `Bài tập ${item.task_code}`}
-                              </div>
-                            </td>
-                            <td>
-                              {item.due_date ? (
-                                <span
-                                  style={{
-                                    fontSize: '12px',
-                                    fontWeight: 600,
-                                    padding: '2px 8px',
-                                    borderRadius: '6px',
-                                    background: isOverdue ? '#fee4e2' : '#f0fdf4',
-                                    color: isOverdue ? '#b42318' : '#15803d',
-                                    display: 'inline-block',
-                                    whiteSpace: 'nowrap',
-                                  }}
-                                >
-                                  {isOverdue ? '⚠️ Quá hạn: ' : '⏰ '}
-                                  {new Date(item.due_date).toLocaleString('vi-VN', {
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                    day: '2-digit',
-                                    month: '2-digit',
-                                    year: 'numeric',
-                                  })}
-                                </span>
-                              ) : (
-                                <span style={{ fontSize: '12px', color: 'var(--color-muted)' }}>Không giới hạn</span>
-                              )}
-                            </td>
-                            <td style={{ fontSize: '12px', color: 'var(--color-muted)', whiteSpace: 'nowrap' }}>
-                              {new Date(item.created_at).toLocaleDateString('vi-VN')}
-                            </td>
-                            <td style={{ textAlign: 'center' }}>
-                              <button
-                                type="button"
-                                className="btn-signout"
-                                style={{ padding: '4px 8px', fontSize: '11px', color: '#b42318', borderColor: '#fecdca' }}
-                                title="Hủy giao bài tập này"
-                                disabled={isDeletingAssignId === item.id}
-                                onClick={() => handleDeleteAssignment(item.id)}
-                              >
-                                {isDeletingAssignId === item.id ? '...' : '🗑️ Hủy'}
-                              </button>
-                            </td>
-                          </tr>
-                        )
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* TAB 3: BẢNG ĐIỂM TOÀN TRƯỜNG */}
-      {activeTab === 'gradebook' && (
-        <section>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
-            <div>
-              <h2>Bảng Điểm & Giám Sát Toàn Trường</h2>
-              <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--color-muted)' }}>
-                Quyền Quản trị viên: Theo dõi trực tiếp kết quả, điểm lần 1 và trạng thái hoàn thành của mọi học sinh
-              </p>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span style={{ fontSize: '13px', color: 'var(--color-success)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981' }} />
-                Realtime kết nối
-              </span>
-              <button
-                type="button"
-                className="btn-auth-link btn-auth-link--secondary"
-                style={{ padding: '6px 14px', fontSize: '12px', cursor: 'pointer' }}
-                disabled={isRefreshingGradebook}
-                onClick={loadGradebookAttempts}
-              >
-                {isRefreshingGradebook ? '⏳ Đang tải...' : '🔄 Làm mới'}
-              </button>
-            </div>
-          </div>
-
-          {/* Bộ lọc bảng điểm */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center', marginBottom: '16px', background: '#ffffff', padding: '12px 16px', borderRadius: '10px', border: '1px solid var(--color-line)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <label htmlFor="gb-class" style={{ fontSize: '13px', fontWeight: 700 }}>Lớp học:</label>
-              <select
-                id="gb-class"
-                className="form-input"
-                style={{ width: 'auto', minWidth: '180px', padding: '6px 10px', fontSize: '13px' }}
-                value={gradebookClassFilter}
-                onChange={(e) => setGradebookClassFilter(e.target.value)}
-              >
-                <option value="ALL">Toàn trường (Tất cả lớp)</option>
-                {classes.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} ({c.code})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <label htmlFor="gb-status" style={{ fontSize: '13px', fontWeight: 700 }}>Trạng thái:</label>
-              <select
-                id="gb-status"
-                className="form-input"
-                style={{ width: 'auto', padding: '6px 10px', fontSize: '13px' }}
-                value={gradebookStatusFilter}
-                onChange={(e) => setGradebookStatusFilter(e.target.value as any)}
-              >
-                <option value="ALL">Tất cả trạng thái</option>
-                <option value="completed">Đã hoàn thành ✓</option>
-                <option value="in_progress">Đang làm dở ⏳</option>
-              </select>
-            </div>
-
-            <div style={{ flex: 1, minWidth: '220px' }}>
-              <input
-                type="text"
-                className="form-input"
-                style={{ width: '100%', padding: '6px 12px', fontSize: '13px' }}
-                placeholder="Tìm tên học sinh, mã task (60113), email..."
-                value={gradebookSearch}
-                onChange={(e) => setGradebookSearch(e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Thẻ thống kê nhanh */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '16px' }}>
-            <div style={{ background: '#ffffff', border: '1px solid var(--color-line)', padding: '12px', borderRadius: '8px' }}>
-              <div style={{ fontSize: '12px', color: 'var(--color-muted)' }}>Tổng bài tập</div>
-              <div style={{ fontSize: '20px', fontWeight: 700, marginTop: '4px' }}>{filteredAttempts.length}</div>
-            </div>
-            <div style={{ background: '#ffffff', border: '1px solid var(--color-line)', padding: '12px', borderRadius: '8px' }}>
-              <div style={{ fontSize: '12px', color: '#16a34a' }}>Đã hoàn thành</div>
-              <div style={{ fontSize: '20px', fontWeight: 700, color: '#16a34a', marginTop: '4px' }}>{completedCount}</div>
-            </div>
-            <div style={{ background: '#ffffff', border: '1px solid var(--color-line)', padding: '12px', borderRadius: '8px' }}>
-              <div style={{ fontSize: '12px', color: '#d97706' }}>Đang làm dở</div>
-              <div style={{ fontSize: '20px', fontWeight: 700, color: '#d97706', marginTop: '4px' }}>{inProgressCount}</div>
-            </div>
-            <div style={{ background: '#ffffff', border: '1px solid var(--color-line)', padding: '12px', borderRadius: '8px' }}>
-              <div style={{ fontSize: '12px', color: 'var(--color-muted)' }}>Điểm trung bình</div>
-              <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--color-primary)', marginTop: '4px' }}>{avgScore}/100</div>
-            </div>
-          </div>
-
-          {/* Bảng Dữ Liệu Bảng Điểm */}
-          <div className="portal-table-container">
-            <table className="portal-table">
-              <thead>
-                <tr>
-                  <th>Học sinh</th>
-                  <th>Lớp học</th>
-                  <th>Mã Task</th>
-                  <th title="Điểm đạt được ở lần nộp/kiểm tra đầu tiên">Điểm lần 1</th>
-                  <th title="Điểm hiện tại / cao nhất">Điểm hiện tại</th>
-                  <th>Trạng thái</th>
-                  <th>Lần làm</th>
-                  <th>Thời gian cập nhật</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredAttempts.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} style={{ textAlign: 'center', color: 'var(--color-muted)', padding: '36px' }}>
-                      {attempts.length === 0
-                        ? 'Chưa có bài nộp nào từ học sinh.'
-                        : 'Không tìm thấy kết quả nào phù hợp với bộ lọc hiện tại.'}
-                    </td>
-                  </tr>
-                ) : (
-                  filteredAttempts.map((a) => (
-                    <tr key={a.id}>
-                      <td>
-                        <strong>{a.student_name}</strong>
-                        {(a.student_username || a.student_email) && (
-                          <div style={{ fontSize: '11px', color: 'var(--color-muted)', marginTop: '2px' }}>
-                            {a.student_username || a.student_email}
-                          </div>
-                        )}
-                      </td>
-                      <td>
-                        {a.class_name ? (
-                          <div>
-                            <span style={{ fontWeight: 600 }}>{a.class_name}</span>
-                            {a.class_code && (
-                              <div style={{ fontSize: '11px', color: 'var(--color-muted)' }}>Mã: {a.class_code}</div>
-                            )}
-                          </div>
-                        ) : (
-                          <span style={{ color: 'var(--color-muted)', fontSize: '12px' }}>Tự do</span>
-                        )}
-                      </td>
-                      <td>
-                        <span style={{ fontFamily: 'monospace', fontWeight: 700, backgroundColor: 'rgba(99, 102, 241, 0.08)', padding: '2px 6px', borderRadius: '4px', color: 'var(--color-primary)' }}>
-                          {a.task_code}
-                        </span>
-                      </td>
-                      <td>
-                        {a.first_score !== null && a.first_score !== undefined ? (
-                          <strong style={{ color: a.first_score >= 80 ? 'var(--color-success, #16a34a)' : '#6366f1' }}>
-                            {a.first_score}/100
-                          </strong>
-                        ) : (
-                          <span style={{ color: 'var(--color-muted)' }}>-</span>
-                        )}
-                      </td>
-                      <td>
-                        <strong style={{ color: a.score >= 80 ? 'var(--color-success, #16a34a)' : '#e11d48' }}>
-                          {a.score}/{a.max_score}
-                        </strong>
-                      </td>
-                      <td>
-                        {a.status === 'completed' ? (
-                          <span className="user-badge" style={{ backgroundColor: '#dcfce7', color: '#15803d', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            ✓ Đã xong
-                          </span>
-                        ) : (
-                          <span className="user-badge" style={{ backgroundColor: '#fef3c7', color: '#b45309', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            ⏳ Đang làm dở
-                          </span>
-                        )}
-                      </td>
-                      <td>
-                        <span style={{ fontSize: '13px' }}>Lần {a.attempt_count}</span>
-                      </td>
-                      <td style={{ fontSize: '12px' }}>
-                        {formatAttemptTime(a)}
-                        {a.status === 'in_progress' && (
-                          <span style={{ display: 'block', fontSize: '11px', color: '#b45309' }}>Chưa nộp kết thúc</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
-
-      {/* TAB 4: DANH SÁCH LỚP HỌC & GIÁO VIÊN */}
-      {activeTab === 'classes' && (
-        <section>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <div>
-              <h2>Danh Sách Lớp Học Toàn Hệ Thống</h2>
-              <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--color-muted)' }}>
-                Các lớp học đang được quản lý bởi các giáo viên trong trường
-              </p>
-            </div>
-            <Link to="/teacher" className="btn-submit" style={{ textDecoration: 'none', padding: '9px 18px' }}>
-              + Sang Cổng Giáo Viên để tạo lớp
-            </Link>
-          </div>
-
-          <div className="portal-table-container">
-            <table className="portal-table">
-              <thead>
-                <tr>
-                  <th>Tên lớp</th>
-                  <th>Mã tham gia</th>
-                  <th>Giáo viên phụ trách</th>
-                  <th>Sĩ số học sinh</th>
-                  <th>Ngày tạo</th>
-                </tr>
-              </thead>
-              <tbody>
-                {classes.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} style={{ textAlign: 'center', padding: '36px', color: 'var(--color-muted)' }}>
-                      Chưa có lớp học nào trong hệ thống.
-                    </td>
-                  </tr>
-                ) : (
-                  classes.map((c) => (
-                    <tr key={c.id}>
-                      <td><strong style={{ fontSize: '15px' }}>{c.name}</strong></td>
-                      <td>
-                        <code style={{ fontSize: '13px', fontWeight: 700, padding: '4px 8px', background: '#f1f5f9', borderRadius: '4px', color: 'var(--color-primary)' }}>
-                          {c.code}
-                        </code>
-                      </td>
-                      <td>
-                        <strong>{c.teacher_name}</strong>
-                        {c.teacher_email && <div style={{ fontSize: '11px', color: 'var(--color-muted)' }}>{c.teacher_email}</div>}
-                      </td>
-                      <td>
-                        <span className="user-badge user-badge--student" style={{ fontWeight: 600 }}>
-                          {c.student_count} học sinh
-                        </span>
-                      </td>
-                      <td>
-                        {c.created_at ? new Date(c.created_at).toLocaleDateString('vi-VN') : '-'}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
-
-      {/* TAB 5: CẤU HÌNH AI & API KEYS */}
-      {activeTab === 'ai_config' && (
-        <section style={{ maxWidth: '840px', margin: '0 auto' }}>
-          <div style={{ marginBottom: '24px' }}>
-            <h2 style={{ margin: 0 }}>Cấu Hình Trí Tuệ Nhân Tạo (AI Services & API Keys)</h2>
-            <p style={{ margin: '6px 0 0', fontSize: '13.5px', color: 'var(--color-muted)', lineHeight: 1.5 }}>
-              Quản lý API Key cho các mô hình AI phục vụ học sinh: Google Gemini (Chấm Ngữ pháp Form 3) và AssemblyAI (Chuyển giọng nói & Chấm phát âm Form 4). Khóa API được lưu cục bộ an toàn trên trình duyệt của máy bạn và sử dụng ngay lập tức khi học sinh làm bài.
-            </p>
-          </div>
-
-          {apiKeySaveMsg && (
-            <div
-              className={`auth-message ${apiKeySaveMsg.success ? 'auth-message--success' : 'auth-message--error'}`}
-              style={{ marginBottom: '20px', padding: '14px 18px', borderRadius: '10px', fontSize: '14px', fontWeight: 600 }}
-            >
-              {apiKeySaveMsg.text}
-            </div>
-          )}
-
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              if (typeof window !== 'undefined') {
-                if (assemblyAiKeyInput.trim()) {
-                  localStorage.setItem('gsec_assemblyai_api_key', assemblyAiKeyInput.trim())
-                } else {
-                  localStorage.removeItem('gsec_assemblyai_api_key')
-                }
-
-                if (geminiKeyInput.trim()) {
-                  localStorage.setItem('gsec_gemini_api_key', geminiKeyInput.trim())
-                } else {
-                  localStorage.removeItem('gsec_gemini_api_key')
-                }
-                setApiKeySaveMsg({ success: true, text: '✅ Đã lưu cấu hình API Keys thành công! Các bài tập Form 3 & Form 4 sẽ sử dụng ngay lập tức.' })
-                setTimeout(() => setApiKeySaveMsg(null), 5000)
-              }
-            }}
-            style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}
-          >
-            {/* Card 1: AssemblyAI */}
-            <div style={{ background: '#ffffff', border: '1px solid var(--color-line)', borderRadius: '14px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ fontSize: '24px' }}>🎙️</span>
-                  <div>
-                    <h3 style={{ margin: 0, fontSize: '16px', color: 'var(--color-heading)' }}>AssemblyAI API Key (Dành cho Form 4 Nói & Phát âm)</h3>
-                    <div style={{ fontSize: '12px', color: 'var(--color-muted)', marginTop: '2px' }}>
-                      Chuyển đổi âm thanh micro thành văn bản (Speech-to-Text) kèm độ tin cậy âm học từng từ
-                    </div>
-                  </div>
-                </div>
-                <span
-                  style={{
-                    padding: '4px 10px',
-                    borderRadius: '999px',
-                    fontSize: '12px',
-                    fontWeight: 700,
-                    background: assemblyAiKeyInput.trim() ? '#dcfce7' : '#fee2e2',
-                    color: assemblyAiKeyInput.trim() ? '#166534' : '#991b1b',
-                  }}
-                >
-                  {assemblyAiKeyInput.trim() ? '✓ Đã cấu hình' : 'Chưa cấu hình'}
-                </span>
-              </div>
-
-              <div className="form-group" style={{ marginBottom: '10px' }}>
-                <label htmlFor="cfg-assemblyai-key" style={{ fontWeight: 600, fontSize: '13px' }}>
-                  Khóa bí mật (AssemblyAI Token):
-                </label>
-                <input
-                  id="cfg-assemblyai-key"
-                  type="password"
-                  className="form-input"
-                  placeholder="Nhập AssemblyAI API Key (ví dụ: a1b2c3d4e5f6...)"
-                  value={assemblyAiKeyInput}
-                  onChange={(e) => setAssemblyAiKeyInput(e.target.value)}
-                  style={{ fontFamily: 'monospace' }}
-                />
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#64748b' }}>
-                <span>Được sử dụng cho bài 60116 và tất cả bài tập thuộc định dạng FORM_4_SPEAKING.</span>
-                <a
-                  href="https://www.assemblyai.com/dashboard/signup"
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{ color: 'var(--color-primary)', fontWeight: 600, textDecoration: 'none' }}
-                >
-                  Đăng ký lấy key miễn phí →
-                </a>
-              </div>
-            </div>
-
-            {/* Card 2: Google Gemini */}
-            <div style={{ background: '#ffffff', border: '1px solid var(--color-line)', borderRadius: '14px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ fontSize: '24px' }}>✨</span>
-                  <div>
-                    <h3 style={{ margin: 0, fontSize: '16px', color: 'var(--color-heading)' }}>Google Gemini API Key (Dành cho Form 3 Chấm Ngữ Pháp)</h3>
-                    <div style={{ fontSize: '12px', color: 'var(--color-muted)', marginTop: '2px' }}>
-                      Phân tích ngữ pháp tiếng Anh, cấu trúc câu và đối chiếu từ bắt buộc trong sách
-                    </div>
-                  </div>
-                </div>
-                <span
-                  style={{
-                    padding: '4px 10px',
-                    borderRadius: '999px',
-                    fontSize: '12px',
-                    fontWeight: 700,
-                    background: geminiKeyInput.trim() ? '#dcfce7' : '#fee2e2',
-                    color: geminiKeyInput.trim() ? '#166534' : '#991b1b',
-                  }}
-                >
-                  {geminiKeyInput.trim() ? '✓ Đã cấu hình' : 'Chưa cấu hình'}
-                </span>
-              </div>
-
-              <div className="form-group" style={{ marginBottom: '10px' }}>
-                <label htmlFor="cfg-gemini-key" style={{ fontWeight: 600, fontSize: '13px' }}>
-                  Google AI Studio API Key (Gemini Token):
-                </label>
-                <input
-                  id="cfg-gemini-key"
-                  type="password"
-                  className="form-input"
-                  placeholder="Nhập Gemini API Key (ví dụ: AIzaSy...)"
-                  value={geminiKeyInput}
-                  onChange={(e) => setGeminiKeyInput(e.target.value)}
-                  style={{ fontFamily: 'monospace' }}
-                />
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#64748b' }}>
-                <span>Được sử dụng cho bài 60115 và tất cả bài tập thuộc định dạng FORM_3_WRITING.</span>
-                <a
-                  href="https://aistudio.google.com/app/apikey"
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{ color: 'var(--color-primary)', fontWeight: 600, textDecoration: 'none' }}
-                >
-                  Lấy key miễn phí từ Google AI Studio →
-                </a>
-              </div>
-            </div>
-
-            {/* Submit & Reset actions */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '10px' }}>
-              <button
-                type="button"
-                className="btn-auth-link btn-auth-link--secondary"
-                style={{ padding: '10px 20px', border: '1px solid #d1d5db', cursor: 'pointer', borderRadius: '8px' }}
-                onClick={() => {
-                  if (window.confirm('Bạn có chắc chắn muốn xóa toàn bộ API Keys đã lưu trên trình duyệt không?')) {
-                    setAssemblyAiKeyInput('')
-                    setGeminiKeyInput('')
-                    localStorage.removeItem('gsec_assemblyai_api_key')
-                    localStorage.removeItem('gsec_gemini_api_key')
-                    setApiKeySaveMsg({ success: true, text: 'Đã xóa toàn bộ API Keys khỏi trình duyệt.' })
-                    setTimeout(() => setApiKeySaveMsg(null), 4000)
-                  }
-                }}
-              >
-                Xóa tất cả Keys
-              </button>
-              <button
-                type="submit"
-                className="btn-submit"
-                style={{ width: 'auto', padding: '10px 28px', fontWeight: 700 }}
-              >
-                💾 Lưu Cấu Hình API Keys
-              </button>
-            </div>
-          </form>
-        </section>
-      )}
-
-      {/* MODAL SOẠN BÀI TẬP MỚI */}
-      {isAuthoringOpen && (
+      {/* MODAL CẤP TÀI KHOẢN HỌC SINH HÀNG LOẠT (DÀNH CHO ADMIN) */}
+      {isBatchModalOpen && (
         <div className="portal-modal-overlay">
-          <div className="portal-modal" style={{ width: '720px', maxHeight: '90vh', overflowY: 'auto' }}>
+          <div className="portal-modal" style={{ maxWidth: '680px' }}>
             <div className="portal-modal-header">
-              <h2>Soạn Bài Tập Mới (Studio)</h2>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '18px' }}>👥 Cấp Tài Khoản Học Sinh Hàng Loạt</h3>
+                <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--color-muted)' }}>
+                  Hệ thống tự động sinh tên đăng nhập & mật khẩu mặc định (123456)
+                </p>
+              </div>
               <button
                 type="button"
                 className="portal-modal-close"
-                onClick={() => setIsAuthoringOpen(false)}
+                onClick={() => setIsBatchModalOpen(false)}
               >
-                ×
+                ✕
               </button>
             </div>
 
-            {authoringStatus && (
-              <div
-                className={`auth-message ${authoringStatus.success ? 'auth-message--success' : 'auth-message--error'}`}
-                style={{
-                  marginBottom: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '12px',
-                }}
-              >
-                <span>{authoringStatus.text}</span>
-                {authoringStatus.success && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsAuthoringOpen(false)
-                      navigate(`/tasks/${taskCode.trim()}`)
-                    }}
-                    style={{
-                      background: '#10b981',
-                      color: '#ffffff',
-                      border: 'none',
-                      padding: '5px 12px',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    ▶ Mở xem ngay
-                  </button>
-                )}
-              </div>
-            )}
-
-            <form onSubmit={handleSaveNewTask} className="auth-form">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-                <div className="form-group">
-                  <label htmlFor="modal-task-form">Dạng bài (Form Archetype):</label>
-                  <select
-                    id="modal-task-form"
-                    className="form-input"
-                    value={authoringFormType}
-                    onChange={(e) => setAuthoringFormType(e.target.value)}
-                  >
-                    <option value="FORM_1_CHOICE">FORM 1: Trắc nghiệm (A/B/C hoặc T/F)</option>
-                    <option value="FORM_2_FILL">FORM 2: Điền từ vào ô trống</option>
-                    <option value="FORM_3_WRITING">FORM 3: Viết câu với từ bắt buộc (AI chấm ngữ pháp)</option>
-                    <option value="FORM_4_SPEAKING">FORM 4: Luyện nói & Chấm phát âm (AssemblyAI)</option>
-                    <option value="FORM_5_LISTEN_REPEAT">FORM 5: Nghe & Ghi âm lặp lại (AssemblyAI &gt; 80%)</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="modal-task-code">Mã bài tập (5 chữ số):</label>
-                  <input
-                    id="modal-task-code"
-                    type="text"
-                    className="form-input"
-                    required
-                    placeholder="ví dụ: 60171"
-                    value={taskCode}
-                    onChange={(e) => setTaskCode(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px' }}>
-                <div className="form-group">
-                  <label htmlFor="modal-task-unit">Unit:</label>
-                  <input
-                    id="modal-task-unit"
-                    type="number"
-                    min={1}
-                    className="form-input"
-                    required
-                    value={taskUnit}
-                    onChange={(e) => handleUnitChange(e.target.value)}
-                  />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="modal-task-lesson">Lesson:</label>
-                  <input
-                    id="modal-task-lesson"
-                    type="number"
-                    min={1}
-                    className="form-input"
-                    required
-                    value={taskLesson}
-                    onChange={(e) => handleLessonChange(e.target.value)}
-                  />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="modal-task-number">Bài số (Task #):</label>
-                  <input
-                    id="modal-task-number"
-                    type="number"
-                    min={1}
-                    className="form-input"
-                    required
-                    value={taskNumber}
-                    onChange={(e) => handleTaskNumberChange(e.target.value)}
-                  />
-                </div>
-              </div>
-
+            <div className="portal-modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* Chọn lớp học cần cấp */}
               <div className="form-group">
-                <label htmlFor="modal-task-title">Tiêu đề bài tập (Tự động tạo theo Lesson & Task):</label>
-                <input
-                  id="modal-task-title"
-                  type="text"
+                <label style={{ fontWeight: 600, fontSize: '13px', display: 'block', marginBottom: '6px' }}>
+                  Lớp học tiếp nhận:
+                </label>
+                <select
                   className="form-input"
-                  required
-                  placeholder="AI Tutor • WS 1 - Task 1"
-                  value={taskTitle}
-                  onChange={(e) => setTaskTitle(e.target.value)}
+                  value={batchClassId}
+                  onChange={(e) => setBatchClassId(e.target.value)}
+                >
+                  {classes.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} ({c.code}) - GV: {c.teacher_name || 'Chưa phân công'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Ô nhập danh sách học sinh */}
+              <div className="form-group">
+                <label style={{ fontWeight: 600, fontSize: '13px', display: 'block', marginBottom: '6px' }}>
+                  Danh sách họ và tên học sinh (Mỗi bạn 1 dòng):
+                </label>
+                <textarea
+                  className="form-input"
+                  rows={6}
+                  placeholder={`Nguyễn Văn An\nTrần Thị Bình\nLê Hoàng Nam\n...`}
+                  value={batchNamesText}
+                  onChange={(e) => setBatchNamesText(e.target.value)}
+                  style={{ fontFamily: 'inherit', resize: 'vertical' }}
                 />
               </div>
 
-              <div className="form-group">
-                <label htmlFor="modal-task-intro">Lời dẫn dắt của AI Tutor (Intro Text):</label>
-                <input
-                  id="modal-task-intro"
-                  type="text"
-                  className="form-input"
-                  placeholder="ví dụ: Check Task 1. Enter your answers."
-                  value={taskIntro}
-                  onChange={(e) => setTaskIntro(e.target.value)}
-                />
-              </div>
-
-              {/* TRƯỜNG TẢI FILE ÂM THANH (AUDIO CHO FORM 1 & FORM 2, ẨN HOÀN TOÀN Ở FORM 3, 4, 5) */}
-              {authoringFormType !== 'FORM_3_WRITING' && authoringFormType !== 'FORM_4_SPEAKING' && authoringFormType !== 'FORM_5_LISTEN_REPEAT' && (
-                <div className="form-group" style={{ borderTop: '1px solid var(--color-line)', paddingTop: '14px', marginTop: '14px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                    <label htmlFor="modal-task-audio-file" style={{ margin: 0, fontWeight: 600 }}>
-                      File âm thanh (Audio bài nghe):
-                    </label>
-                    <span style={{ fontSize: '12px', color: 'var(--color-muted)' }}>
-                      (Tùy chọn - Dành cho bài tập Listening)
-                    </span>
-                  </div>
-
-                  <div
-                    style={{
-                      padding: '14px',
-                      border: '1.5px dashed var(--color-line, #d1d5db)',
-                      borderRadius: '12px',
-                      background: taskAudioUrl ? '#f0fdf4' : '#fafafa',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '10px',
-                    }}
-                  >
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-                      <input
-                        id="modal-task-audio-file"
-                        ref={audioInputRef}
-                        type="file"
-                        accept="audio/*"
-                        style={{ display: 'none' }}
-                        onChange={handleAudioFileUpload}
-                      />
-                      <button
-                        type="button"
-                        className="btn-auth-link btn-auth-link--secondary"
-                        onClick={() => audioInputRef.current?.click()}
-                        disabled={isUploadingAudio}
-                      >
-                        {isUploadingAudio ? '⏳ Đang tải file lên...' : taskAudioUrl ? '📁 Đổi file âm thanh khác' : '📁 Tải file âm thanh từ máy lên'}
-                      </button>
-
-                      {taskAudioUrl && (
-                        <button
-                          type="button"
-                          style={{
-                            background: 'none',
-                            border: '1px solid #fca5a5',
-                            borderRadius: '8px',
-                            color: '#dc2626',
-                            padding: '6px 12px',
-                            fontSize: '13px',
-                            cursor: 'pointer',
-                          }}
-                          onClick={handleRemoveAudio}
-                        >
-                          🗑️ Xóa file âm thanh
-                        </button>
-                      )}
-                    </div>
-
-                    {taskAudioName && (
-                      <div style={{ fontSize: '13px', color: '#374151', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span>🎵</span>
-                        <strong>{taskAudioName}</strong>
-                      </div>
-                    )}
-
-                    {taskAudioUrl && (
-                      <div style={{ marginTop: '4px' }}>
-                        <audio controls src={taskAudioUrl} style={{ width: '100%', height: '36px' }} />
-                        <div style={{ fontSize: '11px', color: '#16a34a', marginTop: '4px' }}>
-                          ✓ File âm thanh sẵn sàng. Khi học sinh làm bài, hệ thống sẽ yêu cầu nghe 2 lần trước khi mở khóa câu hỏi.
-                        </div>
-                      </div>
-                    )}
-
-                    {!taskAudioUrl && (
-                      <div style={{ fontSize: '12px', color: 'var(--color-muted)' }}>
-                        💡 Nếu bài tập không có file âm thanh, giao diện loa nghe sẽ được tự động ẩn hoàn toàn.
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* BUILDER CHO FORM 1: TRẮC NGHIỆM */}
-              {authoringFormType === 'FORM_1_CHOICE' && (
-                <div style={{ borderTop: '1px solid var(--color-line)', paddingTop: '16px', marginTop: '10px' }}>
-                  <div className="form-group" style={{ marginBottom: '14px' }}>
-                    <label htmlFor="modal-choice-opts">Các lựa chọn (phân cách bằng dấu phẩy):</label>
-                    <input
-                      id="modal-choice-opts"
-                      type="text"
-                      className="form-input"
-                      value={choiceOptionsText}
-                      onChange={(e) => setChoiceOptionsText(e.target.value)}
-                    />
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                    <strong>Danh sách câu hỏi & Đáp án bí mật:</strong>
-                    <button
-                      type="button"
-                      className="btn-auth-link btn-auth-link--secondary"
-                      onClick={() =>
-                        setChoiceItems((prev) => [
-                          ...prev,
-                          {
-                            label: `Question ${prev.length + 1}`,
-                            cue: `Look back at Question ${prev.length + 1}.`,
-                            correct: 'A',
-                            hints: ['', ''],
-                          },
-                        ])
-                      }
-                    >
-                      + Thêm câu hỏi
-                    </button>
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                    {choiceItems.map((item, index) => (
-                      <div
-                        key={index}
-                        style={{
-                          padding: '14px',
-                          background: 'var(--color-surface, #f9fafb)',
-                          borderRadius: '8px',
-                          border: '1px solid var(--color-line)',
-                        }}
-                      >
-                        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr auto', gap: '10px', alignItems: 'center', marginBottom: '10px' }}>
-                          <input
-                            type="text"
-                            className="form-input"
-                            placeholder="Nhãn câu (vd: Question 1)"
-                            value={item.label}
-                            onChange={(e) => {
-                              const next = [...choiceItems]
-                              next[index].label = e.target.value
-                              setChoiceItems(next)
-                            }}
-                          />
-                          <input
-                            type="text"
-                            className="form-input"
-                            placeholder="Đáp án đúng (vd: A)"
-                            value={item.correct}
-                            onChange={(e) => {
-                              const next = [...choiceItems]
-                              next[index].correct = e.target.value
-                              setChoiceItems(next)
-                            }}
-                          />
-                          {choiceItems.length > 1 && (
-                            <button
-                              type="button"
-                              style={{
-                                background: 'none',
-                                border: 'none',
-                                color: 'var(--color-error, #dc2626)',
-                                cursor: 'pointer',
-                                fontSize: '13px',
-                                padding: '4px 8px',
-                              }}
-                              title="Xóa câu hỏi này"
-                              onClick={() => {
-                                setChoiceItems((prev) => prev.filter((_, i) => i !== index))
-                              }}
-                            >
-                              Xóa câu
-                            </button>
-                          )}
-                        </div>
-
-                        {/* Danh sách gợi ý động (có thể thêm nhiều hint) */}
-                        <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed var(--color-line)' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-muted)' }}>
-                              Gợi ý giải bài (AI sẽ chọn ngẫu nhiên khi học sinh sai):
-                            </span>
-                            <button
-                              type="button"
-                              style={{
-                                fontSize: '11px',
-                                background: 'transparent',
-                                border: '1px dashed var(--color-primary)',
-                                color: 'var(--color-primary)',
-                                padding: '2px 8px',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                fontWeight: 600,
-                              }}
-                              onClick={() => {
-                                const next = [...choiceItems]
-                                next[index].hints = [...(next[index].hints || []), '']
-                                setChoiceItems(next)
-                              }}
-                            >
-                              + Thêm gợi ý
-                            </button>
-                          </div>
-
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            {(item.hints || []).map((hint, hIdx) => (
-                              <div key={hIdx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                <input
-                                  type="text"
-                                  className="form-input"
-                                  style={{ fontSize: '12px', padding: '6px 10px', flex: 1 }}
-                                  placeholder={`Gợi ý ${hIdx + 1}`}
-                                  value={hint}
-                                  onChange={(e) => {
-                                    const next = [...choiceItems]
-                                    next[index].hints[hIdx] = e.target.value
-                                    setChoiceItems(next)
-                                  }}
-                                />
-                                {(item.hints || []).length > 1 && (
-                                  <button
-                                    type="button"
-                                    style={{
-                                      background: 'none',
-                                      border: 'none',
-                                      color: 'var(--color-muted)',
-                                      cursor: 'pointer',
-                                      fontSize: '15px',
-                                      padding: '2px 6px',
-                                    }}
-                                    title="Xóa gợi ý này"
-                                    onClick={() => {
-                                      const next = [...choiceItems]
-                                      next[index].hints.splice(hIdx, 1)
-                                      setChoiceItems(next)
-                                    }}
-                                  >
-                                    ✕
-                                  </button>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* BUILDER CHO FORM 2: ĐIỀN TỪ */}
-              {authoringFormType === 'FORM_2_FILL' && (
-                <div style={{ borderTop: '1px solid var(--color-line)', paddingTop: '16px', marginTop: '10px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                    <strong>Danh sách ô trống & Đáp án chấp nhận:</strong>
-                    <button
-                      type="button"
-                      className="btn-auth-link btn-auth-link--secondary"
-                      onClick={() =>
-                        setFillItems((prev) => [
-                          ...prev,
-                          {
-                            label: String(prev.length + 1),
-                            placeholder: 'Your answer',
-                            correctAnswers: '',
-                            hints: ['', ''],
-                          },
-                        ])
-                      }
-                    >
-                      + Thêm ô trống
-                    </button>
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {fillItems.map((item, index) => {
-                      const itemHints = item.hints || ['', '']
-                      return (
-                        <div
-                          key={index}
-                          style={{
-                            padding: '12px',
-                            background: 'var(--color-surface, #f9fafb)',
-                            borderRadius: '8px',
-                            border: '1px solid var(--color-line)',
-                          }}
-                        >
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr auto', gap: '10px', marginBottom: '10px', alignItems: 'center' }}>
-                            <input
-                              type="text"
-                              className="form-input"
-                              placeholder="Số thứ tự (vd: 1)"
-                              value={item.label}
-                              onChange={(e) => {
-                                const next = [...fillItems]
-                                next[index].label = e.target.value
-                                setFillItems(next)
-                              }}
-                            />
-                            <input
-                              type="text"
-                              className="form-input"
-                              placeholder="Các đáp án đúng (cách nhau bằng dấu phẩy: school, a school)"
-                              value={item.correctAnswers}
-                              onChange={(e) => {
-                                const next = [...fillItems]
-                                next[index].correctAnswers = e.target.value
-                                setFillItems(next)
-                              }}
-                            />
-                            {fillItems.length > 1 && (
-                              <button
-                                type="button"
-                                style={{
-                                  background: 'none',
-                                  border: 'none',
-                                  color: 'var(--color-muted)',
-                                  cursor: 'pointer',
-                                  fontSize: '16px',
-                                  padding: '4px',
-                                }}
-                                title="Xóa ô trống này"
-                                onClick={() => {
-                                  const next = [...fillItems]
-                                  next.splice(index, 1)
-                                  setFillItems(next)
-                                }}
-                              >
-                                🗑️
-                              </button>
-                            )}
-                          </div>
-
-                          {/* Quản lý danh sách Hint ngẫu nhiên cho ô trống */}
-                          <div style={{ marginTop: '8px', borderTop: '1px dashed #e5e7eb', paddingTop: '8px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-muted)' }}>
-                                Danh sách gợi ý (sẽ đưa ra ngẫu nhiên khi sai):
-                              </span>
-                              <button
-                                type="button"
-                                style={{
-                                  fontSize: '11px',
-                                  background: 'none',
-                                  border: 'none',
-                                  color: 'var(--color-primary)',
-                                  cursor: 'pointer',
-                                  fontWeight: 600,
-                                }}
-                                onClick={() => {
-                                  const next = [...fillItems]
-                                  next[index].hints = [...itemHints, '']
-                                  setFillItems(next)
-                                }}
-                              >
-                                + Thêm gợi ý
-                              </button>
-                            </div>
-
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                              {itemHints.map((hint, hIdx) => (
-                                <div key={hIdx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                  <input
-                                    type="text"
-                                    className="form-input"
-                                    style={{ fontSize: '12px', padding: '6px 10px', flex: 1 }}
-                                    placeholder={`Gợi ý ${hIdx + 1}`}
-                                    value={hint}
-                                    onChange={(e) => {
-                                      const next = [...fillItems]
-                                      const currentHints = [...(next[index].hints || ['', ''])]
-                                      currentHints[hIdx] = e.target.value
-                                      next[index].hints = currentHints
-                                      setFillItems(next)
-                                    }}
-                                  />
-                                  {itemHints.length > 1 && (
-                                    <button
-                                      type="button"
-                                      style={{
-                                        background: 'none',
-                                        border: 'none',
-                                        color: 'var(--color-muted)',
-                                        cursor: 'pointer',
-                                        fontSize: '15px',
-                                        padding: '2px 6px',
-                                      }}
-                                      title="Xóa gợi ý này"
-                                      onClick={() => {
-                                        const next = [...fillItems]
-                                        const currentHints = [...(next[index].hints || ['', ''])]
-                                        currentHints.splice(hIdx, 1)
-                                        next[index].hints = currentHints
-                                        setFillItems(next)
-                                      }}
-                                    >
-                                      ✕
-                                    </button>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* BUILDER CHO FORM 3: CÁC DẠNG BÀI VIẾT (AI CHẤM) */}
-              {authoringFormType === 'FORM_3_WRITING' && (
-                <div style={{ borderTop: '1px solid var(--color-line)', paddingTop: '16px', marginTop: '10px' }}>
-                  {/* Chọn dạng bài viết (Sub-mode) */}
-                  <div style={{ marginBottom: '16px' }}>
-                    <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-heading)', display: 'block', marginBottom: '8px' }}>
-                      🎯 Chọn dạng bài viết (Form 3 Sub-mode):
-                    </label>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
-                      <button
-                        type="button"
-                        onClick={() => setForm3SubMode('FREE_SENTENCE')}
-                        style={{
-                          padding: '10px 12px',
-                          borderRadius: '8px',
-                          textAlign: 'left',
-                          cursor: 'pointer',
-                          border: form3SubMode === 'FREE_SENTENCE' ? '2px solid var(--color-primary, #6366f1)' : '1px solid var(--color-line)',
-                          background: form3SubMode === 'FREE_SENTENCE' ? 'rgba(99, 102, 241, 0.08)' : 'var(--color-surface, #fff)',
-                          transition: 'all 0.15s ease',
-                        }}
-                      >
-                        <div style={{ fontWeight: 600, fontSize: '13px', color: form3SubMode === 'FREE_SENTENCE' ? 'var(--color-primary, #6366f1)' : 'inherit' }}>
-                          ✍️ 3.1 Viết câu tự do
-                        </div>
-                        <div style={{ fontSize: '11px', color: 'var(--color-muted)', marginTop: '4px' }}>
-                          Không có từ mẫu. AI chấm ngữ pháp từng câu đến khi hoàn toàn chính xác.
-                        </div>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setForm3SubMode('BOOK_KEYWORD')}
-                        style={{
-                          padding: '10px 12px',
-                          borderRadius: '8px',
-                          textAlign: 'left',
-                          cursor: 'pointer',
-                          border: form3SubMode === 'BOOK_KEYWORD' ? '2px solid var(--color-primary, #6366f1)' : '1px solid var(--color-line)',
-                          background: form3SubMode === 'BOOK_KEYWORD' ? 'rgba(99, 102, 241, 0.08)' : 'var(--color-surface, #fff)',
-                          transition: 'all 0.15s ease',
-                        }}
-                      >
-                        <div style={{ fontWeight: 600, fontSize: '13px', color: form3SubMode === 'BOOK_KEYWORD' ? 'var(--color-primary, #6366f1)' : 'inherit' }}>
-                          📖 3.2 Từ gợi ý trong sách
-                        </div>
-                        <div style={{ fontSize: '11px', color: 'var(--color-muted)', marginTop: '4px' }}>
-                          Từ gợi ý ẩn trên web (học sinh xem sách). AI chấm ngầm đủ từ + đúng ngữ pháp.
-                        </div>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setForm3SubMode('PARAGRAPH')}
-                        style={{
-                          padding: '10px 12px',
-                          borderRadius: '8px',
-                          textAlign: 'left',
-                          cursor: 'pointer',
-                          border: form3SubMode === 'PARAGRAPH' ? '2px solid var(--color-primary, #6366f1)' : '1px solid var(--color-line)',
-                          background: form3SubMode === 'PARAGRAPH' ? 'rgba(99, 102, 241, 0.08)' : 'var(--color-surface, #fff)',
-                          transition: 'all 0.15s ease',
-                        }}
-                      >
-                        <div style={{ fontWeight: 600, fontSize: '13px', color: form3SubMode === 'PARAGRAPH' ? 'var(--color-primary, #6366f1)' : 'inherit' }}>
-                          📝 3.3 Viết đoạn văn
-                        </div>
-                        <div style={{ fontSize: '11px', color: 'var(--color-muted)', marginTop: '4px' }}>
-                          Viết đoạn văn dài theo tiêu chí, vốn từ trợ giúp. AI chấm ngữ pháp và nội dung.
-                        </div>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* SUB-MODE 3.3: VIẾT ĐOẠN VĂN (PARAGRAPH) */}
-                  {form3SubMode === 'PARAGRAPH' ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                      <div className="form-group">
-                        <label style={{ fontSize: '12px', fontWeight: 600 }}>📝 Đề bài / Yêu cầu viết đoạn văn (Prompt):</label>
-                        <textarea
-                          className="form-input"
-                          rows={2}
-                          placeholder="vd: Write a short paragraph (40-60 words) about your favourite hobby."
-                          value={paragraphPrompt}
-                          onChange={(e) => setParagraphPrompt(e.target.value)}
-                        />
-                      </div>
-
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                        <div className="form-group">
-                          <label style={{ fontSize: '12px', fontWeight: 600 }}>🔢 Số từ tối thiểu (Min Words):</label>
-                          <input
-                            type="number"
-                            className="form-input"
-                            min={10}
-                            max={300}
-                            value={paragraphMinWords}
-                            onChange={(e) => setParagraphMinWords(Math.max(5, parseInt(e.target.value, 10) || 10))}
-                          />
-                        </div>
-                        <div className="form-group">
-                          <label style={{ fontSize: '12px', fontWeight: 600 }}>🔢 Số từ tối đa (Max Words):</label>
-                          <input
-                            type="number"
-                            className="form-input"
-                            min={20}
-                            max={500}
-                            value={paragraphMaxWords}
-                            onChange={(e) => setParagraphMaxWords(Math.max(20, parseInt(e.target.value, 10) || 50))}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="form-group">
-                        <label style={{ fontSize: '12px', fontWeight: 600 }}>💡 Vốn từ / Cụm từ trợ giúp (Helper Word Bank - cách nhau bằng dấu phẩy):</label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          placeholder="vd: library, playground, friendly teachers, classmates"
-                          value={paragraphHelperWords}
-                          onChange={(e) => setParagraphHelperWords(e.target.value)}
-                        />
-                        <div style={{ fontSize: '11px', color: 'var(--color-muted)', marginTop: '4px' }}>
-                          Các từ này sẽ hiển thị thành các chip gợi ý từ vựng trực quan để học sinh tham khảo khi viết.
-                        </div>
-                      </div>
-
-                      {/* Tiêu chí đánh giá (Rubric Checklist) */}
-                      <div style={{ borderTop: '1px dashed #e5e7eb', paddingTop: '10px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-heading)' }}>
-                            📋 Tiêu chí đánh giá nội dung (AI sẽ đối chiếu từng tiêu chí):
-                          </span>
-                          <button
-                            type="button"
-                            style={{
-                              fontSize: '11px',
-                              background: 'none',
-                              border: 'none',
-                              color: 'var(--color-primary)',
-                              cursor: 'pointer',
-                              fontWeight: 600,
-                            }}
-                            onClick={() => setParagraphCriteria((prev) => [...prev, ''])}
-                          >
-                            + Thêm tiêu chí
-                          </button>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          {paragraphCriteria.map((crit, cIdx) => (
-                            <div key={cIdx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                              <input
-                                type="text"
-                                className="form-input"
-                                style={{ fontSize: '12px', padding: '6px 10px', flex: 1 }}
-                                placeholder={`Tiêu chí ${cIdx + 1} (vd: Giới thiệu tên trường và vị trí)`}
-                                value={crit}
-                                onChange={(e) => {
-                                  const next = [...paragraphCriteria]
-                                  next[cIdx] = e.target.value
-                                  setParagraphCriteria(next)
-                                }}
-                              />
-                              {paragraphCriteria.length > 1 && (
-                                <button
-                                  type="button"
-                                  style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    color: 'var(--color-muted)',
-                                    cursor: 'pointer',
-                                    fontSize: '15px',
-                                    padding: '2px 6px',
-                                  }}
-                                  title="Xóa tiêu chí này"
-                                  onClick={() => {
-                                    const next = [...paragraphCriteria]
-                                    next.splice(cIdx, 1)
-                                    setParagraphCriteria(next)
-                                  }}
-                                >
-                                  ✕
-                                </button>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Gợi ý cho học sinh (Hints) */}
-                      <div style={{ borderTop: '1px dashed #e5e7eb', paddingTop: '10px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-heading)' }}>
-                            💡 Gợi ý cấu trúc / phong cách viết (Hints):
-                          </span>
-                          <button
-                            type="button"
-                            style={{
-                              fontSize: '11px',
-                              background: 'none',
-                              border: 'none',
-                              color: 'var(--color-primary)',
-                              cursor: 'pointer',
-                              fontWeight: 600,
-                            }}
-                            onClick={() => setParagraphHints((prev) => [...prev, ''])}
-                          >
-                            + Thêm gợi ý
-                          </button>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          {paragraphHints.map((hint, hIdx) => (
-                            <div key={hIdx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                              <input
-                                type="text"
-                                className="form-input"
-                                style={{ fontSize: '12px', padding: '6px 10px', flex: 1 }}
-                                placeholder={`Gợi ý ${hIdx + 1} (vd: Sử dụng thì hiện tại đơn)`}
-                                value={hint}
-                                onChange={(e) => {
-                                  const next = [...paragraphHints]
-                                  next[hIdx] = e.target.value
-                                  setParagraphHints(next)
-                                }}
-                              />
-                              {paragraphHints.length > 1 && (
-                                <button
-                                  type="button"
-                                  style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    color: 'var(--color-muted)',
-                                    cursor: 'pointer',
-                                    fontSize: '15px',
-                                    padding: '2px 6px',
-                                  }}
-                                  title="Xóa gợi ý này"
-                                  onClick={() => {
-                                    const next = [...paragraphHints]
-                                    next.splice(hIdx, 1)
-                                    setParagraphHints(next)
-                                  }}
-                                >
-                                  ✕
-                                </button>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    /* SUB-MODE 3.1 VÀ 3.2: TỪNG CÂU HỎI VIẾT */
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                        <div>
-                          <strong>Danh sách câu hỏi:</strong>
-                          <div style={{ fontSize: '12px', color: 'var(--color-muted)', marginTop: '2px' }}>
-                            {form3SubMode === 'BOOK_KEYWORD'
-                              ? 'Học sinh nhìn từ gợi ý trong sách giấy. Web sẽ ẩn từ khóa, AI chấm ngầm xem học sinh có viết đủ từ không.'
-                              : 'Học sinh tự do viết câu theo yêu cầu đề bài. AI sẽ chấm cấu trúc ngữ pháp từng câu đến khi đúng.'}
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          className="btn-auth-link btn-auth-link--secondary"
-                          onClick={() =>
-                            setWritingItems((prev) => [
-                              ...prev,
-                              {
-                                label: `Question ${prev.length + 1}`,
-                                prompt: form3SubMode === 'BOOK_KEYWORD' ? 'Xem gợi ý từ trong sách bài tập' : '',
-                                requiredWords: '',
-                                hints: ['', ''],
-                              },
-                            ])
-                          }
-                        >
-                          + Thêm câu hỏi
-                        </button>
-                      </div>
-
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                        {writingItems.map((item, index) => {
-                          const itemHints = item.hints || ['', '']
-                          return (
-                            <div
-                              key={index}
-                              style={{
-                                padding: '14px',
-                                background: 'var(--color-surface, #f9fafb)',
-                                borderRadius: '10px',
-                                border: '1px solid var(--color-line)',
-                              }}
-                            >
-                              <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'center' }}>
-                                <input
-                                  type="text"
-                                  className="form-input"
-                                  placeholder="Nhãn câu (vd: Question 1)"
-                                  value={item.label}
-                                  onChange={(e) => {
-                                    const next = [...writingItems]
-                                    next[index].label = e.target.value
-                                    setWritingItems(next)
-                                  }}
-                                  style={{ flex: 1 }}
-                                />
-                                {form3SubMode === 'BOOK_KEYWORD' && (
-                                  <input
-                                    type="text"
-                                    className="form-input"
-                                    placeholder="Ghi chú đề bài (tùy chọn)"
-                                    value={item.prompt}
-                                    onChange={(e) => {
-                                      const next = [...writingItems]
-                                      next[index].prompt = e.target.value
-                                      setWritingItems(next)
-                                    }}
-                                    style={{ flex: 1.5 }}
-                                  />
-                                )}
-                                {writingItems.length > 1 && (
-                                  <button
-                                    type="button"
-                                    style={{
-                                      background: 'none',
-                                      border: 'none',
-                                      color: 'var(--color-muted)',
-                                      cursor: 'pointer',
-                                      fontSize: '16px',
-                                      padding: '4px',
-                                    }}
-                                    title="Xóa câu này"
-                                    onClick={() => {
-                                      const next = [...writingItems]
-                                      next.splice(index, 1)
-                                      setWritingItems(next)
-                                    }}
-                                  >
-                                    🗑️
-                                  </button>
-                                )}
-                              </div>
-
-                              {form3SubMode === 'BOOK_KEYWORD' && (
-                                <div className="form-group" style={{ marginBottom: '10px' }}>
-                                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#0369a1' }}>
-                                    📖 Từ khóa yêu cầu trong sách (Ẩn trên giao diện học sinh, AI chấm ngầm):
-                                  </label>
-                                  <input
-                                    type="text"
-                                    className="form-input"
-                                    placeholder="ví dụ: usually, badminton hoặc play badminton, Sunday"
-                                    value={item.requiredWords}
-                                    onChange={(e) => {
-                                      const next = [...writingItems]
-                                      next[index].requiredWords = e.target.value
-                                      setWritingItems(next)
-                                    }}
-                                  />
-                                  <div style={{ fontSize: '11px', color: 'var(--color-muted)', marginTop: '3px' }}>
-                                    * Các từ/cụm từ này sẽ được giấu kín khỏi màn hình làm bài của học sinh để các em tự tra cứu sách bài tập.
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* Quản lý danh sách Hint cho câu viết */}
-                              <div style={{ marginTop: '8px', borderTop: '1px dashed #e5e7eb', paddingTop: '8px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                                  <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-muted)' }}>
-                                    Gợi ý cấu trúc câu (AI sẽ căn cứ để chấm ngữ pháp và hướng dẫn học sinh):
-                                  </span>
-                                  <button
-                                    type="button"
-                                    style={{
-                                      fontSize: '11px',
-                                      background: 'none',
-                                      border: 'none',
-                                      color: 'var(--color-primary)',
-                                      cursor: 'pointer',
-                                      fontWeight: 600,
-                                    }}
-                                    onClick={() => {
-                                      const next = [...writingItems]
-                                      next[index].hints = [...itemHints, '']
-                                      setWritingItems(next)
-                                    }}
-                                  >
-                                    + Thêm gợi ý
-                                  </button>
-                                </div>
-
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                  {itemHints.map((hint, hIdx) => (
-                                    <div key={hIdx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                      <input
-                                        type="text"
-                                        className="form-input"
-                                        style={{ fontSize: '12px', padding: '6px 10px', flex: 1 }}
-                                        placeholder={`Gợi ý ${hIdx + 1} (vd: Đặt trạng từ tần suất trước động từ thường)`}
-                                        value={hint}
-                                        onChange={(e) => {
-                                          const next = [...writingItems]
-                                          const currentHints = [...(next[index].hints || ['', ''])]
-                                          currentHints[hIdx] = e.target.value
-                                          next[index].hints = currentHints
-                                          setWritingItems(next)
-                                        }}
-                                      />
-                                      {itemHints.length > 1 && (
-                                        <button
-                                          type="button"
-                                          style={{
-                                            background: 'none',
-                                            border: 'none',
-                                            color: 'var(--color-muted)',
-                                            cursor: 'pointer',
-                                            fontSize: '15px',
-                                            padding: '2px 6px',
-                                          }}
-                                          title="Xóa gợi ý này"
-                                          onClick={() => {
-                                            const next = [...writingItems]
-                                            const currentHints = [...(next[index].hints || ['', ''])]
-                                            currentHints.splice(hIdx, 1)
-                                            next[index].hints = currentHints
-                                            setWritingItems(next)
-                                          }}
-                                        >
-                                          ✕
-                                        </button>
-                                      )}
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* CẤU HÌNH CHO FORM 4: SPEAKING & PRONUNCIATION */}
-              {authoringFormType === 'FORM_4_SPEAKING' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', background: '#f8fafc', padding: '18px', borderRadius: '12px', border: '1px solid #cbd5e1', marginTop: '14px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#1e3a8a', fontWeight: 700, fontSize: '15px' }}>
-                    🎙️ Cấu hình Dạng 4: Luyện nói & Chấm phát âm (AssemblyAI)
-                  </div>
-                  <div style={{ fontSize: '13px', color: '#475569', lineHeight: 1.5 }}>
-                    Dạng bài này kết nối với bài tập Form 3 trước đó. Khi học sinh làm bài, hệ thống sẽ tự động tải các câu học sinh đã viết đúng trong bài Form 3 để học sinh đọc lại. AI sẽ ghi âm, nhận diện giọng nói và chấm điểm phát âm từ 0 - 100 điểm.
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-                    <div className="form-group">
-                      <label htmlFor="modal-speaking-linked-task" style={{ fontWeight: 600, fontSize: '13px' }}>
-                        Mã bài Form 3 liên kết:
-                      </label>
-                      <input
-                        id="modal-speaking-linked-task"
-                        type="text"
-                        className="form-input"
-                        placeholder="ví dụ: 60115"
-                        value={speakingLinkedTaskCode}
-                        onChange={(e) => setSpeakingLinkedTaskCode(e.target.value)}
-                      />
-                      <span style={{ fontSize: '11px', color: '#64748b' }}>Hệ thống sẽ lấy các câu văn học sinh đã hoàn thành đúng ở mã bài này.</span>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="modal-speaking-pass-score" style={{ fontWeight: 600, fontSize: '13px' }}>
-                        Điểm đạt tối thiểu (0 - 100 điểm):
-                      </label>
-                      <input
-                        id="modal-speaking-pass-score"
-                        type="number"
-                        min={0}
-                        max={100}
-                        className="form-input"
-                        value={speakingPassScore}
-                        onChange={(e) => setSpeakingPassScore(Number(e.target.value))}
-                      />
-                      <span style={{ fontSize: '11px', color: '#64748b' }}>Mặc định là 80 điểm để được công nhận hoàn thành bài.</span>
-                    </div>
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="modal-speaking-fallbacks" style={{ fontWeight: 600, fontSize: '13px' }}>
-                      Câu mẫu dự phòng (Fallback Sentences - mỗi dòng 1 câu):
-                    </label>
-                    <textarea
-                      id="modal-speaking-fallbacks"
-                      rows={4}
-                      className="form-input"
-                      style={{ fontFamily: 'inherit', resize: 'vertical', fontSize: '13px' }}
-                      placeholder="Nhập các câu dự phòng..."
-                      value={speakingFallbackSentences}
-                      onChange={(e) => setSpeakingFallbackSentences(e.target.value)}
-                    />
-                    <span style={{ fontSize: '11px', color: '#64748b' }}>Được sử dụng khi học sinh vào thẳng bài nói này mà chưa từng làm bài viết Form 3 tương ứng.</span>
-                  </div>
-                </div>
-              )}
-
-              {/* CẤU HÌNH CHO FORM 5: LISTEN & REPEAT */}
-              {authoringFormType === 'FORM_5_LISTEN_REPEAT' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', background: '#f0fdf4', padding: '18px', borderRadius: '12px', border: '1px solid #bbf7d0', marginTop: '14px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#166534', fontWeight: 700, fontSize: '15px' }}>
-                    🎧 Cấu hình Dạng 5: Nghe & Ghi âm lặp lại (AssemblyAI chấm &gt; 80%)
-                  </div>
-                  <div style={{ fontSize: '13px', color: '#14532d', lineHeight: 1.5 }}>
-                    Bài tập phát âm thanh từng câu để học sinh nghe và lặp lại. AssemblyAI chấm độ khớp từ và độ tự tin âm thanh (thang điểm 100). Học sinh phải đạt tối thiểu từ <strong>{form5PassScore} điểm</strong> trở lên cho mỗi câu để được mở khóa câu tiếp theo.
-                  </div>
-
-                  <div className="form-group" style={{ maxWidth: '280px' }}>
-                    <label htmlFor="modal-form5-pass-score" style={{ fontWeight: 600, fontSize: '13px', color: '#166534' }}>
-                      Điểm đạt tối thiểu (0 - 100 điểm):
-                    </label>
-                    <input
-                      id="modal-form5-pass-score"
-                      type="number"
-                      min={0}
-                      max={100}
-                      className="form-input"
-                      value={form5PassScore}
-                      onChange={(e) => setForm5PassScore(Number(e.target.value))}
-                    />
-                    <span style={{ fontSize: '11px', color: '#15803d' }}>Mặc định là 80 điểm (bắt buộc đúng trên 80% mới cho qua).</span>
-                  </div>
-
-                  <div style={{ borderTop: '1px dashed #86efac', paddingTop: '14px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                      <div>
-                        <strong style={{ fontSize: '14px', color: '#166534' }}>Danh sách các câu luyện nghe & nói:</strong>
-                        <div style={{ fontSize: '12px', color: '#15803d', marginTop: '2px' }}>
-                          Mỗi câu có thể tải file audio riêng, nhập link, hoặc để trống (hệ thống sẽ tự động dùng AI đọc Web Speech bản xứ).
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        className="btn-auth-link btn-auth-link--secondary"
-                        onClick={() =>
-                          setForm5Items((prev) => [
-                            ...prev,
-                            {
-                              id: `item-${Date.now()}`,
-                              label: `Sentence ${prev.length + 1}`,
-                              target_text: '',
-                              audio_url: '',
-                              hints: ['Nghe kỹ phát âm âm đuôi và ngữ điệu.'],
-                            },
-                          ])
-                        }
-                      >
-                        + Thêm câu luyện tập
-                      </button>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                      {form5Items.map((item, index) => {
-                        const itemHints = item.hints || ['']
-                        return (
-                          <div
-                            key={item.id || index}
-                            style={{
-                              padding: '16px',
-                              background: '#ffffff',
-                              borderRadius: '10px',
-                              border: '1px solid #bbf7d0',
-                              boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
-                            }}
-                          >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                              <input
-                                type="text"
-                                className="form-input"
-                                placeholder={`Nhãn câu (vd: Sentence ${index + 1})`}
-                                value={item.label}
-                                onChange={(e) => {
-                                  const next = [...form5Items]
-                                  next[index].label = e.target.value
-                                  setForm5Items(next)
-                                }}
-                                style={{ width: '200px', fontWeight: 600, fontSize: '13px' }}
-                              />
-                              {form5Items.length > 1 && (
-                                <button
-                                  type="button"
-                                  style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    color: '#dc2626',
-                                    cursor: 'pointer',
-                                    fontSize: '15px',
-                                    padding: '4px 8px',
-                                  }}
-                                  title="Xóa câu này"
-                                  onClick={() => {
-                                    const next = [...form5Items]
-                                    next.splice(index, 1)
-                                    setForm5Items(next)
-                                  }}
-                                >
-                                  🗑️ Xóa câu
-                                </button>
-                              )}
-                            </div>
-
-                            <div className="form-group" style={{ marginBottom: '10px' }}>
-                              <label style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>
-                                Câu mẫu tiếng Anh (Target Text - học sinh đọc theo câu này):
-                              </label>
-                              <input
-                                type="text"
-                                className="form-input"
-                                placeholder="vd: I usually play badminton after school."
-                                value={item.target_text}
-                                onChange={(e) => {
-                                  const next = [...form5Items]
-                                  next[index].target_text = e.target.value
-                                  setForm5Items(next)
-                                }}
-                                style={{ width: '100%', fontSize: '13px' }}
-                              />
-                            </div>
-
-                            <div className="form-group" style={{ marginBottom: '10px' }}>
-                              <label style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>
-                                File âm thanh mẫu (Audio URL - Tùy chọn):
-                              </label>
-                              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                <input
-                                  type="text"
-                                  className="form-input"
-                                  placeholder="Dán link audio (mp3/wav) hoặc để trống để dùng AI Web Speech phát âm"
-                                  value={item.audio_url || ''}
-                                  onChange={(e) => {
-                                    const next = [...form5Items]
-                                    next[index].audio_url = e.target.value
-                                    setForm5Items(next)
-                                  }}
-                                  style={{ flex: 1, fontSize: '12px' }}
-                                />
-                                <label
-                                  className="btn-auth-link btn-auth-link--secondary"
-                                  style={{ margin: 0, padding: '6px 12px', fontSize: '12px', cursor: 'pointer' }}
-                                >
-                                  📁 Tải file
-                                  <input
-                                    type="file"
-                                    accept="audio/*"
-                                    style={{ display: 'none' }}
-                                    onChange={(e) => handleItemAudioUpload(index, e)}
-                                  />
-                                </label>
-                                {item.audio_url && (
-                                  <button
-                                    type="button"
-                                    style={{
-                                      background: 'none',
-                                      border: '1px solid #fca5a5',
-                                      borderRadius: '6px',
-                                      color: '#dc2626',
-                                      padding: '5px 8px',
-                                      fontSize: '12px',
-                                      cursor: 'pointer',
-                                    }}
-                                    onClick={() => {
-                                      const next = [...form5Items]
-                                      next[index].audio_url = ''
-                                      setForm5Items(next)
-                                    }}
-                                  >
-                                    ✕ Xóa audio
-                                  </button>
-                                )}
-                              </div>
-                              <span style={{ fontSize: '11px', color: '#6b7280' }}>
-                                {item.audio_url ? '✓ Đã gắn audio mẫu cho câu này.' : '💡 Nếu để trống, hệ thống sẽ tự động dùng AI Web Speech chuẩn giọng bản xứ.'}
-                              </span>
-                            </div>
-
-                            {/* Hints */}
-                            <div style={{ marginTop: '8px', borderTop: '1px dashed #e5e7eb', paddingTop: '8px' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                                <span style={{ fontSize: '12px', fontWeight: 600, color: '#6b7280' }}>
-                                  Gợi ý phát âm (Hints):
-                                </span>
-                                <button
-                                  type="button"
-                                  style={{
-                                    fontSize: '11px',
-                                    background: 'none',
-                                    border: 'none',
-                                    color: '#16a34a',
-                                    cursor: 'pointer',
-                                    fontWeight: 600,
-                                  }}
-                                  onClick={() => {
-                                    const next = [...form5Items]
-                                    next[index].hints = [...itemHints, '']
-                                    setForm5Items(next)
-                                  }}
-                                >
-                                  + Thêm gợi ý
-                                </button>
-                              </div>
-
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                {itemHints.map((h, hIdx) => (
-                                  <div key={hIdx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                    <input
-                                      type="text"
-                                      className="form-input"
-                                      style={{ fontSize: '12px', padding: '5px 10px', flex: 1 }}
-                                      placeholder={`Gợi ý ${hIdx + 1} (vd: Chú ý phát âm âm đuôi s)`}
-                                      value={h}
-                                      onChange={(e) => {
-                                        const next = [...form5Items]
-                                        const hList = [...(next[index].hints || [''])]
-                                        hList[hIdx] = e.target.value
-                                        next[index].hints = hList
-                                        setForm5Items(next)
-                                      }}
-                                    />
-                                    {itemHints.length > 1 && (
-                                      <button
-                                        type="button"
-                                        style={{
-                                          background: 'none',
-                                          border: 'none',
-                                          color: '#9ca3af',
-                                          cursor: 'pointer',
-                                          fontSize: '14px',
-                                          padding: '2px 6px',
-                                        }}
-                                        onClick={() => {
-                                          const next = [...form5Items]
-                                          const hList = [...(next[index].hints || [''])]
-                                          hList.splice(hIdx, 1)
-                                          next[index].hints = hList
-                                          setForm5Items(next)
-                                        }}
-                                      >
-                                        ✕
-                                      </button>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                 <button
                   type="button"
                   className="btn-auth-link btn-auth-link--secondary"
-                  style={{ flex: 1, border: 'none', cursor: 'pointer' }}
-                  onClick={() => setIsAuthoringOpen(false)}
+                  style={{ padding: '8px 16px', fontSize: '13px', cursor: 'pointer' }}
+                  onClick={handleGenerateBatchPreview}
+                  disabled={!batchNamesText.trim()}
+                >
+                  👁️ Xem trước tài khoản ({batchNamesText.split('\n').filter((l) => l.trim()).length})
+                </button>
+              </div>
+
+              {/* Bảng xem trước danh sách tài khoản được sinh */}
+              {createdBatch.length > 0 && (
+                <div style={{ marginTop: '10px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <strong style={{ fontSize: '13px' }}>Danh sách tài khoản dự kiến tạo ({createdBatch.length}):</strong>
+                    <button
+                      type="button"
+                      className="btn-auth-link btn-auth-link--secondary"
+                      style={{ fontSize: '12px', padding: '4px 8px', cursor: 'pointer' }}
+                      onClick={() => {
+                        const tsv = createdBatch.map((s) => `${s.name}\t${s.username}\t${s.pass}`).join('\n')
+                        navigator.clipboard.writeText(`Họ và Tên\tTên đăng nhập\tMật khẩu\n${tsv}`)
+                        alert('Đã copy danh sách tài khoản dạng bảng vào bộ nhớ tạm!')
+                      }}
+                    >
+                      📋 Copy toàn bộ danh sách
+                    </button>
+                  </div>
+                  <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid var(--color-line)', borderRadius: '8px' }}>
+                    <table className="portal-table" style={{ margin: 0, fontSize: '13px' }}>
+                      <thead>
+                        <tr>
+                          <th>STT</th>
+                          <th>Họ và Tên</th>
+                          <th>Tên Đăng Nhập</th>
+                          <th>Mật Khẩu Mặc Định</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {createdBatch.map((s, idx) => (
+                          <tr key={idx}>
+                            <td>{idx + 1}</td>
+                            <td><strong>{s.name}</strong></td>
+                            <td><code>{s.username}</code></td>
+                            <td><code>{s.pass}</code></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Thông báo kết quả */}
+              {batchResult && (
+                <div
+                  style={{
+                    padding: '12px',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    background: batchResult.success ? '#f0fdf4' : '#fee2e2',
+                    color: batchResult.success ? '#15803d' : '#991b1b',
+                    border: `1px solid ${batchResult.success ? '#bbf7d0' : '#fecaca'}`,
+                  }}
+                >
+                  {batchResult.message}
+                </div>
+              )}
+            </div>
+
+            <div className="portal-modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '16px' }}>
+              <button
+                type="button"
+                className="btn-auth-link btn-auth-link--secondary"
+                style={{ padding: '8px 16px', cursor: 'pointer' }}
+                onClick={() => setIsBatchModalOpen(false)}
+              >
+                Đóng
+              </button>
+              <button
+                type="button"
+                className="btn-submit"
+                style={{ width: 'auto', margin: 0, padding: '8px 20px' }}
+                disabled={createdBatch.length === 0 || isSubmittingBatch}
+                onClick={handleCommitBatchCreation}
+              >
+                {isSubmittingBatch ? '⏳ Đang khởi tạo...' : `Xác nhận tạo ${createdBatch.length} tài khoản`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL TẠO LỚP HỌC MỚI (DÀNH CHO ADMIN) */}
+      {isCreateClassModalOpen && (
+        <div className="portal-modal-overlay">
+          <div className="portal-modal" style={{ maxWidth: '520px' }}>
+            <div className="portal-modal-header">
+              <div>
+                <h3 style={{ margin: 0, fontSize: '18px' }}>🏫 Tạo Lớp Học Mới</h3>
+                <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--color-muted)' }}>
+                  Hệ thống tự động sinh mã tham gia ngẫu nhiên gồm 6 ký tự
+                </p>
+              </div>
+              <button
+                type="button"
+                className="portal-modal-close"
+                onClick={() => setIsCreateClassModalOpen(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            {createClassError && (
+              <div
+                style={{
+                  margin: '12px 0',
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  background: '#fee2e2',
+                  color: '#991b1b',
+                  border: '1px solid #fecaca',
+                }}
+              >
+                {createClassError}
+              </div>
+            )}
+
+            <form onSubmit={handleAdminCreateClass} className="auth-form" style={{ marginTop: '14px' }}>
+              <div className="form-group" style={{ marginBottom: '14px' }}>
+                <label htmlFor="admin-class-name" style={{ fontWeight: 600, fontSize: '13px', display: 'block', marginBottom: '6px' }}>
+                  Tên lớp học:
+                </label>
+                <input
+                  id="admin-class-name"
+                  type="text"
+                  className="form-input"
+                  required
+                  placeholder="vd: Lớp 6A1 - Tiếng Anh GSEC"
+                  value={newClassName}
+                  onChange={(e) => setNewClassName(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '14px' }}>
+                <label htmlFor="admin-class-teacher" style={{ fontWeight: 600, fontSize: '13px', display: 'block', marginBottom: '6px' }}>
+                  Phân công Giáo viên phụ trách:
+                </label>
+                <select
+                  id="admin-class-teacher"
+                  className="form-input"
+                  value={newClassTeacherId}
+                  onChange={(e) => setNewClassTeacherId(e.target.value)}
+                >
+                  <option value="">-- Chính Admin phụ trách --</option>
+                  {teachers.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.full_name} ({t.email})
+                    </option>
+                  ))}
+                </select>
+                <div style={{ fontSize: '12px', color: 'var(--color-muted)', marginTop: '4px' }}>
+                  Giáo viên được chọn sẽ có quyền theo dõi bảng điểm và giao bài tập cho lớp này.
+                </div>
+              </div>
+
+              <div className="note" style={{ margin: '10px 0 16px', fontSize: '12.5px', background: '#f8fafc', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                Mã lớp học sẽ được sinh tự động (ví dụ: <code>GSEC6A</code>) để học sinh nhập mã tham gia.
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button
+                  type="button"
+                  className="btn-auth-link btn-auth-link--secondary"
+                  style={{ padding: '8px 16px', cursor: 'pointer' }}
+                  onClick={() => setIsCreateClassModalOpen(false)}
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
                   className="btn-submit"
-                  style={{ flex: 1 }}
-                  disabled={savingTask}
+                  style={{ width: 'auto', margin: 0, padding: '8px 20px' }}
+                  disabled={!newClassName.trim() || isSubmittingClass}
                 >
-                  {savingTask ? '⏳ Đang lưu bài...' : '💾 Lưu & Xuất Bản Bài Tập'}
+                  {isSubmittingClass ? '⏳ Đang tạo...' : '✓ Xác nhận Tạo Lớp'}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
-    </div>
-  </>
-)
+    </>
+  )
 }

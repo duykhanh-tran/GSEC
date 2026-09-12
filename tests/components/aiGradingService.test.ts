@@ -170,6 +170,38 @@ describe('aiGradingService - Step 2: evaluateSentenceHeuristically fallback', ()
     expect(res.error_type).toBe('none')
   })
 
+  it('enforces strict scoring criteria such as mandatory full stop when configured by teacher', () => {
+    // Normal mode without strict criteria: missing period still counts as correct (score 95) with reminder
+    const lenientRes = evaluateSentenceHeuristically(
+      'I usually play badminton after school',
+      mockItem,
+    )
+    expect(lenientRes.is_correct).toBe(true)
+
+    // Strict criteria mode: teacher configured mandatory full stop / dấu chấm
+    const strictRes = evaluateSentenceHeuristically(
+      'I usually play badminton after school',
+      mockItem,
+      'Bắt buộc kết thúc bằng dấu chấm câu'
+    )
+    expect(strictRes.is_correct).toBe(false)
+    expect(strictRes.error_type).toBe('punctuation')
+    expect(strictRes.feedback_vi).toContain('dấu chấm')
+  })
+
+  it('enforces item-level scoring criteria when configured per question', () => {
+    const itemWithCriteria: WritingItemConfig = {
+      ...mockItem,
+      scoring_criteria: 'Yêu cầu viết hoa chữ cái đầu câu nghiêm ngặt',
+    }
+    const strictCapRes = evaluateSentenceHeuristically(
+      'i usually play badminton after school.',
+      itemWithCriteria,
+    )
+    expect(strictCapRes.is_correct).toBe(false)
+    expect(strictCapRes.feedback_vi).toContain('viết hoa')
+  })
+
   it('evaluates free sentence without required words correctly', () => {
     const freeItem: WritingItemConfig = {
       id: 'q1',
@@ -189,6 +221,88 @@ describe('aiGradingService - Step 2: evaluateSentenceHeuristically fallback', ()
       freeItem
     )
     expect(badRes.is_correct).toBe(false)
+  })
+
+  it('correctly accepts Vietnamese proper names like Toan, Doan, Khoa without confusing them with to an or do an', () => {
+    // 1. Kiểm tra cấp độ Lexicon / Token
+    const toanCheck = checkConcatenatedToken('Toan')
+    expect(toanCheck.hasError).toBe(false)
+
+    const lowerToanCheck = checkConcatenatedToken('toan')
+    expect(lowerToanCheck.hasError).toBe(false)
+
+    const doanCheck = checkConcatenatedToken('Doan')
+    expect(doanCheck.hasError).toBe(false)
+
+    const khoaCheck = checkConcatenatedToken('Khoa')
+    expect(khoaCheck.hasError).toBe(false)
+
+    // 2. Kiểm tra cấp độ câu đầy đủ
+    const lexCheckToan = checkSentenceLexicon('Toan is my friend.')
+    expect(lexCheckToan.hasError).toBe(false)
+
+    const lexCheckWithToan = checkSentenceLexicon('I usually play badminton with Toan.')
+    expect(lexCheckWithToan.hasError).toBe(false)
+
+    // 3. Đánh giá câu có chứa Toan
+    const resToanSubject = evaluateSentenceHeuristically(
+      'Toan usually plays badminton with my brother.',
+      mockItem
+    )
+    expect(resToanSubject.is_correct).toBe(true)
+    expect(resToanSubject.score).toBe(100)
+
+    const resWithToan = evaluateSentenceHeuristically(
+      'I usually play badminton with Toan.',
+      mockItem
+    )
+    expect(resWithToan.is_correct).toBe(true)
+    expect(resWithToan.score).toBe(100)
+
+    const resDoan = evaluateSentenceHeuristically(
+      'Doan usually plays badminton after school.',
+      mockItem
+    )
+    expect(resDoan.is_correct).toBe(true)
+    expect(resDoan.score).toBe(100)
+
+    const freeItem: WritingItemConfig = {
+      id: 'q_name',
+      label: 'Question',
+      prompt: 'Write about your friend.',
+    }
+    const resFriendToan = evaluateSentenceHeuristically(
+      'Toan is my best friend at school.',
+      freeItem
+    )
+    expect(resFriendToan.is_correct).toBe(true)
+    expect(resFriendToan.score).toBe(100)
+  })
+
+  it('strictly retains rigorous grading for real concatenated English words and grammar errors', () => {
+    // 1. Từ dính chữ thực sự (concatenated words) phải BỊ TỪ CHỐI
+    const resFourpen = evaluateSentenceHeuristically('I also have fourpen.', mockItem)
+    expect(resFourpen.is_correct).toBe(false)
+    expect(resFourpen.error_type).toBe('spelling')
+
+    const resGotoschool = evaluateSentenceHeuristically('I usually gotoschool by bike.', mockItem)
+    expect(resGotoschool.is_correct).toBe(false)
+
+    const resMyschool = evaluateSentenceHeuristically('myschool is very beautiful.', mockItem)
+    expect(resMyschool.is_correct).toBe(false)
+
+    const resInmy = evaluateSentenceHeuristically('There is a ruler inmy backpack.', mockItem)
+    expect(resInmy.is_correct).toBe(false)
+
+    // 2. Lỗi hòa hợp số nhiều (plural agreement) phải BỊ TỪ CHỐI
+    const resFourPen = evaluateSentenceHeuristically('I have four pen.', mockItem)
+    expect(resFourPen.is_correct).toBe(false)
+    expect(resFourPen.error_type).toBe('grammar')
+
+    // 3. Lỗi động từ kép / cấu trúc câu sai phải BỊ TỪ CHỐI
+    const resFeelIs = evaluateSentenceHeuristically('I feel is a excited today.', mockItem)
+    expect(resFeelIs.is_correct).toBe(false)
+    expect(resFeelIs.error_type).toBe('grammar')
   })
 })
 

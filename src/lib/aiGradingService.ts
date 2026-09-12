@@ -1,4 +1,5 @@
 import type { Form3ParagraphConfig, WritingItemConfig } from '../task-engine/dynamic-schema'
+import type { PronunciationScoreResult } from './pronunciationScorer'
 import { checkSentenceLexicon } from './englishLexicon'
 
 export interface KeywordCheckResult {
@@ -210,7 +211,8 @@ You are an expert, encouraging English Language Assessor and Pedagogy Specialist
 Your evaluation MUST be rigorous and fair according to standard English:
 
 1. VOCABULARY & SPELLING (CRITICAL):
-- Every word must be a real English word or an acceptable proper noun (such as Vietnamese names: "Tran Quoc", "Nguyen Du", "Ha Noi").
+- Every word must be a real English word or an acceptable proper noun (such as Vietnamese names: "Tran Quoc", "Nguyen Du", "Ha Noi", "Toan", "Doan", "Nam", "Linh", "Minh", "Hoa", "Lan", "Mai", "Phong", "Khoa", "Dung", "Duc", "Bao", "Huy", etc., or textbook character names like "Peter", "Mary", "Linda", "Tom", "Tony").
+- CRITICAL FOR VIETNAMESE NAMES: In Vietnamese, personal names like "Toan" (Toàn) and "Doan" (Đoàn) are single, continuous words written without spaces. Do NOT confuse them with English phrases like "to an" or "do an". In sentences like "Toan is my friend." or "I play with Toan.", "Toan" is a valid proper name, NOT a run-on of "to an"!
 - REJECT words written together without spaces (run-on/concatenated words like "fourpen", "myschool", "inmy", "gotoschool", "playfootball"). Set is_correct = false, score = 40, error_type = "spelling", and explain in feedback_vi that words must be separated by spaces.
 - REJECT words with typos or extra letters (e.g. "fourlpen"). Set is_correct = false, score = 40, error_type = "spelling", and suggest the correct form (e.g. "four pens").
 - REJECT any gibberish, non-existent words, random keyboard typing (e.g. "sjnvldkfjvblkjdfb", "asdfghjk", "xxxyyy"). Set is_correct = false, score = 0, error_type = "gibberish", and point out the meaningless word in feedback_vi.
@@ -240,10 +242,15 @@ Your evaluation MUST be rigorous and fair according to standard English:
 export function evaluateSentenceHeuristically(
   sentence: string,
   item: WritingItemConfig,
+  scoringCriteria?: string,
 ): AIGrammarResult {
   const trimmed = sentence.trim()
   const minWords = item.min_words || 3
   const words = trimmed.split(/\s+/).filter(Boolean)
+  const combinedCriteria = [scoringCriteria, item.scoring_criteria]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase()
 
   if (words.length < minWords) {
     return {
@@ -306,6 +313,16 @@ export function evaluateSentenceHeuristically(
       vi: 'Cấu trúc động từ không chính xác.',
     },
     {
+      pattern: /\bhave\s+are\b/i,
+      en: 'Do not use "have" and "are" together.',
+      vi: 'Không dùng "have are" cùng nhau nhé.',
+    },
+    {
+      pattern: /\bcan\s+(?:to\s+)?(is|are|am|was|were)\b/i,
+      en: 'Use the base verb after modal verb "can" (say "can be").',
+      vi: 'Sau "can" dùng động từ nguyên mẫu (ví dụ "can be").',
+    },
+    {
       pattern: /\b(he|she|it|my father|my mother|my brother|my sister)\s+(?:(?:always|usually|often|sometimes|rarely|never)\s+)?(play|go|do|watch|study|have)\b/i,
       en: 'Remember to add -s/-es to the verb with singular third-person subjects (He/She/It).',
       vi: 'Chú ý thêm -s/-es vào sau động từ với chủ ngữ số ít (He/She/It).',
@@ -344,14 +361,37 @@ export function evaluateSentenceHeuristically(
     }
   }
 
-  // 3. Kiểm tra viết hoa & dấu câu
-  const firstChar = trimmed[0]
-  const isCapitalized = firstChar === firstChar.toUpperCase() && /[A-Z]/.test(firstChar)
-  const lastChar = trimmed[trimmed.length - 1]
-  const hasEndPunctuation = ['.', '!', '?'].includes(lastChar)
+  const hasPunctuation = /[.?!]$/.test(trimmed)
+  const isCapitalized = /^[A-Z]/.test(trimmed)
+
+  // Nếu tiêu chí giáo viên yêu cầu chặt chẽ về dấu chấm hoặc viết hoa:
+  const strictPunctuation = combinedCriteria.includes('dấu chấm') || combinedCriteria.includes('period') || combinedCriteria.includes('chấm cuối')
+  const strictCapital = combinedCriteria.includes('viết hoa') || combinedCriteria.includes('capital') || combinedCriteria.includes('chữ hoa')
+
+  if (!hasPunctuation && strictPunctuation) {
+    return {
+      is_correct: false,
+      score: 70,
+      feedback_en: 'According to the teacher\'s rubric, your sentence must end with a full stop (.).',
+      feedback_vi: 'Theo tiêu chí chấm của giáo viên, câu của em cần có dấu chấm câu (.) ở cuối nhé.',
+      error_type: 'punctuation',
+      corrected_sentence: `${trimmed}.`,
+    }
+  }
+
+  if (!isCapitalized && strictCapital) {
+    return {
+      is_correct: false,
+      score: 70,
+      feedback_en: 'According to the teacher\'s rubric, the first letter must be capitalized.',
+      feedback_vi: 'Theo tiêu chí chấm của giáo viên, em cần viết hoa chữ cái đầu câu nhé.',
+      error_type: 'grammar',
+      corrected_sentence: trimmed.charAt(0).toUpperCase() + trimmed.slice(1),
+    }
+  }
 
   // Nếu thiếu cả viết hoa VÀ thiếu dấu chấm câu -> nhắc nhở
-  if (!isCapitalized && !hasEndPunctuation) {
+  if (!isCapitalized && !hasPunctuation) {
     return {
       is_correct: false,
       score: 70,
@@ -361,8 +401,8 @@ export function evaluateSentenceHeuristically(
     }
   }
 
-  // Nếu câu đúng ngữ pháp nhưng chỉ thiếu dấu chấm ở cuối -> CHO ĐÚNG và nhắc nhở nhẹ
-  if (!hasEndPunctuation) {
+  // Nếu chỉ thiếu dấu chấm câu cuối (chế độ thường) -> CHO ĐÚNG và nhắc nhở
+  if (!hasPunctuation) {
     return {
       is_correct: true,
       score: 95,
@@ -401,6 +441,7 @@ export async function evaluateSentenceWithAI(
   sentence: string,
   item: WritingItemConfig,
   customApiKey?: string,
+  scoringCriteria?: string,
 ): Promise<AIGrammarResult> {
   const apiKey =
     customApiKey ||
@@ -410,8 +451,14 @@ export async function evaluateSentenceWithAI(
     import.meta.env.VITE_GEMINI_API_KEY ||
     ''
 
+  const finalCriteria = [scoringCriteria, item.scoring_criteria]
+    .filter(Boolean)
+    .map((c) => c!.trim())
+    .filter(Boolean)
+    .join('\n')
+
   if (!apiKey || !apiKey.trim()) {
-    return evaluateSentenceHeuristically(sentence, item)
+    return evaluateSentenceHeuristically(sentence, item, finalCriteria)
   }
 
   // Pre-check gibberish nhanh
@@ -430,7 +477,15 @@ export async function evaluateSentenceWithAI(
   const prompt = `Task prompt: ${item.prompt || item.label || 'Write a sentence.'}
 ${hasKeywords ? `Required words that must be used: ${item.required_words!.join(', ')}` : 'Style: Free sentence writing.'}
 ${item.hints && item.hints.length > 0 ? `Target grammar / hints: ${item.hints.filter(Boolean).join('; ')}` : ''}
-
+${
+  finalCriteria
+    ? `\nTEACHER'S SCORING CRITERIA (MANDATORY TO FOLLOW STRICTLY):
+"""
+${finalCriteria}
+"""
+Please strictly evaluate the student's sentence against the teacher's scoring criteria above. Deduct points or set is_correct = false if any criterion is violated.\n`
+    : ''
+}
 Student wrote: "${sentence.trim()}"
 
 Return JSON:
@@ -446,7 +501,7 @@ Return JSON:
   try {
     const rawText = await callGeminiAPI(apiKey, prompt, SYSTEM_INSTRUCTION_SENTENCE, 800)
     if (!rawText) {
-      return evaluateSentenceHeuristically(sentence, item)
+      return evaluateSentenceHeuristically(sentence, item, finalCriteria)
     }
 
     const cleanJson = rawText
@@ -468,14 +523,32 @@ Return JSON:
       corrected_sentence: parsed.corrected_sentence || undefined,
     }
 
-    // Màng lọc Guardrail: Nếu câu có lỗi dính chữ hoặc lỗi từ vựng nghiêm trọng
-    const lexCheck = checkSentenceLexicon(sentence)
-    if (lexCheck.hasError && result.is_correct) {
+    // Màng lọc Guardrail: Kiểm tra chéo lỗi từ dính chữ, hòa hợp số ít/nhiều hoặc gõ phím vô nghĩa
+    const gib = detectGibberish(sentence)
+    if (gib.isGibberish && result.is_correct) {
       result.is_correct = false
-      result.score = Math.min(result.score, 45)
-      result.feedback_vi = lexCheck.feedback_vi || result.feedback_vi
-      result.feedback_en = lexCheck.feedback_en || result.feedback_en
-      result.error_type = lexCheck.errorType === 'plural_agreement' ? 'grammar' : 'spelling'
+      result.score = 0
+      result.error_type = 'gibberish'
+      result.feedback_vi = `Từ "${gib.token}" không phải từ tiếng Anh có nghĩa. Em hãy thay bằng một từ vựng tiếng Anh thật nhé!`
+      result.feedback_en = `The word "${gib.token}" is not a recognized English word. Please use a real English word.`
+    } else {
+      const lexCheck = checkSentenceLexicon(sentence)
+      if (lexCheck.hasError && result.is_correct) {
+        // Chỉ ghi đè AI nếu là lỗi hòa hợp số nhiều hoặc dính chữ thực sự (concatenated)
+        // Không ghi đè nếu chỉ là spelling từ vựng mở rộng/tên riêng mà AI đã công nhận
+        const shouldOverride =
+          lexCheck.errorType === 'plural_agreement' ||
+          lexCheck.errorType === 'concatenated' ||
+          lexCheck.errorType === 'concatenated_typo'
+
+        if (shouldOverride) {
+          result.is_correct = false
+          result.score = Math.min(result.score, 45)
+          result.feedback_vi = lexCheck.feedback_vi || result.feedback_vi
+          result.feedback_en = lexCheck.feedback_en || result.feedback_en
+          result.error_type = lexCheck.errorType === 'plural_agreement' ? 'grammar' : 'spelling'
+        }
+      }
     }
 
     return result
@@ -497,9 +570,11 @@ export async function evaluateBatchSentencesWithAI(
     sentence: string
     required_words?: string[]
     hints?: string[]
+    scoring_criteria?: string
   }>,
   subMode: string = 'FREE_SENTENCE',
   customApiKey?: string,
+  scoringCriteria?: string,
 ): Promise<Record<string, AIGrammarResult>> {
   const apiKey =
     customApiKey ||
@@ -512,13 +587,18 @@ export async function evaluateBatchSentencesWithAI(
   const fallbackAll = () => {
     const fallbackMap: Record<string, AIGrammarResult> = {}
     for (const it of itemsWithSentences) {
-      fallbackMap[it.id] = evaluateSentenceHeuristically(it.sentence, {
-        id: it.id,
-        label: it.label || '',
-        prompt: it.prompt,
-        required_words: it.required_words,
-        hints: it.hints,
-      })
+      fallbackMap[it.id] = evaluateSentenceHeuristically(
+        it.sentence,
+        {
+          id: it.id,
+          label: it.label || '',
+          prompt: it.prompt,
+          required_words: it.required_words,
+          hints: it.hints,
+          scoring_criteria: it.scoring_criteria,
+        },
+        scoringCriteria,
+      )
     }
     return fallbackMap
   }
@@ -533,9 +613,20 @@ export async function evaluateBatchSentencesWithAI(
     sentence: it.sentence,
     required_words: it.required_words || [],
     hints: it.hints || [],
+    ...(it.scoring_criteria ? { scoring_criteria: it.scoring_criteria } : {}),
   }))
 
-  const userPrompt = `Evaluate the following student sentences for a school lesson (mode: ${subMode}). Return a JSON object with a "results" field mapping each item id to its evaluation:
+  const userPrompt = `Evaluate the following student sentences for a school lesson (mode: ${subMode}).
+${
+  scoringCriteria && scoringCriteria.trim()
+    ? `\nTEACHER'S SCORING CRITERIA (MANDATORY TO FOLLOW STRICTLY FOR THIS EXERCISE):
+"""
+${scoringCriteria.trim()}
+"""
+Please strictly evaluate every student sentence against the teacher's scoring criteria above. Deduct points or set is_correct = false if the criteria are violated.\n`
+    : ''
+}
+Return a JSON object with a "results" field mapping each item id to its evaluation:
 ${JSON.stringify(promptItems, null, 2)}
 
 Required schema:
@@ -580,26 +671,47 @@ Required schema:
             corrected_sentence: r.corrected_sentence || undefined,
           }
 
-          // Màng lọc Guardrail: Kiểm tra chéo từ dính chữ / chính tả
-          const lexCheck = checkSentenceLexicon(it.sentence)
-          if (lexCheck.hasError && itemRes.is_correct) {
+          // Màng lọc Guardrail: Kiểm tra chéo lỗi từ dính chữ, hòa hợp số ít/nhiều hoặc gõ phím vô nghĩa
+          const gib = detectGibberish(it.sentence)
+          if (gib.isGibberish && itemRes.is_correct) {
             itemRes.is_correct = false
-            itemRes.score = Math.min(itemRes.score, 45)
-            itemRes.feedback_vi = lexCheck.feedback_vi || itemRes.feedback_vi
-            itemRes.feedback_en = lexCheck.feedback_en || itemRes.feedback_en
-            itemRes.error_type = lexCheck.errorType === 'plural_agreement' ? 'grammar' : 'spelling'
+            itemRes.score = 0
+            itemRes.error_type = 'gibberish'
+            itemRes.feedback_vi = `Từ "${gib.token}" không phải từ tiếng Anh có nghĩa. Em hãy thay bằng một từ vựng tiếng Anh thật nhé!`
+            itemRes.feedback_en = `The word "${gib.token}" is not a recognized English word. Please use a real English word.`
+          } else {
+            const lexCheck = checkSentenceLexicon(it.sentence)
+            if (lexCheck.hasError && itemRes.is_correct) {
+              const shouldOverride =
+                lexCheck.errorType === 'plural_agreement' ||
+                lexCheck.errorType === 'concatenated' ||
+                lexCheck.errorType === 'concatenated_typo'
+
+              if (shouldOverride) {
+                itemRes.is_correct = false
+                itemRes.score = Math.min(itemRes.score, 45)
+                itemRes.feedback_vi = lexCheck.feedback_vi || itemRes.feedback_vi
+                itemRes.feedback_en = lexCheck.feedback_en || itemRes.feedback_en
+                itemRes.error_type = lexCheck.errorType === 'plural_agreement' ? 'grammar' : 'spelling'
+              }
+            }
           }
 
           resultsMap[it.id] = itemRes
         } else {
           // Dự phòng cho item bị thiếu
-          resultsMap[it.id] = evaluateSentenceHeuristically(it.sentence, {
-            id: it.id,
-            label: it.label || '',
-            prompt: it.prompt,
-            required_words: it.required_words,
-            hints: it.hints,
-          })
+          resultsMap[it.id] = evaluateSentenceHeuristically(
+            it.sentence,
+            {
+              id: it.id,
+              label: it.label || '',
+              prompt: it.prompt,
+              required_words: it.required_words,
+              hints: it.hints,
+              scoring_criteria: it.scoring_criteria,
+            },
+            scoringCriteria,
+          )
         }
       }
       return resultsMap
@@ -799,3 +911,92 @@ Return ONLY a valid JSON object matching this schema (no markdown fences, no oth
     return evaluateParagraphHeuristically(paragraph, config)
   }
 }
+
+/**
+ * Đánh giá bài phát âm (Form 4) kết hợp Gemini AI dựa trên tiêu chí chấm điểm của giáo viên
+ */
+export async function evaluateSpeakingWithAI(
+  targetSentence: string,
+  recognizedText: string,
+  baselineResult: PronunciationScoreResult,
+  scoringCriteria?: string,
+  customApiKey?: string
+): Promise<PronunciationScoreResult> {
+  const apiKey =
+    customApiKey ||
+    (typeof window !== 'undefined'
+      ? localStorage.getItem('gsec_gemini_api_key') || ''
+      : '') ||
+    import.meta.env.VITE_GEMINI_API_KEY ||
+    ''
+
+  if (!apiKey || !apiKey.trim() || !scoringCriteria?.trim()) {
+    return baselineResult
+  }
+
+  const prompt = `You are an expert English language and pronunciation assessor for Vietnamese students (grade 6).
+Target sentence: "${targetSentence}"
+Recognized speech from student: "${recognizedText}"
+Acoustic baseline:
+- Word accuracy: ${baselineResult.accuracyScore}/100
+- Acoustic confidence: ${baselineResult.confidenceScore}/100
+- Baseline score: ${baselineResult.score}/100
+- Evaluated words: ${JSON.stringify(
+    baselineResult.evaluatedWords.map((w) => ({
+      word: w.targetWord,
+      heard: w.heardWord,
+      status: w.status,
+    }))
+  )}
+
+TEACHER'S CUSTOM SCORING CRITERIA (MANDATORY TO FOLLOW STRICTLY):
+"${scoringCriteria.trim()}"
+
+STRICT EVALUATION INSTRUCTIONS:
+1. If the student spoke a completely different sentence, or substituted key content words, is_passed MUST be false and score MUST NOT exceed 40.
+2. Under no circumstances should a substituted, missing, or completely wrong sentence be marked as passed.
+3. Only mark is_passed = true if the student spoke the actual target sentence accurately with good pronunciation.
+
+Return JSON:
+{
+  "score": number,
+  "is_passed": boolean,
+  "feedback_vi": string,
+  "feedback_en": string,
+  "suggestions": string[]
+}`.trim()
+
+  try {
+    const rawText = await callGeminiAPI(apiKey, prompt, undefined, 800)
+    if (!rawText) return baselineResult
+
+    const cleanJson = rawText
+      .replace(/^```json\s*/i, '')
+      .replace(/^```\s*/i, '')
+      .replace(/```\s*$/i, '')
+      .trim()
+
+    const parsed = JSON.parse(cleanJson)
+    if (typeof parsed.score === 'number') {
+      const isActuallyPassed =
+        baselineResult.isPassed && Boolean(parsed.is_passed) && parsed.score >= 80
+
+      return {
+        ...baselineResult,
+        score: Math.max(0, Math.min(100, Math.round(parsed.score))),
+        isPassed: isActuallyPassed,
+        feedback_vi: parsed.feedback_vi || baselineResult.feedback_vi,
+        feedback_en: parsed.feedback_en || baselineResult.feedback_en,
+        suggestions:
+          Array.isArray(parsed.suggestions) && parsed.suggestions.length > 0
+            ? parsed.suggestions
+            : baselineResult.suggestions,
+      }
+    }
+  } catch (err) {
+    console.warn('evaluateSpeakingWithAI fallback to baseline:', err)
+  }
+
+  return baselineResult
+}
+

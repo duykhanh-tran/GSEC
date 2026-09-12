@@ -4,6 +4,7 @@ import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { getTaskPath, normalizeTaskCode, TASKS } from '../registry'
 import { useAuth } from '../auth'
 import { supabase } from '../../lib/supabaseClient'
+import { taskCacheService } from '../../lib/taskCacheService'
 import { InlineCodeKeypad } from '../../components/keypad/InlineCodeKeypad'
 import { AppHeader } from '../../components/shell/AppHeader'
 import '../../styles/auth.css'
@@ -48,10 +49,16 @@ export function IndexPage() {
 
   // Student assigned homework state
   const [studentAssignments, setStudentAssignments] = useState<StudentAssignmentItem[]>([])
-  const [loadingAssignments, setLoadingAssignments] = useState(false)
 
   useEffect(() => {
     document.title = 'GSEC-6'
+    // Tải trước ngầm các bài tập phổ biến/bài tập có audio để học sinh nhập mã là mở ngay tức thì
+    if (import.meta.env.MODE !== 'test') {
+      const timer = setTimeout(() => {
+        taskCacheService.preloadTasksBatch(['60111', '60112', '60123', '60124', '60125', '60126'])
+      }, 500)
+      return () => clearTimeout(timer)
+    }
   }, [])
 
   useEffect(() => {
@@ -124,11 +131,9 @@ export function IndexPage() {
 
     if (classes.length === 0) {
       setStudentAssignments([])
-      setLoadingAssignments(false)
       return
     }
 
-    setLoadingAssignments(true)
     try {
       const classIds = classes.map((c) => c.id).filter(Boolean)
       const classMap = new Map<string, EnrolledClass>()
@@ -218,10 +223,14 @@ export function IndexPage() {
       })
 
       setStudentAssignments(formatted)
+      if (import.meta.env.MODE !== 'test') {
+        const assignedCodes = formatted.map((f) => f.task_code)
+        taskCacheService.preloadTasksBatch(assignedCodes)
+      }
     } catch (err) {
       console.error('Lỗi loadStudentAssignments:', err)
     } finally {
-      setLoadingAssignments(false)
+      // Done loading
     }
   }, [user])
 
@@ -289,230 +298,85 @@ export function IndexPage() {
     return <Navigate replace to={requestedPath} />
   }
 
-  // Điều hướng tự động theo vai trò: Admin -> /admin, Teacher -> /teacher
-  // Cho phép Admin / Teacher mở mode=student để thử nghiệm bàn phím như học sinh
-  const isTestingStudentMode = searchParams.get('mode') === 'student'
-  if (user && profile && !isTestingStudentMode) {
-    if (profile.role === 'ADMIN') {
-      return <Navigate replace to="/admin" />
-    }
-    if (profile.role === 'TEACHER') {
-      return <Navigate replace to="/teacher" />
-    }
+  // Điều hướng tự động theo vai trò:
+  // 1. Giáo viên TUYỆT ĐỐI KHÔNG xem giao diện học sinh -> luôn chuyển hướng về /teacher
+  if (user && profile?.role === 'TEACHER') {
+    return <Navigate replace to="/teacher" />
   }
 
-  const isStudentView = Boolean(user && (profile?.role === 'STUDENT' || isTestingStudentMode))
+  // 2. Admin chỉ chuyển hướng về /admin nếu không chủ động bật mode=student để kiểm thử
+  const isTestingStudentMode = searchParams.get('mode') === 'student'
+  if (user && profile?.role === 'ADMIN' && !isTestingStudentMode) {
+    return <Navigate replace to="/admin" />
+  }
+
   const uncompletedCount = studentAssignments.filter((a) => a.status !== 'completed').length
 
   return (
     <>
-      <AppHeader currentPortal="student" isTestingStudentMode={isTestingStudentMode} />
+      <AppHeader
+        currentPortal="student"
+        isTestingStudentMode={isTestingStudentMode}
+        studentAssignments={studentAssignments}
+      />
 
-      {/* KHU VỰC THÔNG BÁO BÀI TẬP & LỚP HỌC CHO HỌC SINH */}
-      {isStudentView && (
-        <div style={{ width: 'min(580px, calc(100% - 32px))', margin: '16px auto 0' }}>
-          {/* Card Quản lý Lớp & Tham gia */}
-          <aside className="student-classes-card" style={{ width: '100%', margin: '0 0 12px' }}>
-            <div className="student-classes-head">
-              <div>
-                <strong>
-                  {enrolledClasses.length > 0 ? `📚 Lớp đang học (${enrolledClasses.length})` : '🎒 Học tập tự do'}
-                </strong>
-                <div style={{ fontSize: '11px', color: 'var(--color-muted)', marginTop: '2px' }}>
-                  {enrolledClasses.length > 0 ? 'Bạn đang là thành viên của các lớp học dưới đây' : 'Chưa tham gia lớp nào của giáo viên'}
-                </div>
-              </div>
-              <button
-                type="button"
-                className="btn-join-class"
-                onClick={() => setIsJoinModalOpen(true)}
-              >
-                + Nhập mã vào lớp
-              </button>
-            </div>
+      <main className="student-centered-hero" id="code-keypad">
+        <div className="student-centered-card">
+          <div className="student-centered-badge">
+            <span>✨</span>
+            <span>Hệ Thống Luyện Tập Tiếng Anh Thông Minh</span>
+          </div>
 
-            {enrolledClasses.length === 0 ? (
-              <div style={{ padding: '10px 12px', background: '#fffbeb', borderRadius: '8px', border: '1px solid #fde68a', marginTop: '8px' }}>
-                <p style={{ fontSize: '12.5px', color: '#92400e', margin: 0, lineHeight: 1.4 }}>
-                  💡 <strong>Bạn chưa nhận được bài tập?</strong> Hãy bấm nút <strong>"+ Nhập mã vào lớp"</strong> ở trên và nhập mã lớp do thầy cô cung cấp (ví dụ: <strong>GSEC3EMS</strong>) để nhận bài tập được giao!
-                </p>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
-                {enrolledClasses.map((cl) => (
-                  <span
-                    key={cl.id}
-                    style={{
-                      fontSize: '12px',
-                      padding: '4px 10px',
-                      borderRadius: '8px',
-                      background: '#f1f5f9',
-                      color: '#1e293b',
-                      fontWeight: 650,
-                      border: '1px solid #e2e8f0',
-                    }}
-                  >
-                    📚 {cl.name} · <span style={{ color: 'var(--color-muted)' }}>{cl.teacher_name}</span> (Mã: <code>{cl.code}</code>)
-                  </span>
-                ))}
-              </div>
-            )}
-          </aside>
+          <h1 className="student-centered-title">Nhập Mã Bài Tập</h1>
+          <p className="student-centered-subtitle">
+            Nhập mã 5 chữ số từ giáo viên hoặc sách bài tập (ví dụ: <code>60111</code>) để bắt đầu luyện tập cùng AI Tutor.
+          </p>
 
-          {/* Card Bài Tập Được Giao & Hạn Nộp */}
-          <section className="student-assignments-card" style={{ width: '100%', margin: 0 }}>
-            <div className="student-assignments-header">
-              <div>
-                <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: 'var(--color-text)' }}>
-                  📝 BÀI TẬP ĐƯỢC GIAO CẦN LÀM
-                </h3>
-                <span style={{ fontSize: '12px', color: 'var(--color-muted)' }}>
-                  Nhiệm vụ học tập và hạn nộp bài từ giáo viên
-                </span>
-              </div>
-              {loadingAssignments ? (
-                <span className="assignment-badge" style={{ background: '#f1f5f9', color: 'var(--color-muted)' }}>
-                  ⏳ Đang kiểm tra...
-                </span>
-              ) : studentAssignments.length > 0 && uncompletedCount > 0 ? (
-                <span className="assignment-badge assignment-badge--pending">
-                  🔔 Còn {uncompletedCount} bài cần làm
-                </span>
-              ) : studentAssignments.length > 0 ? (
-                <span className="assignment-badge assignment-badge--completed">
-                  🎉 Đã hoàn thành tất cả
+          {/* BÀN PHÍM SỐ Ở CHÍNH GIỮA */}
+          <div className="student-keypad-box">
+            <InlineCodeKeypad onNavigate={(code) => navigate(`/tasks/${code}`)} />
+          </div>
+
+          {requestedCode ? (
+            <p className="launcher-error" role="alert" style={{ marginTop: '12px' }}>
+              Không tìm thấy task có mã {requestedCode}.
+            </p>
+          ) : null}
+
+          {/* HINT: THÔNG BÁO BÀI TẬP NẰM TRONG THẺ TÊN HEADER */}
+          <div className="student-header-hint-card">
+            <span className="student-header-hint-icon">💡</span>
+            <div className="student-header-hint-content">
+              {uncompletedCount > 0 ? (
+                <span>
+                  Em có <strong>{uncompletedCount} bài tập</strong> cô giáo giao chưa làm.{' '}
+                  <strong>Di chuột hoặc chạm vào Thẻ tên</strong> ở góc trên bên phải thanh menu để xem danh sách bài và làm ngay!
                 </span>
               ) : (
-                <span className="assignment-badge" style={{ background: '#f8fafc', color: 'var(--color-muted)', border: '1px solid #e2e8f0' }}>
-                  0 bài tập
+                <span>
+                  <strong>Di chuột hoặc chạm vào Thẻ tên</strong> ở góc trên bên phải để xem thông báo, danh sách bài tập được giao và lớp học của em.
                 </span>
               )}
+              {enrolledClasses.length > 0 && (
+                <div style={{ marginTop: '6px', fontSize: '12px', color: '#64748b' }}>
+                  📚 Lớp đang tham gia: <strong>{enrolledClasses.map((c) => c.name).join(', ')}</strong>
+                </div>
+              )}
             </div>
+          </div>
 
-            {loadingAssignments ? (
-              <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--color-muted)', fontSize: '13px' }}>
-                ⏳ Đang kiểm tra bài tập mới nhất...
-              </div>
-            ) : studentAssignments.length > 0 ? (
-              <>
-                {uncompletedCount > 0 && (
-                  <div style={{ padding: '8px 12px', background: '#fff4ed', borderRadius: '8px', border: '1px solid #fedf89', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '16px' }}>⏰</span>
-                    <span style={{ fontSize: '12.5px', color: '#c4320a', fontWeight: 650 }}>
-                      Bạn có {uncompletedCount} bài tập chưa nộp. Hãy chú ý hạn chót bên dưới để hoàn thành đúng hạn nhé!
-                    </span>
-                  </div>
-                )}
-
-                <div className="student-assignments-list">
-                  {studentAssignments.map((item) => {
-                    const isDone = item.status === 'completed'
-                    const isOngoing = item.status === 'in_progress'
-
-                    return (
-                      <div
-                        key={item.id}
-                        className={`student-assignment-row ${isDone ? 'is-completed' : ''} ${item.is_overdue ? 'is-overdue' : ''}`}
-                      >
-                        <div className="student-assignment-info">
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
-                            <span className="task-code-pill">{item.task_code}</span>
-                            <span className="assignment-class-tag">📚 {item.class_name} ({item.teacher_name})</span>
-                          </div>
-                          <h4 className="assignment-task-title">{item.title}</h4>
-                          {item.subtitle ? <p className="assignment-task-subtitle">{item.subtitle}</p> : null}
-
-                          <div className="assignment-meta-row">
-                            {item.due_date ? (
-                              <span className={`assignment-due-tag ${item.is_overdue ? 'is-overdue' : ''}`}>
-                                ⏰ Hạn: {new Date(item.due_date).toLocaleDateString('vi-VN', {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                  day: '2-digit',
-                                  month: '2-digit',
-                                  year: 'numeric',
-                                })}
-                                {item.is_overdue ? ' ⚠️ Quá hạn' : ''}
-                              </span>
-                            ) : (
-                              <span className="assignment-due-tag">⏰ Không có hạn nộp</span>
-                            )}
-
-                            {isDone && (
-                              <span className="assignment-score-tag">
-                                ⭐ Đạt: {item.score ?? 0}đ {item.first_score != null && item.first_score !== item.score ? `(Lần 1: ${item.first_score}đ)` : ''}
-                              </span>
-                            )}
-                            {isOngoing && (
-                              <span className="assignment-due-tag" style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}>
-                                ⏳ Đang làm dở
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="student-assignment-action">
-                          {isDone ? (
-                            <button
-                              type="button"
-                              className="btn-task-action btn-task-action--review"
-                              onClick={() => navigate(`/tasks/${item.task_code}`)}
-                            >
-                              👁️ Xem lại
-                            </button>
-                          ) : isOngoing ? (
-                            <button
-                              type="button"
-                              className="btn-task-action btn-task-action--continue"
-                              onClick={() => navigate(`/tasks/${item.task_code}`)}
-                            >
-                              ✏️ Tiếp tục
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              className="btn-task-action btn-task-action--start"
-                              onClick={() => navigate(`/tasks/${item.task_code}`)}
-                            >
-                              🚀 Làm bài ngay
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </>
-            ) : enrolledClasses.length > 0 ? (
-              <div style={{ textAlign: 'center', padding: '24px 16px', color: 'var(--color-muted)' }}>
-                <div style={{ fontSize: '28px', marginBottom: '6px' }}>🎉</div>
-                <div style={{ fontSize: '13px', fontWeight: 650, color: '#334155' }}>Hiện tại chưa có bài tập nào được giao cho các lớp của bạn.</div>
-                <div style={{ fontSize: '12px', marginTop: '4px' }}>Bạn có thể thoải mái nhập mã 5 chữ số ở bàn phím bên dưới để tự luyện tập!</div>
-              </div>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '20px 16px', color: 'var(--color-muted)' }}>
-                <div style={{ fontSize: '28px', marginBottom: '6px' }}>📬</div>
-                <div style={{ fontSize: '13px', fontWeight: 650, color: '#334155' }}>Khu vực thông báo bài tập đang trống</div>
-                <div style={{ fontSize: '12px', marginTop: '4px' }}>
-                  Khi bạn tham gia vào lớp học của giáo viên, toàn bộ bài tập và hạn nộp sẽ hiển thị tại đây!
-                </div>
-              </div>
-            )}
-          </section>
+          {/* NÚT THAM GIA LỚP HỌC MỚI */}
+          <div style={{ marginTop: '20px', textAlign: 'center' }}>
+            <button
+              type="button"
+              className="btn-auth-link btn-auth-link--secondary"
+              style={{ fontSize: '13px', padding: '7px 16px', borderRadius: '20px', cursor: 'pointer' }}
+              onClick={() => setIsJoinModalOpen(true)}
+            >
+              + Nhập mã tham gia lớp học mới
+            </button>
+          </div>
         </div>
-      )}
-
-      <main id="code-keypad" className="launcher-shell" style={{ marginTop: '20px' }}>
-        <span className="launcher-avatar" aria-hidden="true">
-          AI
-        </span>
-        <h1>GSEC-6</h1>
-        <InlineCodeKeypad onNavigate={(code) => navigate(`/tasks/${code}`)} />
-        {requestedCode ? (
-          <p className="launcher-error" role="alert">
-            Không tìm thấy task có mã {requestedCode}.
-          </p>
-        ) : null}
       </main>
 
       {/* MODAL NHẬP MÃ THAM GIA LỚP */}

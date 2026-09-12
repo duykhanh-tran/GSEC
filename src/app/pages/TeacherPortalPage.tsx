@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth'
 import { supabase } from '../../lib/supabaseClient'
 import { TASKS } from '../registry'
 import { AppHeader } from '../../components/shell/AppHeader'
+import { InlineCodeKeypad } from '../../components/keypad/InlineCodeKeypad'
 import '../../styles/auth.css'
 import '../../styles/portal.css'
 
@@ -63,15 +64,13 @@ interface AttemptItem {
 }
 
 export function TeacherPortalPage() {
+  const navigate = useNavigate()
   const { user, profile } = useAuth()
-  const [activeTab, setActiveTab] = useState<'classes' | 'assignments' | 'students' | 'progress'>('classes')
+  const [activeTab, setActiveTab] = useState<'classes' | 'assignments' | 'students' | 'progress' | 'keypad'>('classes')
 
   // Classes state
   const [classes, setClasses] = useState<ClassItem[]>([])
   const [selectedClassId, setSelectedClassId] = useState<string>('')
-  const [isCreateClassOpen, setIsCreateClassOpen] = useState(false)
-  const [newClassName, setNewClassName] = useState('')
-  const [classError, setClassError] = useState('')
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
 
   // Assignments state
@@ -86,11 +85,6 @@ export function TeacherPortalPage() {
 
   // Students state
   const [students, setStudents] = useState<StudentItem[]>([])
-  const [isBatchModalOpen, setIsBatchModalOpen] = useState(false)
-  const [batchNamesText, setBatchNamesText] = useState('')
-  const [createdBatch, setCreatedBatch] = useState<Array<{ username: string; name: string; pass: string }>>([])
-  const [isSubmittingBatch, setIsSubmittingBatch] = useState(false)
-  const [batchResult, setBatchResult] = useState<{ success: boolean; message: string } | null>(null)
 
   // Progress / Gradebook state & filters
   const [attempts, setAttempts] = useState<AttemptItem[]>([])
@@ -103,23 +97,6 @@ export function TeacherPortalPage() {
   // Kiểm tra quyền: Chỉ Teacher và Admin mới có quyền truy cập
   const isAuthorized = profile?.role === 'TEACHER' || profile?.role === 'ADMIN'
 
-  // 1. Tải danh sách lớp học của giáo viên (hoặc toàn bộ lớp nếu là Admin)
-  const loadClasses = useCallback(async () => {
-    if (!user) return
-    setLoading(true)
-    const { data, error } = await supabase
-      .from('classes')
-      .select('*')
-      .order('created_at', { ascending: false })
-
-    setLoading(false)
-    if (!error && data) {
-      setClasses(data as ClassItem[])
-      if (data.length > 0 && !selectedClassId) {
-        setSelectedClassId(data[0].id)
-      }
-    }
-  }, [user, selectedClassId])
 
   // 2. Tải tiến độ làm bài (Attempts) và ánh xạ lớp học
   const loadAttempts = useCallback(async () => {
@@ -188,8 +165,9 @@ export function TeacherPortalPage() {
     }
   }, [])
 
-  // 3. Tải danh mục Task (32 bài hệ thống + bài tạo mới)
+  // 3. Tải danh mục Task (Mặc định ẩn 32 bài mẫu, chỉ nạp bài tập thực tế từ Supabase)
   const loadTasks = useCallback(async () => {
+    const showStandard = localStorage.getItem('gsec_show_standard_tasks') === 'true'
     const { data: dbTasks } = await supabase
       .from('tasks')
       .select('code, worksheet, task_number, title, subtitle, form_type')
@@ -200,15 +178,19 @@ export function TeacherPortalPage() {
       dbTasks.forEach((t) => dbMap.set(t.code, t))
     }
 
-    const merged: TaskOption[] = TASKS.map((t) => {
-      const dbItem = dbMap.get(t.code)
-      return {
-        code: t.code,
-        title: dbItem?.title || t.title,
-        subtitle: dbItem?.subtitle || t.subtitle,
-        form_type: dbItem?.form_type || 'FORM_1_CHOICE',
-      }
-    })
+    const merged: TaskOption[] = []
+
+    if (showStandard) {
+      TASKS.forEach((t) => {
+        const dbItem = dbMap.get(t.code)
+        merged.push({
+          code: t.code,
+          title: dbItem?.title || t.title,
+          subtitle: dbItem?.subtitle || t.subtitle,
+          form_type: dbItem?.form_type || 'FORM_1_CHOICE',
+        })
+      })
+    }
 
     if (dbTasks) {
       dbTasks.forEach((dbT) => {
@@ -363,31 +345,6 @@ export function TeacherPortalPage() {
     }
   }, [isAuthorized, loadAttempts])
 
-  // Tạo lớp học mới
-  const handleCreateClass = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newClassName.trim() || !user) return
-
-    // Sinh mã lớp ngẫu nhiên 6 ký tự (ví dụ GSEC6A, GSEC29)
-    const randomChars = Math.random().toString(36).substring(2, 6).toUpperCase()
-    const generatedCode = `GSEC${randomChars}`
-
-    const { data, error } = await supabase.from('classes').insert({
-      teacher_id: user.id,
-      name: newClassName.trim(),
-      code: generatedCode,
-    }).select().single()
-
-    if (error) {
-      setClassError(error.message)
-    } else {
-      setIsCreateClassOpen(false)
-      setNewClassName('')
-      setClassError('')
-      await loadClasses()
-      if (data) setSelectedClassId(data.id)
-    }
-  }
 
   // Sao chép mã lớp vào bộ nhớ tạm
   const handleCopyCode = (code: string) => {
@@ -396,58 +353,7 @@ export function TeacherPortalPage() {
     setTimeout(() => setCopiedCode(null), 2500)
   }
 
-  // Sinh danh sách tài khoản học sinh hàng loạt từ văn bản
-  const handleGenerateBatchPreview = () => {
-    const lines = batchNamesText.split('\n').map((l) => l.trim()).filter(Boolean)
-    const currentClass = classes.find((c) => c.id === selectedClassId)
-    const classPrefix = currentClass ? currentClass.name.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 4) : 'gsec'
 
-    const generated = lines.map((name, index) => {
-      // Tách tên cuối tiếng Việt để làm username (ví dụ Nguyễn Văn An -> an)
-      const parts = name.split(' ')
-      const lastName = parts[parts.length - 1].toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '')
-      const username = `${classPrefix}.${lastName}${index + 1}`
-      return {
-        username,
-        name,
-        pass: '123456',
-      }
-    })
-
-    setCreatedBatch(generated)
-    setBatchResult(null)
-  }
-
-  // Thực hiện lưu các tài khoản đã sinh vào hệ thống Supabase Auth & Database
-  const handleCommitBatchCreation = async () => {
-    if (!selectedClassId || createdBatch.length === 0) return
-    setIsSubmittingBatch(true)
-    setBatchResult(null)
-
-    try {
-      const { data, error } = await supabase.rpc('create_managed_students_batch', {
-        p_class_id: selectedClassId,
-        p_students: createdBatch,
-      })
-
-      if (error) {
-        setBatchResult({ success: false, message: error.message })
-      } else if (data && !data.success) {
-        setBatchResult({ success: false, message: data.message })
-      } else {
-        setBatchResult({
-          success: true,
-          message: data?.message || `Đã cấp thành công ${createdBatch.length} tài khoản vào lớp!`,
-        })
-        await loadStudentsForClass(selectedClassId)
-      }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Có lỗi xảy ra khi tạo tài khoản.'
-      setBatchResult({ success: false, message: msg })
-    } finally {
-      setIsSubmittingBatch(false)
-    }
-  }
 
   if (!isAuthorized) {
     return (
@@ -514,24 +420,6 @@ export function TeacherPortalPage() {
             <h1>Cổng Giáo Viên — GSEC 6</h1>
             <p>Quản lý lớp học, cấp mã tham gia và theo dõi kết quả học sinh</p>
           </div>
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <button
-              type="button"
-              className="btn-submit"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '8px 16px',
-                fontSize: '13px',
-                margin: 0,
-              }}
-              onClick={() => setIsCreateClassOpen(true)}
-            >
-              <span>+</span>
-              <span>Tạo Lớp Học Mới</span>
-            </button>
-          </div>
         </header>
 
       {/* Tabs */}
@@ -564,21 +452,20 @@ export function TeacherPortalPage() {
         >
           📊 Bảng điểm Realtime ({filteredAttempts.length})
         </button>
+        <button
+          type="button"
+          className={`portal-tab-btn ${activeTab === 'keypad' ? 'is-active' : ''}`}
+          onClick={() => setActiveTab('keypad')}
+        >
+          ⌨️ Nhập Mã Code
+        </button>
       </nav>
 
       {/* TAB 1: LỚP HỌC */}
       {activeTab === 'classes' && (
         <section>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h2>Danh sách Lớp học</h2>
-            <button
-              type="button"
-              className="btn-submit"
-              style={{ width: 'auto', padding: '9px 18px' }}
-              onClick={() => setIsCreateClassOpen(true)}
-            >
-              + Tạo Lớp Mới
-            </button>
+            <h2>Danh sách Lớp học phụ trách</h2>
           </div>
 
           {loading ? (
@@ -587,7 +474,7 @@ export function TeacherPortalPage() {
             </div>
           ) : classes.length === 0 ? (
             <div className="class-card" style={{ textAlign: 'center', padding: '40px' }}>
-              <p style={{ color: 'var(--color-muted)' }}>Bạn chưa có lớp học nào. Hãy bấm <strong>"+ Tạo Lớp Mới"</strong> để bắt đầu.</p>
+              <p style={{ color: 'var(--color-muted)' }}>Bạn chưa được phân công lớp học nào. Vui lòng liên hệ Quản trị viên (Admin) để tạo lớp học và phân công giảng dạy.</p>
             </div>
           ) : (
             <div className="class-grid">
@@ -854,13 +741,17 @@ export function TeacherPortalPage() {
             </div>
 
             {selectedClass && (
-              <button
-                type="button"
-                className="btn-auth-link btn-auth-link--secondary"
-                onClick={() => setIsBatchModalOpen(true)}
-              >
-                + Cấp tài khoản hàng loạt cho lớp này
-              </button>
+              <div style={{ fontSize: '13px', color: 'var(--color-muted)' }}>
+                Mã tham gia lớp: <strong style={{ color: 'var(--color-primary)', letterSpacing: '1px' }}>{selectedClass.code}</strong>
+                <button
+                  type="button"
+                  className="btn-copy-code"
+                  style={{ marginLeft: '8px' }}
+                  onClick={() => handleCopyCode(selectedClass.code)}
+                >
+                  {copiedCode === selectedClass.code ? '✓ Đã chép' : 'Sao chép mã'}
+                </button>
+              </div>
             )}
           </div>
 
@@ -878,7 +769,7 @@ export function TeacherPortalPage() {
                 {students.length === 0 ? (
                   <tr>
                     <td colSpan={4} style={{ textAlign: 'center', color: 'var(--color-muted)', padding: '32px' }}>
-                      Chưa có học sinh nào trong lớp. Học sinh có thể dùng mã <strong>{selectedClass?.code}</strong> để tự tham gia, hoặc bạn có thể cấp tài khoản hàng loạt.
+                      Chưa có học sinh nào trong lớp. Học sinh có thể dùng mã <strong>{selectedClass?.code}</strong> để tự tham gia lớp học.
                     </td>
                   </tr>
                 ) : (
@@ -984,22 +875,22 @@ export function TeacherPortalPage() {
           </div>
 
           {/* Thẻ thống kê nhanh */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '16px' }}>
-            <div style={{ background: 'var(--color-card, #fff)', border: '1px solid var(--color-line, #e2e8f0)', padding: '12px', borderRadius: '8px' }}>
-              <div style={{ fontSize: '12px', color: 'var(--color-muted)' }}>Tổng bài tập</div>
-              <div style={{ fontSize: '20px', fontWeight: 700, marginTop: '4px' }}>{filteredAttempts.length}</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '14px', marginBottom: '20px' }}>
+            <div style={{ background: '#ffffff', border: '1px solid var(--color-line, #e2e8f0)', padding: '16px', borderRadius: '12px', boxShadow: 'var(--shadow-card)' }}>
+              <div style={{ fontSize: '13px', color: 'var(--color-muted)', fontWeight: 500 }}>📚 Tổng bài nộp</div>
+              <div style={{ fontSize: '24px', fontWeight: 800, marginTop: '6px', color: 'var(--color-text)' }}>{filteredAttempts.length}</div>
             </div>
-            <div style={{ background: 'var(--color-card, #fff)', border: '1px solid var(--color-line, #e2e8f0)', padding: '12px', borderRadius: '8px' }}>
-              <div style={{ fontSize: '12px', color: '#16a34a' }}>Đã hoàn thành</div>
-              <div style={{ fontSize: '20px', fontWeight: 700, color: '#16a34a', marginTop: '4px' }}>{completedCount}</div>
+            <div style={{ background: '#ffffff', border: '1px solid var(--color-line, #e2e8f0)', padding: '16px', borderRadius: '12px', boxShadow: 'var(--shadow-card)' }}>
+              <div style={{ fontSize: '13px', color: '#059669', fontWeight: 500 }}>✅ Đã hoàn thành</div>
+              <div style={{ fontSize: '24px', fontWeight: 800, color: '#059669', marginTop: '6px' }}>{completedCount}</div>
             </div>
-            <div style={{ background: 'var(--color-card, #fff)', border: '1px solid var(--color-line, #e2e8f0)', padding: '12px', borderRadius: '8px' }}>
-              <div style={{ fontSize: '12px', color: '#d97706' }}>Đang làm dở</div>
-              <div style={{ fontSize: '20px', fontWeight: 700, color: '#d97706', marginTop: '4px' }}>{inProgressCount}</div>
+            <div style={{ background: '#ffffff', border: '1px solid var(--color-line, #e2e8f0)', padding: '16px', borderRadius: '12px', boxShadow: 'var(--shadow-card)' }}>
+              <div style={{ fontSize: '13px', color: '#d97706', fontWeight: 500 }}>⏳ Đang làm dở</div>
+              <div style={{ fontSize: '24px', fontWeight: 800, color: '#d97706', marginTop: '6px' }}>{inProgressCount}</div>
             </div>
-            <div style={{ background: 'var(--color-card, #fff)', border: '1px solid var(--color-line, #e2e8f0)', padding: '12px', borderRadius: '8px' }}>
-              <div style={{ fontSize: '12px', color: 'var(--color-muted)' }}>Điểm trung bình</div>
-              <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--color-primary)', marginTop: '4px' }}>{avgScore}/100</div>
+            <div style={{ background: '#ffffff', border: '1px solid var(--color-line, #e2e8f0)', padding: '16px', borderRadius: '12px', boxShadow: 'var(--shadow-card)' }}>
+              <div style={{ fontSize: '13px', color: 'var(--color-primary, #4f46e5)', fontWeight: 500 }}>🎯 Điểm trung bình</div>
+              <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--color-primary, #4f46e5)', marginTop: '6px' }}>{avgScore}/100</div>
             </div>
           </div>
 
@@ -1098,172 +989,28 @@ export function TeacherPortalPage() {
         </section>
       )}
 
-      {/* MODAL TẠO LỚP HỌC */}
-      {isCreateClassOpen && (
-        <div className="portal-modal-overlay">
-          <div className="portal-modal">
-            <div className="portal-modal-header">
-              <h2>Tạo Lớp Học Mới</h2>
-              <button
-                type="button"
-                className="portal-modal-close"
-                onClick={() => setIsCreateClassOpen(false)}
-              >
-                ×
-              </button>
+      {/* TAB 5: BÀN PHÍM GÕ MÃ CODE (ĐỒNG NHẤT VỚI TẤT CẢ CÁC ROLE) */}
+      {activeTab === 'keypad' && (
+        <main className="student-centered-hero" id="teacher-keypad">
+          <div className="student-centered-card">
+            <div className="student-centered-badge">
+              <span>✨</span>
+              <span>Hệ Thống Luyện Tập Tiếng Anh Thông Minh</span>
             </div>
 
-            {classError && <div className="auth-message auth-message--error">{classError}</div>}
-
-            <form onSubmit={handleCreateClass} className="auth-form">
-              <div className="form-group">
-                <label htmlFor="modal-class-name">Tên lớp học</label>
-                <input
-                  id="modal-class-name"
-                  type="text"
-                  className="form-input"
-                  required
-                  placeholder="vd: Lớp 6A1 - Tiếng Anh GSEC"
-                  value={newClassName}
-                  onChange={(e) => setNewClassName(e.target.value)}
-                />
-              </div>
-
-              <div className="note" style={{ margin: '8px 0', fontSize: '13px' }}>
-                Hệ thống sẽ tự động tạo một <strong>Mã lớp học gồm 6 ký tự</strong> (ví dụ: GSEC6A) để học sinh nhập vào tham gia.
-              </div>
-
-              <div style={{ display: 'flex', gap: '10px', marginTop: '14px' }}>
-                <button
-                  type="button"
-                  className="btn-auth-link btn-auth-link--secondary"
-                  style={{ flex: 1, border: 'none', cursor: 'pointer' }}
-                  onClick={() => setIsCreateClassOpen(false)}
-                >
-                  Hủy
-                </button>
-                <button type="submit" className="btn-submit" style={{ flex: 1 }}>
-                  Tạo Lớp
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL TẠO HỌC SINH HÀNG LOẠT */}
-      {isBatchModalOpen && (
-        <div className="portal-modal-overlay">
-          <div className="portal-modal" style={{ width: '600px' }}>
-            <div className="portal-modal-header">
-              <h2>Cấp Tài Khoản Học Sinh Hàng Loạt</h2>
-              <button
-                type="button"
-                className="portal-modal-close"
-                onClick={() => {
-                  setIsBatchModalOpen(false)
-                  setCreatedBatch([])
-                  setBatchResult(null)
-                }}
-              >
-                ×
-              </button>
-            </div>
-
-            <p style={{ fontSize: '14px', color: 'var(--color-muted)', marginBottom: '16px' }}>
-              Dành cho học sinh lớp <strong>{selectedClass?.name}</strong> chưa có email. Dán danh sách tên học sinh (mỗi em một dòng), hệ thống sẽ tự sinh Username và mật khẩu mặc định <strong>123456</strong>.
+            <h1 className="student-centered-title">Nhập Mã Bài Tập</h1>
+            <p className="student-centered-subtitle">
+              Nhập mã 5 chữ số từ giáo viên hoặc sách bài tập (ví dụ: <code>60111</code>) để bắt đầu luyện tập cùng AI Tutor.
             </p>
 
-            <div className="form-group">
-              <label htmlFor="batch-names">Danh sách tên học sinh:</label>
-              <textarea
-                id="batch-names"
-                className="form-input"
-                rows={5}
-                placeholder="Nguyễn Văn An&#10;Trần Thị Bình&#10;Lê Hoàng Cúc"
-                value={batchNamesText}
-                onChange={(e) => setBatchNamesText(e.target.value)}
-              />
+            {/* BÀN PHÍM SỐ Ở CHÍNH GIỮA */}
+            <div className="student-keypad-box">
+              <InlineCodeKeypad onNavigate={(code) => navigate(`/tasks/${code}`)} />
             </div>
-
-            <button
-              type="button"
-              className="btn-submit"
-              style={{ margin: '14px 0' }}
-              onClick={handleGenerateBatchPreview}
-            >
-              Xem trước danh sách tài khoản
-            </button>
-
-            {createdBatch.length > 0 && (
-              <div style={{ marginTop: '16px' }}>
-                {batchResult && (
-                  <div
-                    className={`auth-message ${batchResult.success ? 'auth-message--success' : 'auth-message--error'}`}
-                    style={{ marginBottom: '14px' }}
-                  >
-                    {batchResult.message}
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <strong>Thẻ tài khoản học sinh ({createdBatch.length} em):</strong>
-                  <button
-                    type="button"
-                    className="btn-copy-code"
-                    onClick={() => {
-                      const text = createdBatch.map((b) => `${b.name} | Username: ${b.username} | Pass: ${b.pass}`).join('\n')
-                      navigator.clipboard.writeText(text)
-                      alert('Đã chép danh sách vào bộ nhớ tạm để gửi cho phụ huynh!')
-                    }}
-                  >
-                    Sao chép toàn bộ
-                  </button>
-                </div>
-
-                <div style={{ maxHeight: '180px', overflowY: 'auto', border: '1px solid var(--color-line)', borderRadius: '8px' }}>
-                  <table className="portal-table">
-                    <thead>
-                      <tr>
-                        <th>Họ tên</th>
-                        <th>Tên đăng nhập</th>
-                        <th>Mật khẩu</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {createdBatch.map((b, i) => (
-                        <tr key={i}>
-                          <td>{b.name}</td>
-                          <td><strong style={{ color: 'var(--color-primary)' }}>{b.username}</strong></td>
-                          <td><code>{b.pass}</code></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                <button
-                  type="button"
-                  className="btn-submit"
-                  style={{
-                    width: '100%',
-                    marginTop: '16px',
-                    backgroundColor: batchResult?.success ? '#059669' : undefined,
-                  }}
-                  disabled={isSubmittingBatch}
-                  onClick={handleCommitBatchCreation}
-                >
-                  {isSubmittingBatch
-                    ? '⏳ Đang khởi tạo tài khoản trên hệ thống...'
-                    : batchResult?.success
-                    ? '✔ Đã tạo thành công! (Bấm để cập nhật lại nếu cần)'
-                    : `🚀 Xác nhận Tạo & Cấp ${createdBatch.length} tài khoản này vào hệ thống`}
-                </button>
-              </div>
-            )}
           </div>
-        </div>
+        </main>
       )}
+
     </div>
   </>
 )

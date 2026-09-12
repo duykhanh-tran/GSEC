@@ -154,6 +154,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const resetPasswordForEmail = async (email: string) => {
+    try {
+      const cleanEmail = email.trim()
+      const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      })
+      return { error: error ? new Error(error.message) : null }
+    } catch (err: unknown) {
+      return { error: err instanceof Error ? err : new Error(String(err)) }
+    }
+  }
+
+  const updatePassword = async (newPassword: string) => {
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      })
+      return { error: error ? new Error(error.message) : null }
+    } catch (err: unknown) {
+      return { error: err instanceof Error ? err : new Error(String(err)) }
+    }
+  }
+
   const signOut = async () => {
     await supabase.auth.signOut()
     setUser(null)
@@ -172,6 +195,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signInWithFacebook,
         signInWithPassword,
         signUpWithEmail,
+        resetPasswordForEmail,
+        updatePassword,
         signOut,
         refreshProfile,
       }}

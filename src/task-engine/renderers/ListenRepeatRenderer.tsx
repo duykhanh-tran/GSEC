@@ -9,7 +9,6 @@ import {
 } from '../../lib/assemblyAiService'
 import {
   scorePronunciation,
-  type EvaluatedWord,
   type PronunciationScoreResult,
 } from '../../lib/pronunciationScorer'
 import type { Form5ListenRepeatConfig, ListenRepeatItemConfig } from '../dynamic-schema'
@@ -55,6 +54,7 @@ export function ListenRepeatRenderer({
 
   // Trạng thái câu hiện tại
   const [currentIndex, setCurrentIndex] = useState(0)
+  const [maxUnlockedIndex, setMaxUnlockedIndex] = useState(0)
   const currentItem = items[currentIndex] || items[0]
   const currentItemId = String(currentItem.id || currentIndex + 1)
 
@@ -67,7 +67,6 @@ export function ListenRepeatRenderer({
   const [isPlayingAudio, setIsPlayingAudio] = useState(false)
   const [audioProgress, setAudioProgress] = useState(0)
   const [audioSpeed, setAudioSpeed] = useState<1.0 | 0.8>(1.0)
-  const [hasListened, setHasListened] = useState(false)
   const audioModelRef = useRef<HTMLAudioElement | null>(null)
 
   // Trạng thái thu âm
@@ -81,7 +80,12 @@ export function ListenRepeatRenderer({
   const [isEvaluating, setIsEvaluating] = useState(false)
   const [evalProgress, setEvalProgress] = useState<TranscriptionProgress | null>(null)
   const [currentScoreResult, setCurrentScoreResult] = useState<PronunciationScoreResult | null>(null)
-  const [activeWordTooltip, setActiveWordTooltip] = useState<EvaluatedWord | null>(null)
+  const [activeWordTooltip, setActiveWordTooltip] = useState<{
+    word: string
+    tip?: string
+    confidence?: number
+    status?: string
+  } | null>(null)
 
   // Trạng thái hoàn thành toàn bộ bài
   const [isAllFinished, setIsAllFinished] = useState(false)
@@ -116,7 +120,6 @@ export function ListenRepeatRenderer({
     }
     setIsPlayingAudio(false)
     setAudioProgress(0)
-    setHasListened(false)
 
     // Reset thu âm
     setIsRecording(false)
@@ -152,8 +155,6 @@ export function ListenRepeatRenderer({
       setIsPlayingAudio(false)
       return
     }
-
-    setHasListened(true)
 
     // Trường hợp 1: Có URL file âm thanh
     if (currentItem.audio_url && currentItem.audio_url.trim()) {
@@ -255,15 +256,13 @@ export function ListenRepeatRenderer({
       })
       streamRef.current = stream
 
-      let mimeType = 'audio/webm'
-      if (!MediaRecorder.isTypeSupported('audio/webm')) {
-        if (MediaRecorder.isTypeSupported('audio/mp4')) {
-          mimeType = 'audio/mp4'
-        } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
-          mimeType = 'audio/ogg'
-        } else {
-          mimeType = ''
-        }
+      let mimeType = ''
+      if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+        mimeType = 'audio/webm;codecs=opus'
+      } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+        mimeType = 'audio/webm'
+      } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+        mimeType = 'audio/mp4'
       }
 
       const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream)
@@ -324,7 +323,12 @@ export function ListenRepeatRenderer({
   // =========================================================================
   const evaluateRecording = async () => {
     const targetBlob = audioBlob
-    if (!targetBlob) return
+    if (!targetBlob || targetBlob.size < 1500) {
+      setMediaError(
+        'Bản ghi âm quá ngắn hoặc không có âm thanh. Vui lòng bấm thu âm và đọc to rõ ràng ít nhất 1-2 giây trước khi dừng.'
+      )
+      return
+    }
 
     setIsEvaluating(true)
     setEvalProgress({
@@ -336,35 +340,26 @@ export function ListenRepeatRenderer({
 
     try {
       const apiKey = getAssemblyAiApiKey()
-      const boostWords = currentItem.target_text
-        .replace(/[^a-zA-Z0-9\s]/g, ' ')
+      // Chỉ boost các tên riêng (Proper nouns) để tránh AssemblyAI ép nhận diện theo câu mẫu khi học sinh đọc từ khác
+      const properNouns = currentItem.target_text
         .split(/\s+/)
-        .filter((w) => w.length > 1)
+        .filter((raw, idx) => idx > 0 && /^[A-Z]/.test(raw))
+        .map((w) => w.toLowerCase().replace(/[^a-z0-9]/g, '').trim())
+        .filter((w) => w.length > 2)
 
       let heardText = ''
       let heardWords: AssemblyAIWord[] = []
 
       if (apiKey) {
-        const result = await transcribeAudioWithAssemblyAI(targetBlob, boostWords, (prog) => {
+        const result = await transcribeAudioWithAssemblyAI(targetBlob, properNouns, (prog) => {
           setEvalProgress(prog)
         })
         heardText = result.text || ''
         heardWords = result.words || []
       } else {
-        setEvalProgress({
-          stage: 'transcribing',
-          message: 'Đang phân tích âm thanh cục bộ...',
-          percent: 60,
-        })
-        await new Promise((r) => setTimeout(r, 1200))
-
-        heardText = currentItem.target_text
-        heardWords = currentItem.target_text.split(/\s+/).map((w, idx) => ({
-          text: w,
-          start: idx * 400,
-          end: (idx + 1) * 400,
-          confidence: 0.93,
-        }))
+        throw new Error(
+          'Chưa cấu hình AssemblyAI API Key. Vui lòng kiểm tra file .env (VITE_ASSEMBLYAI_API_KEY) hoặc cài đặt để kích hoạt tính năng chấm giọng nói thực tế.'
+        )
       }
 
       // Động cơ chấm điểm phát âm 0 - 100 điểm
@@ -407,6 +402,10 @@ export function ListenRepeatRenderer({
 
   // Chuyển sang câu tiếp theo
   const handleGoNext = () => {
+    setAudioBlob(null)
+    setAudioUrl(null)
+    setCurrentScoreResult(null)
+    setActiveWordTooltip(null)
     if (currentIndex < items.length - 1) {
       setCurrentIndex((prev) => prev + 1)
     } else {
@@ -418,6 +417,7 @@ export function ListenRepeatRenderer({
   const handleRestartAll = () => {
     setCompletedItems({})
     setCurrentIndex(0)
+    setMaxUnlockedIndex(0)
     setIsAllFinished(false)
     setCurrentScoreResult(null)
     onRestart?.()
@@ -430,7 +430,6 @@ export function ListenRepeatRenderer({
   }
 
   const isCurrentItemPassed = currentScoreResult ? currentScoreResult.score >= passScore : false
-  const currentSaved = completedItems[currentItemId]
 
   // =========================================================================
   // GIAI ĐOẠN 4: BẢNG TỔNG KẾT KHI ĐÃ HOÀN THÀNH TẤT CẢ CÁC CÂU (> 80%)
@@ -503,26 +502,34 @@ export function ListenRepeatRenderer({
         </div>
       </div>
 
-      {/* 2. Thanh điều hướng câu hỏi (Step Navigation) */}
+      {/* 2. Thanh điều hướng câu hỏi (Step Navigation - Mở từng câu một) */}
       <div className="lr-step-nav">
         {items.map((it, idx) => {
           const itId = String(it.id || idx + 1)
           const isPassed = Boolean(completedItems[itId] && completedItems[itId].score >= passScore)
           const isActive = idx === currentIndex
-          // Khóa các câu phía trước chưa được mở nếu chưa làm câu hiện tại
-          const isLocked = idx > currentIndex && !isPassed
+          // Khóa các câu phía trước nếu chưa đạt yêu cầu ở câu trước đó
+          const isLocked = idx > maxUnlockedIndex
 
           return (
             <button
               key={it.id}
               type="button"
-              className={`lr-step-pill ${isActive ? 'active' : ''} ${isPassed ? 'passed' : ''}`}
+              className={`lr-step-pill ${isActive ? 'active' : ''} ${isPassed ? 'passed' : ''} ${isLocked ? 'locked' : ''}`}
               disabled={isLocked || disabled}
-              onClick={() => setCurrentIndex(idx)}
-              title={it.label || `Câu ${idx + 1}`}
+              onClick={() => {
+                if (!isLocked) {
+                  setCurrentIndex(idx)
+                  setAudioBlob(null)
+                  setAudioUrl(null)
+                  setCurrentScoreResult(null)
+                  setActiveWordTooltip(null)
+                }
+              }}
+              title={isLocked ? 'Cần hoàn thành câu trước (> 80%) để mở khóa' : (it.label || `Câu ${idx + 1}`)}
             >
               <span>{it.label || `Câu ${idx + 1}`}</span>
-              {isPassed && <span>✓</span>}
+              {isPassed ? <span>✓</span> : isLocked ? <span style={{ fontSize: '11px', opacity: 0.7 }}>🔒</span> : null}
             </button>
           )
         })}
@@ -530,124 +537,113 @@ export function ListenRepeatRenderer({
 
       {/* 3. Thẻ tương tác chính của câu hiện tại */}
       <div className="lr-card">
-        {/* Câu mẫu tiếng Anh cần đọc */}
+        {/* Header câu hiện tại (ĐÃ ẨN CÂU MẪU ĐỐI CHIẾU - CHỈ AI ĐỐI CHIẾU NGẦM) */}
         <div className="lr-target-sentence-box">
           <div className="lr-target-label">
-            {currentItem.label || `Câu ${currentIndex + 1}`} • Câu mẫu chuẩn đối chiếu:
+            🎧 {currentItem.label || `Câu ${currentIndex + 1}`} • Nghe audio mẫu và thu âm lặp lại
           </div>
-          <div className="lr-target-text">"{currentItem.target_text}"</div>
           {currentItem.hints && currentItem.hints.length > 0 && (
             <div className="lr-target-hint">
-              <span>💡 Gợi ý:</span> {currentItem.hints.join(' • ')}
+              <span>💡 Gợi ý phát âm:</span> {currentItem.hints.join(' • ')}
             </div>
           )}
         </div>
 
-        {/* BƯỚC 1: NGHE MẪU (AUDIO PLAYER) */}
-        <div className="lr-audio-player-card">
-          <div className="lr-audio-top-row">
-            <div className="lr-audio-title">
-              <span>🎧 Bước 1: Nghe phát âm mẫu</span>
-              {hasListened && <span style={{ color: '#16a34a', fontSize: '13px' }}>✓ Đã nghe</span>}
-            </div>
+        {/* BƯỚC 1: KHUNG NGHE MẪU (NHỎ GỌN, KHOA HỌC) */}
+        <div className="lr-compact-audio-bar">
+          <button
+            type="button"
+            className={`lr-compact-play-btn ${isPlayingAudio ? 'playing' : ''}`}
+            onClick={handleTogglePlayModelAudio}
+            disabled={disabled || isRecording || isEvaluating}
+            title={isPlayingAudio ? 'Dừng phát' : 'Nghe audio mẫu'}
+          >
+            {isPlayingAudio ? '⏸ Dừng' : '🔊 Nghe câu mẫu'}
+          </button>
 
-            <div className="lr-speed-controls">
-              <span style={{ fontSize: '11.5px', color: '#64748b' }}>Tốc độ:</span>
-              <button
-                type="button"
-                className={`lr-speed-btn ${audioSpeed === 1.0 ? 'active' : ''}`}
-                onClick={() => handleSpeedChange(1.0)}
-              >
-                1.0x
-              </button>
-              <button
-                type="button"
-                className={`lr-speed-btn ${audioSpeed === 0.8 ? 'active' : ''}`}
-                onClick={() => handleSpeedChange(0.8)}
-              >
-                0.8x (Chậm)
-              </button>
-            </div>
+          <div className="lr-compact-audio-track">
+            <div className="lr-compact-audio-fill" style={{ width: `${audioProgress}%` }} />
           </div>
 
-          <div className="lr-audio-action-row">
+          <div className="lr-compact-speed-box">
             <button
               type="button"
-              className={`lr-play-main-btn ${isPlayingAudio ? 'playing' : ''}`}
-              onClick={handleTogglePlayModelAudio}
-              disabled={disabled || isRecording || isEvaluating}
+              className={`lr-speed-pill ${audioSpeed === 1.0 ? 'active' : ''}`}
+              onClick={() => handleSpeedChange(1.0)}
             >
-              {isPlayingAudio ? '⏸ Dừng nghe' : '🔊 Nghe audio mẫu'}
+              1.0x
             </button>
-
-            <div className="lr-audio-time-bar">
-              <div className="lr-audio-time-fill" style={{ width: `${audioProgress}%` }} />
-            </div>
+            <button
+              type="button"
+              className={`lr-speed-pill ${audioSpeed === 0.8 ? 'active' : ''}`}
+              onClick={() => handleSpeedChange(0.8)}
+              title="Nghe chậm"
+            >
+              0.8x
+            </button>
           </div>
         </div>
 
-        {/* BƯỚC 2: GHI ÂM GIỌNG ĐỌC CỦA HỌC SINH */}
-        <div className={`lr-recorder-card ${isRecording ? 'is-recording' : ''}`}>
-          <div style={{ fontWeight: 700, fontSize: '14.5px', color: isRecording ? '#dc2626' : '#334155' }}>
-            🎙️ Bước 2: Thu âm giọng đọc của bạn
-          </div>
+        {/* BƯỚC 2: KHUNG THU ÂM (GỌN GÀNG, KHOA HỌC) */}
+        <div className={`lr-compact-recorder-bar ${isRecording ? 'is-recording' : ''}`}>
+          <div className="lr-recorder-main-action">
+            {!isRecording ? (
+              <button
+                type="button"
+                className="lr-compact-mic-btn"
+                onClick={startRecording}
+                disabled={disabled || isEvaluating || isPlayingAudio}
+                title="Bắt đầu thu âm"
+              >
+                🎙️
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="lr-compact-mic-btn recording"
+                onClick={stopRecording}
+                title="Dừng thu âm"
+              >
+                ⏹
+              </button>
+            )}
 
-          {!isRecording ? (
-            <button
-              type="button"
-              className="lr-mic-btn"
-              onClick={startRecording}
-              disabled={disabled || isEvaluating || isPlayingAudio}
-              title="Nhấn để bắt đầu thu âm"
-            >
-              🎙️
-            </button>
-          ) : (
-            <button
-              type="button"
-              className="lr-mic-btn recording"
-              onClick={stopRecording}
-              title="Nhấn để dừng thu âm"
-            >
-              ⏹
-            </button>
-          )}
-
-          {isRecording && (
-            <div className="lr-timer">{formatTime(recordingSeconds)}</div>
-          )}
-
-          <div className={`lr-mic-caption ${isRecording ? 'recording' : ''}`}>
-            {isRecording
-              ? 'Đang lắng nghe... Đọc to rõ ràng câu văn rồi nhấn nút Dừng để chấm điểm.'
-              : audioUrl
-              ? 'Đã thu âm xong. Nhấn "Chấm điểm phát âm" bên dưới để AI đánh giá.'
-              : 'Nhấn vào biểu tượng Microphone để bắt đầu đọc.'}
+            <div className="lr-recorder-info">
+              {isRecording ? (
+                <div style={{ color: '#dc2626', fontWeight: 600, fontSize: '13px' }}>
+                  🔴 Đang thu âm ({formatTime(recordingSeconds)})... Đọc to rõ rồi nhấn Dừng
+                </div>
+              ) : audioUrl ? (
+                <div style={{ color: '#16a34a', fontWeight: 600, fontSize: '13px' }}>
+                  ✓ Đã thu âm xong. Bấm "Chấm điểm AI" để gửi bài.
+                </div>
+              ) : (
+                <div style={{ color: '#64748b', fontSize: '13px' }}>
+                  Nhấn biểu tượng Microphone để đọc lại câu vừa nghe
+                </div>
+              )}
+            </div>
           </div>
 
           {mediaError && (
-            <div style={{ color: '#dc2626', fontSize: '13px', background: '#fee2e2', padding: '6px 12px', borderRadius: '6px' }}>
+            <div style={{ color: '#dc2626', fontSize: '12px', background: '#fee2e2', padding: '4px 10px', borderRadius: '6px', width: '100%' }}>
               ⚠️ {mediaError}
             </div>
           )}
 
-          {/* Nghe lại bản ghi âm của học sinh */}
+          {/* Nghe lại và Nút gửi chấm điểm */}
           {audioUrl && !isRecording && (
-            <div className="lr-preview-player">
-              <span style={{ fontSize: '13px', fontWeight: 600, color: '#475569' }}>Nghe lại giọng bạn:</span>
-              <audio controls src={audioUrl} style={{ height: '36px', flex: 1 }} />
+            <div className="lr-recorder-review-row">
+              <audio controls src={audioUrl} style={{ height: '32px', flex: 1, maxWidth: '200px' }} />
+              <button
+                type="button"
+                className="lr-eval-submit-btn"
+                onClick={evaluateRecording}
+                disabled={disabled || isEvaluating}
+              >
+                {isEvaluating ? '⏳ Đang chấm...' : '✨ Chấm điểm AI'}
+              </button>
             </div>
-          )}
-
-          {/* Nút gửi chấm điểm */}
-          {audioBlob && !isRecording && !isEvaluating && (
-            <ActionButton
-              id="evalBtn"
-              onClick={evaluateRecording}
-              disabled={disabled || isEvaluating}
-            >
-              ✨ Chấm điểm phát âm với AssemblyAI
-            </ActionButton>
           )}
         </div>
 
@@ -659,111 +655,160 @@ export function ListenRepeatRenderer({
           </div>
         )}
 
-        {/* BƯỚC 3: KẾT QUẢ VÀ ĐIỀU KIỆN QUA CÂU (> 80%) */}
+        {/* BƯỚC 3: KẾT QUẢ TỐI GIẢN (MINIMALIST SCORE BOX) */}
         {currentScoreResult && !isEvaluating && (
-          <div className={`lr-score-card ${isCurrentItemPassed ? 'passed' : 'failed'}`}>
-            <div className="lr-score-header">
-              <div>
-                <div style={{ fontSize: '13px', color: '#64748b', fontWeight: 700 }}>KẾT QUẢ PHÁT ÂM</div>
-                <div className="lr-score-circle">
-                  <span className="lr-score-number">{currentScoreResult.score}</span>
-                  <span className="lr-score-max">/100</span>
+          <div className={`lr-minimal-score-box ${isCurrentItemPassed ? 'passed' : 'failed'}`}>
+            <div className="lr-minimal-score-top">
+              <div className="lr-minimal-score-tag">
+                <span className="lr-minimal-score-val">{currentScoreResult.score}</span>
+                <span className="lr-minimal-score-denom">/100</span>
+              </div>
+              <div className="lr-minimal-score-desc">
+                <strong>
+                  {isCurrentItemPassed
+                    ? `✓ Đạt yêu cầu (${currentScoreResult.score} điểm • Đạt trên ${passScore}%)`
+                    : `⚠️ Chưa đạt (${currentScoreResult.score} điểm • Cần đạt trên ${passScore}%)`}
+                </strong>
+                <div style={{ fontSize: '12px', color: '#475569', marginTop: '2px' }}>
+                  {currentScoreResult.feedback_vi || (isCurrentItemPassed ? 'Phát âm tốt, chuẩn xác!' : 'Hãy nghe lại audio mẫu và thu âm lại câu này.')}
                 </div>
               </div>
+            </div>
 
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <span style={{ fontSize: '13px', color: '#475569' }}>
-                  Độ chính xác: <strong>{currentScoreResult.accuracyScore}%</strong>
-                </span>
-                •
-                <span style={{ fontSize: '13px', color: '#475569' }}>
-                  Độ tự tin: <strong>{currentScoreResult.confidenceScore}%</strong>
-                </span>
+            {/* PHẦN 1: ĐÁNH GIÁ TỪNG TỪ CỦA CÂU MẪU (Xanh lá / Vàng / Đỏ / Xám) */}
+            <div style={{ marginTop: '6px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                🎯 Đánh giá câu mẫu theo từng từ:
+              </div>
+              {currentScoreResult.evaluatedWords && currentScoreResult.evaluatedWords.length > 0 && (
+                <div className="lr-minimal-words-wrap">
+                  {currentScoreResult.evaluatedWords
+                    .filter((w) => Boolean(w.targetWord))
+                    .map((word, wIdx) => {
+                      const statusIcon =
+                        word.status === 'correct' ? '✓' : word.status === 'unclear' ? '~' : word.status === 'missing' ? '—' : '✗'
+                      return (
+                        <button
+                          key={wIdx}
+                          type="button"
+                          className={`lr-word-chip ${word.status}`}
+                          onClick={() =>
+                            setActiveWordTooltip({
+                              word: word.targetWord,
+                              tip: word.tip,
+                              confidence: word.confidence,
+                              status: word.status,
+                            })
+                          }
+                          title={word.tip}
+                        >
+                          <span>{word.targetWord}</span>
+                          <span style={{ fontSize: '10px', opacity: 0.85, fontWeight: 800 }}>
+                            {statusIcon}
+                          </span>
+                        </button>
+                      )
+                    })}
+                </div>
+              )}
+
+              {/* Chú thích màu trực quan */}
+              <div className="color-legend-row">
+                <div className="legend-item"><span className="legend-dot correct" /><span>Đọc đúng (Xanh lá)</span></div>
+                <div className="legend-item"><span className="legend-dot unclear" /><span>Gần đúng (Vàng)</span></div>
+                <div className="legend-item"><span className="legend-dot mispronounced" /><span>Đọc sai (Đỏ)</span></div>
+                <div className="legend-item"><span className="legend-dot missing" /><span>Chưa đọc / Bỏ qua (Xám)</span></div>
               </div>
             </div>
 
-            {/* Chi tiết từng từ nhận diện */}
-            <div>
-              <div style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', marginBottom: '6px' }}>
-                CHI TIẾT TỪNG TỪ ĐÃ NHẬN DIỆN (Nhấn vào từ để xem lời khuyên):
+            {/* PHẦN 2: CÂU HỌC SINH ĐÃ ĐỌC THỰC TẾ & GẠCH ĐỎ TỪ THỪA */}
+            <div className="lr-spoken-sentence-card">
+              <div className="lr-spoken-sentence-title">
+                <span>🗣️ Câu bạn đã đọc:</span>
+                {currentScoreResult.spokenWords?.some((w) => w.isExtra) && (
+                  <span className="extra-word-tag">Gạch đỏ từ thừa</span>
+                )}
               </div>
-              <div className="lr-words-container">
-                {currentScoreResult.evaluatedWords.map((word, wIdx) => (
-                  <button
-                    key={wIdx}
-                    type="button"
-                    className={`lr-word-chip ${word.status}`}
-                    onClick={() => setActiveWordTooltip(word)}
-                  >
-                    <span>{word.targetWord || word.heardWord}</span>
-                    <span style={{ fontSize: '10px', opacity: 0.7 }}>
-                      {word.status === 'correct' ? '✓' : word.status === 'unclear' ? '?' : '✗'}
-                    </span>
-                  </button>
-                ))}
-              </div>
+              {currentScoreResult.spokenWords && currentScoreResult.spokenWords.length > 0 ? (
+                <div className="lr-spoken-words-list">
+                  {currentScoreResult.spokenWords.map((sword, sIdx) => (
+                    <button
+                      key={sIdx}
+                      type="button"
+                      className={`lr-spoken-word-chip ${sword.isExtra ? 'extra' : sword.status}`}
+                      onClick={() =>
+                        setActiveWordTooltip({
+                          word: sword.text,
+                          tip: sword.tip,
+                          confidence: sword.confidence,
+                          status: sword.status,
+                        })
+                      }
+                      title={sword.tip}
+                    >
+                      <span>{sword.text}</span>
+                      {sword.isExtra && (
+                        <span style={{ fontSize: '10px', marginLeft: '2px', textDecoration: 'none', color: '#b91c1c' }}>✗</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: '13px' }}>
+                  "{currentScoreResult.recognizedText || 'Chưa ghi nhận được giọng nói rõ ràng từ microphone.'}"
+                </div>
+              )}
+
+              {currentScoreResult.spokenWords?.some((w) => w.isExtra) && (
+                <div className="extra-words-warning-alert">
+                  <span>⚠️</span>
+                  <span>
+                    Bạn đã đọc thừa từ ngoài câu mẫu. Những từ thừa này đã được <strong>gạch đỏ</strong>.
+                  </span>
+                </div>
+              )}
             </div>
 
-            {/* Tooltip lời khuyên cho từ được nhấn */}
+            {/* Tooltip khi bấm vào từ */}
             {activeWordTooltip && (
-              <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', padding: '10px 14px', borderRadius: '8px', fontSize: '13px' }}>
-                <strong>Từ "{activeWordTooltip.targetWord || activeWordTooltip.heardWord}":</strong>{' '}
-                {activeWordTooltip.tip} (Độ tin cậy: {Math.round(activeWordTooltip.confidence * 100)}%)
+              <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', padding: '8px 12px', borderRadius: '8px', fontSize: '12.5px', marginTop: '4px' }}>
+                <strong>"{activeWordTooltip.word}":</strong> {activeWordTooltip.tip || 'Chi tiết phát âm'}
+                {typeof activeWordTooltip.confidence === 'number' && activeWordTooltip.confidence > 0 && (
+                  <span style={{ color: '#64748b', marginLeft: '6px' }}>
+                    (Độ tự tin âm học: {Math.round(activeWordTooltip.confidence * 100)}%)
+                  </span>
+                )}
               </div>
             )}
 
-            {/* HỘP THÔNG BÁO TIÊU CHUẨN QUA CÂU (STRICT GATE > 80%) */}
-            {isCurrentItemPassed ? (
-              <div className="lr-gate-alert passed">
-                <span style={{ fontSize: '24px' }}>🎉</span>
-                <div>
-                  <strong>Đạt yêu cầu ({currentScoreResult.score}/100 điểm • Đạt trên {passScore}%)!</strong>
-                  <div>Bạn đã phát âm chuẩn xác. Hãy chuyển sang câu tiếp theo.</div>
-                </div>
-              </div>
-            ) : (
-              <div className="lr-gate-alert failed">
-                <span style={{ fontSize: '24px' }}>⚠️</span>
-                <div>
-                  <strong>Chưa đạt ({currentScoreResult.score}/100 điểm • Cần đạt trên {passScore}% để qua)!</strong>
-                  <div>{currentScoreResult.feedback_vi || 'Hãy nghe lại audio mẫu và thu âm lại câu này nhé!'}</div>
-                </div>
-              </div>
-            )}
+            {/* Nút hành động tối giản */}
+            <div className="lr-minimal-action-row">
+              {isCurrentItemPassed ? (
+                <button
+                  type="button"
+                  className="lr-action-next-btn"
+                  onClick={handleGoNext}
+                >
+                  {currentIndex < items.length - 1 ? 'Tiếp tục câu tiếp theo →' : '🎉 Xem bảng tổng kết hoàn thành ✓'}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="lr-action-retry-btn"
+                  onClick={() => {
+                    setAudioBlob(null)
+                    setAudioUrl(null)
+                    setCurrentScoreResult(null)
+                    setActiveWordTooltip(null)
+                    startRecording()
+                  }}
+                >
+                  🔄 Thu âm lại câu này
+                </button>
+              )}
+            </div>
           </div>
         )}
-
-        {/* Nút điều hướng chuyển câu hoặc thu âm lại */}
-        <div className="lr-nav-actions">
-          <div>
-            {currentScoreResult && !isCurrentItemPassed && (
-              <ActionButton
-                id="retryThisBtn"
-                variant="secondary"
-                onClick={() => {
-                  setAudioBlob(null)
-                  setAudioUrl(null)
-                  setCurrentScoreResult(null)
-                  startRecording()
-                }}
-              >
-                🔄 Thu âm lại câu này
-              </ActionButton>
-            )}
-          </div>
-
-          <div style={{ display: 'flex', gap: '10px' }}>
-            {/* Nếu câu này đã đạt, cho phép chuyển câu tiếp theo */}
-            {(isCurrentItemPassed || (currentSaved && currentSaved.score >= passScore)) && (
-              <ActionButton
-                id="nextItemBtn"
-                onClick={handleGoNext}
-              >
-                {currentIndex < items.length - 1 ? 'Chuyển câu tiếp theo →' : 'Xem kết quả tổng kết ✓'}
-              </ActionButton>
-            )}
-          </div>
-        </div>
       </div>
     </div>
   )
