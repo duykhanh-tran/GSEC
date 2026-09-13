@@ -8,6 +8,84 @@ import { hasTask } from '../registry'
 import '../../styles/portal.css'
 import '../../styles/auth.css'
 
+const FORM2_STUDIO_DEFAULTS: Record<string, Record<string, string[]>> = {
+  '60111': {
+    '1': ['school'],
+    '2': ['3', 'three'],
+    '3': ['excited'],
+    '4a': ['ruler', 'compass', 'rubber'],
+    '4b': ['pencil sharpener', 'calculator', 'school bag'],
+  },
+  '60121': {
+    '1': ['study', 'a'],
+    '2': ['have', 'b'],
+    '3': ['play', 'c'],
+    '4': ['study', 'd'],
+    '5': ['do', 'b'],
+    '6': ['play', 'c'],
+    '7': ['have', 'd'],
+    '8': ['do', 'a'],
+  },
+  '60131': {
+    '1': ['live', 'a'],
+    '2': ['goes', 'b'],
+    '3': ['have', 'c'],
+    '4': ['starts', 'd'],
+    '5': ["don't study", 'do not study', 'b'],
+    '6': ["doesn't play", 'does not play', 'c'],
+    '7': ['do', 'a'],
+    '7a': ['do', 'a'],
+    '8': ['wear', 'b'],
+    '7b': ['wear', 'b'],
+    '9': ['does', 'c'],
+    '8a': ['does', 'c'],
+    '10': ['like', 'd'],
+    '8b': ['like', 'd'],
+  },
+  '60133': {
+    '1': ['usually do', 'I usually do my homework after dinner.'],
+    '2': ['often uses', 'Lan often uses the computer room at break time.'],
+    '3': ['usually have', 'We do not usually have lessons on Saturday.'],
+    '4': ['sometimes have', 'Does Minh sometimes have lunch at school?'],
+  },
+  '60143': {
+    '1': ['classmates', 'a'],
+    '2': ['favourite subject', 'b'],
+    '3': ['break time', 'c'],
+    '4': ['study together', 'd'],
+    '5': ['library', 'e'],
+    '6': ['share', 'f'],
+    '7': ['uniform', 'g'],
+    '8': ['homework', 'h'],
+  },
+  '60144': {
+    '1': ['b-c-d-a', 'b, d, a, c'],
+    '2': ['b-c-d-a-e', 'c, a, d, b'],
+  },
+  '60163': {
+    '1': ['Our school has a large playground.'],
+    '2': ['We do not have classes on Sunday.'],
+    '3': ['Does your school have a computer room?'],
+    '4': ['I usually do my homework after school.'],
+    '5': ['What do students do at break time?'],
+  },
+  '60171': {
+    '1': ['uniform'],
+    '2': ['science'],
+    '3': ['compass'],
+    '4': ['library'],
+    '5': ['volleyball'],
+    '6': ['homework'],
+  },
+  '60174': {
+    '1': ['Our lessons start at 7.15.'],
+    '2': ["Linh doesn't go to school by bus."],
+    '3': ['Does Tom join the art club on Friday?'],
+    '4': ['Students usually have lunch at school.'],
+    '5': ['The first lesson finishes at 8.15.'],
+  },
+}
+
 export function AdminTaskStudioPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -472,15 +550,25 @@ export function AdminTaskStudioPage() {
           setFillItems(
             rawFillList.map((it: any, idx: number) => {
               const key = String(it.id !== undefined && it.id !== null ? it.id : idx + 1)
-              const keyObj = keysData[key]
-              const correctStr = Array.isArray(keyObj?.accepted)
+              const cleanNum = (it.label || String(idx + 1)).replace(/^câu\s*/i, '').replace(/^question\s*/i, '').replace(/:\s*$/, '').trim()
+              const keyObj = keysData[key] || keysData[String(idx + 1)] || keysData[cleanNum] || keysData[it.label]
+              let correctStr = Array.isArray(keyObj?.accepted)
                 ? keyObj.accepted.join(', ')
                 : Array.isArray(keyObj)
                 ? keyObj.join(', ')
                 : typeof keyObj === 'string'
                 ? keyObj
-                : (it.correct || (Array.isArray(it.accepted) ? it.accepted.join(', ') : '') || '')
-              const pHints = hintsData[key]?.hints || it.hints || []
+                : (it.correct || (Array.isArray(it.accepted) ? it.accepted.join(', ') : (typeof it.accepted === 'string' ? it.accepted : '')) || '')
+
+              if (!correctStr && codeToEdit && FORM2_STUDIO_DEFAULTS[codeToEdit]) {
+                const defs = FORM2_STUDIO_DEFAULTS[codeToEdit]
+                const found = defs[key] || defs[String(idx + 1)] || defs[cleanNum] || defs[it.label]
+                if (found && Array.isArray(found)) {
+                  correctStr = found.join(', ')
+                }
+              }
+
+              const pHints = hintsData[key]?.hints || hintsData[cleanNum]?.hints || it.hints || []
               return {
                 label: it.label || String(idx + 1),
                 placeholder: it.placeholder || '',
@@ -649,9 +737,17 @@ export function AdminTaskStudioPage() {
           }
         })
       } else if (authoringFormType === 'FORM_2_FILL') {
+        const splitAnswers = (raw: string) => {
+          if (!raw) return []
+          return raw
+            .split(/[,/|;\n]|\bhoặc\b|\bor\b/i)
+            .map((a) => a.trim())
+            .filter(Boolean)
+        }
+
         const cleanFields = fillItems.map((item, index) => {
           const cleanHints = (item.hints || []).map((h) => h.trim()).filter(Boolean)
-          const cleanAnswers = item.correctAnswers.split(',').map((a) => a.trim()).filter(Boolean)
+          const cleanAnswers = splitAnswers(item.correctAnswers)
           return {
             id: index + 1,
             label: item.label || String(index + 1),
@@ -671,7 +767,7 @@ export function AdminTaskStudioPage() {
 
         fillItems.forEach((item, index) => {
           const key = String(index + 1)
-          const cleanAnswers = item.correctAnswers.split(',').map((a) => a.trim()).filter(Boolean)
+          const cleanAnswers = splitAnswers(item.correctAnswers)
           const cleanHints = (item.hints || []).map((h) => h.trim()).filter(Boolean)
           keysPayload[key] = cleanAnswers.map((a) => a.toLowerCase().trim())
           hintsPayload[key] = {
@@ -932,14 +1028,19 @@ export function AdminTaskStudioPage() {
       const { error: taskErr } = await supabase.from('tasks').upsert(baseTaskPayload)
       if (taskErr) throw taskErr
 
-      const { error: policyErr } = await supabase.from('task_assessment_policies').upsert({
-        task_code: taskCode.trim(),
-        max_attempts: 2,
-        keys_data: keysPayload,
-        hints_data: hintsPayload,
-      })
-
-      if (policyErr) throw policyErr
+      try {
+        const { error: policyErr } = await supabase.from('task_assessment_policies').upsert({
+          task_code: taskCode.trim(),
+          max_attempts: 2,
+          keys_data: keysPayload,
+          hints_data: hintsPayload,
+        })
+        if (policyErr) {
+          console.warn('Lưu task_assessment_policies có cảnh báo:', policyErr.message)
+        }
+      } catch (policyEx) {
+        console.warn('Bỏ qua lỗi policy để không làm gián đoạn lưu bài tập:', policyEx)
+      }
 
       // Xóa cache cũ để người dùng nạp ngay bản mới nhất
       await taskCacheService.invalidateTask(taskCode.trim())

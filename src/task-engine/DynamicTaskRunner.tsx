@@ -85,7 +85,76 @@ export function buildFullSentence(
   return full.trim()
 }
 
-function gradeAnswersLocally(
+/**
+ * Chuẩn hóa văn bản trả lời cho Form 2 và các dạng điền từ:
+ * - Chuyển chữ thường, cắt khoảng trắng đầu/cuối
+ * - Chuẩn hóa các loại dấu nháy cong, ngoặc kép cong, gạch nối cong
+ * - Xóa các khoảng trắng thừa giữa các từ
+ * - Xóa khoảng trắng trước dấu câu
+ */
+export function normalizeFillAnswer(text: string): string {
+  if (!text) return ''
+  return String(text)
+    .toLowerCase()
+    .trim()
+    .replace(/[’‘`´]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/[—–]/g, '-')
+    .replace(/\s+/g, ' ')
+    .replace(/\s+([.,?!:;])/g, '$1')
+}
+
+/**
+ * So khớp thông minh giữa câu trả lời của học sinh và đáp án được chấp nhận:
+ * - Khớp trực tiếp sau khi normalize
+ * - Bỏ qua dấu chấm câu ở cuối (. ? ! , ; :)
+ * - Bỏ qua dấu nháy đơn (ví dụ don't <-> dont)
+ * - Tự động quy đổi định dạng giờ (ví dụ 7.15 <-> 7:15 <-> 7h15)
+ * - Hỗ trợ dạng viết tắt của trợ động từ (doesn't <-> does not <-> doesnt; don't <-> do not <-> dont)
+ * - Hỗ trợ chuỗi thứ tự chữ cái (b-c-d-a <-> b, c, d, a <-> b c d a <-> bcda)
+ */
+export function areFillAnswersMatching(userRaw: string, acceptedRaw: string): boolean {
+  const uNorm = normalizeFillAnswer(userRaw)
+  const aNorm = normalizeFillAnswer(acceptedRaw)
+
+  if (!uNorm || !aNorm) return false
+  if (uNorm === aNorm) return true
+
+  // 1. So khớp sau khi bỏ dấu câu ở cuối câu (. ? ! , ; :)
+  const uNoTrailing = uNorm.replace(/[.,?!:;]+$/, '').trim()
+  const aNoTrailing = aNorm.replace(/[.,?!:;]+$/, '').trim()
+  if (uNoTrailing === aNoTrailing) return true
+
+  // 2. So khớp sau khi bỏ cả dấu nháy đơn
+  const uNoApos = uNoTrailing.replace(/['"]/g, '')
+  const aNoApos = aNoTrailing.replace(/['"]/g, '')
+  if (uNoApos === aNoApos) return true
+
+  // 3. Quy đổi định dạng giờ học (7.15 vs 7:15 vs 7h15)
+  const uTime = uNoTrailing.replace(/(\d+)[.:h](\d+)/g, '$1:$2')
+  const aTime = aNoTrailing.replace(/(\d+)[.:h](\d+)/g, '$1:$2')
+  if (uTime === aTime) return true
+
+  // 4. Quy đổi phủ định viết tắt (does not <-> doesn't, do not <-> don't)
+  const expandContractions = (s: string) =>
+    s
+      .replace(/\bdoesn'?t\b/g, 'does not')
+      .replace(/\bdon'?t\b/g, 'do not')
+      .replace(/\bisn'?t\b/g, 'is not')
+      .replace(/\baren'?t\b/g, 'are not')
+      .replace(/\bcan'?t\b/g, 'cannot')
+      .replace(/\bwon'?t\b/g, 'will not')
+  if (expandContractions(uNoTrailing) === expandContractions(aNoTrailing)) return true
+
+  // 5. So khớp chuỗi thứ tự chữ cái (vd bài 60144: "b-c-d-a", "b, c, d, a", "b c d a", "bcda")
+  const uLettersOnly = uNorm.replace(/[^a-z0-9]/g, '')
+  const aLettersOnly = aNorm.replace(/[^a-z0-9]/g, '')
+  if (uLettersOnly.length >= 3 && uLettersOnly === aLettersOnly) return true
+
+  return false
+}
+
+export function gradeAnswersLocally(
   taskData: DynamicTaskRecord,
   answers: Record<string, string>,
   attemptCount: number,
@@ -105,93 +174,148 @@ function gradeAnswersLocally(
 
   itemsList.forEach((it: any, idx: number) => {
     const rawId = String(it.id !== undefined && it.id !== null ? it.id : idx + 1)
-    const userVal = (answers[rawId] || '').trim().toLowerCase().replace(/\s+/g, ' ')
+    const cleanLabel = (it.label || String(idx + 1))
+      .replace(/^câu\s*/i, '')
+      .replace(/^question\s*/i, '')
+      .replace(/:\s*$/, '')
+      .trim()
+
+    // Lấy câu trả lời của học sinh linh hoạt theo nhiều khóa ID khác nhau
+    const rawUserVal =
+      answers[rawId] ??
+      answers[String(idx + 1)] ??
+      answers[String(it.id)] ??
+      answers[it.label] ??
+      answers[cleanLabel] ??
+      ''
+    const userVal = (rawUserVal || '').trim()
 
     // Tập hợp tất cả các đáp án chấp nhận (chữ cái a, b, c, d hoặc từ, cụm từ)
     const acceptedList: string[] = []
 
-    if (Array.isArray(it.accepted)) {
-      acceptedList.push(...it.accepted)
-    }
-    if (it.correct) {
-      acceptedList.push(String(it.correct))
-    }
-    if (it.correctAnswers && typeof it.correctAnswers === 'string') {
-      acceptedList.push(...it.correctAnswers.split(',').map((s: string) => s.trim()))
-    }
-    if (it.key) {
-      if (Array.isArray(it.key)) acceptedList.push(...it.key)
-      else acceptedList.push(String(it.key))
-    }
-
-    // Tra cứu thêm từ từ điển bài học gốc nếu chưa có cấu hình trong DB
-    if (acceptedList.length === 0) {
-      const staticDefaults: Record<string, Record<string, string[]>> = {
-        '60111': {
-          'q1': ['school', 'a school'], '1': ['school', 'a school'],
-          'q2': ['3', 'three'], '2': ['3', 'three'],
-          'q3': ['excited'], '3': ['excited'],
-          'q4a': ['ruler', 'compass', 'pencil sharpener', 'rubber', 'pencil case', 'calculator', 'school bag', 'notebook', 'book', 'textbook', 'pen', 'pencil'],
-          'q4b': ['ruler', 'compass', 'pencil sharpener', 'rubber', 'pencil case', 'calculator', 'school bag', 'notebook', 'book', 'textbook', 'pen', 'pencil'],
-          '4a': ['ruler', 'compass', 'pencil sharpener', 'rubber', 'pencil case', 'calculator', 'school bag', 'notebook', 'book', 'textbook', 'pen', 'pencil'],
-          '4b': ['ruler', 'compass', 'pencil sharpener', 'rubber', 'pencil case', 'calculator', 'school bag', 'notebook', 'book', 'textbook', 'pen', 'pencil'],
-        },
-        '60121': {
-          '1': ['study', 'a'],
-          '2': ['have', 'b'],
-          '3': ['play', 'c'],
-          '4': ['study', 'd', 'a'],
-          '5': ['do', 'b', 'd'],
-          '6': ['play', 'c'],
-          '7': ['have', 'd', 'b'],
-          '8': ['do', 'a', 'd'],
-        },
-        '60131': {
-          '1': ['live', 'a'],
-          '2': ['goes', 'b'],
-          '3': ['have', 'c'],
-          '4': ['starts', 'd', 'a'],
-          '5': ["don't study", "do not study", "dont study", "b"],
-          '6': ["doesn't play", "does not play", "doesnt play", "c"],
-          '7': ['do', 'a'],
-          '8': ['wear', 'b'],
-          '9': ['does', 'c', 'a'],
-          '10': ['like', 'd', 'b'],
-        },
-        '60133': {
-          '1': ['a', 'usually do', 'i usually do my homework after dinner', 'i usually do my homework after dinner.'],
-          '2': ['b', 'often uses', 'lan often uses the computer room at break time', 'lan often uses the computer room at break time.'],
-          '3': ['c', 'usually have', 'we do not usually have lessons on saturday', 'we do not usually have lessons on saturday.'],
-          '4': ['a', 'sometimes have', 'does minh sometimes have lunch at school', 'does minh sometimes have lunch at school?'],
-        },
-        '60143': {
-          '1': ['classmates', 'classmate', 'in the same class', 'same class', 'a'],
-          '2': ['favourite subject', 'favorite subject', 'english', 'b'],
-          '3': ['break time', 'at break time', 'c'],
-          '4': ['study together', 'study', 'd'],
-          '5': ['library', 'in the library', 'school library', 'e'],
-          '6': ['share', 'share ideas', 'f'],
-          '7': ['uniform', 'school uniform', 'g'],
-          '8': ['homework', 'do homework', 'h'],
-        },
-        '60144': {
-          '1': ['b, d, a, c', 'b,d,a,c', 'bdac', 'b d a c', 'b-d-a-c', 'a', 'b', '1'],
-          '2': ['c, a, d, b', 'c,a,d,b', 'cadb', 'c a d b', 'c-a-d-b', 'c', 'd', '2'],
-        },
-      }
-      const taskDefaults = staticDefaults[taskData.code]
-      if (taskDefaults && taskDefaults[rawId]) {
-        acceptedList.push(...taskDefaults[rawId])
+    const addAcceptedCandidate = (val: any) => {
+      if (val === undefined || val === null) return
+      if (Array.isArray(val)) {
+        val.forEach(addAcceptedCandidate)
+      } else if (typeof val === 'string') {
+        const parts = val.split(/[,/|;\n]|\bhoặc\b|\bor\b/i).map((s) => s.trim()).filter(Boolean)
+        if (parts.length > 1) {
+          acceptedList.push(val.trim())
+          acceptedList.push(...parts)
+        } else if (val.trim()) {
+          acceptedList.push(val.trim())
+        }
+      } else if (typeof val === 'number') {
+        acceptedList.push(String(val))
       }
     }
 
-    const isCorrect = acceptedList.length > 0 && acceptedList.some((acc) => {
-      const normAcc = String(acc).trim().toLowerCase().replace(/\s+/g, ' ')
-      if (userVal === normAcc) return true
-      if (userVal.replace(/[.,?!]+$/, '') === normAcc.replace(/[.,?!]+$/, '')) return true
-      if (userVal.replace(/['’]/g, '') === normAcc.replace(/['’]/g, '')) return true
-      return false
-    })
+    addAcceptedCandidate(it.accepted)
+    addAcceptedCandidate(it.correct)
+    addAcceptedCandidate(it.correctAnswers)
+    addAcceptedCandidate(it.key)
+    addAcceptedCandidate(it.target_answer)
+    addAcceptedCandidate(it.answer)
+    addAcceptedCandidate(it.answers)
+    addAcceptedCandidate(it.accepted_values)
+
+    if (content?.keys_data) {
+      addAcceptedCandidate(content.keys_data[rawId])
+      addAcceptedCandidate(content.keys_data[String(idx + 1)])
+      addAcceptedCandidate(content.keys_data[it.label])
+      addAcceptedCandidate(content.keys_data[cleanLabel])
+    }
+
+    // Tra cứu thêm từ từ điển bài học gốc nếu chưa có cấu hình trong DB hoặc thiếu trường accepted
+    const staticDefaults: Record<string, Record<string, string[]>> = {
+      '60111': {
+        'q1': ['school', 'a school'], '1': ['school', 'a school'],
+        'q2': ['3', 'three'], '2': ['3', 'three'],
+        'q3': ['excited'], '3': ['excited'],
+        'q4a': ['ruler', 'compass', 'pencil sharpener', 'rubber', 'pencil case', 'calculator', 'school bag', 'notebook', 'book', 'textbook', 'pen', 'pencil'],
+        'q4b': ['ruler', 'compass', 'pencil sharpener', 'rubber', 'pencil case', 'calculator', 'school bag', 'notebook', 'book', 'textbook', 'pen', 'pencil'],
+        '4a': ['ruler', 'compass', 'pencil sharpener', 'rubber', 'pencil case', 'calculator', 'school bag', 'notebook', 'book', 'textbook', 'pen', 'pencil'],
+        '4b': ['ruler', 'compass', 'pencil sharpener', 'rubber', 'pencil case', 'calculator', 'school bag', 'notebook', 'book', 'textbook', 'pen', 'pencil'],
+      },
+      '60121': {
+        '1': ['study', 'a'],
+        '2': ['have', 'b'],
+        '3': ['play', 'c'],
+        '4': ['study', 'd', 'a'],
+        '5': ['do', 'b', 'd'],
+        '6': ['play', 'c'],
+        '7': ['have', 'd', 'b'],
+        '8': ['do', 'a', 'd'],
+      },
+      '60131': {
+        '1': ['live', 'a'],
+        '2': ['goes', 'b'],
+        '3': ['have', 'c'],
+        '4': ['starts', 'd', 'a'],
+        '5': ["don't study", "do not study", "dont study", "b"],
+        '6': ["doesn't play", "does not play", "doesnt play", "c"],
+        '7': ['do', 'a'], '7a': ['do', 'a'],
+        '8': ['wear', 'b'], '7b': ['wear', 'b'],
+        '9': ['does', 'c', 'a'], '8a': ['does', 'c', 'a'],
+        '10': ['like', 'd', 'b'], '8b': ['like', 'd', 'b'],
+      },
+      '60133': {
+        '1': ['usually do', 'i usually do my homework after dinner', 'i usually do my homework after dinner.', 'a'],
+        '2': ['often uses', 'lan often uses the computer room at break time', 'lan often uses the computer room at break time.', 'b'],
+        '3': ['usually have', 'do not usually have', "don't usually have", 'we do not usually have lessons on saturday', 'we do not usually have lessons on saturday.', 'c'],
+        '4': ['sometimes have', 'does minh sometimes have lunch at school', 'does minh sometimes have lunch at school?', 'a'],
+      },
+      '60143': {
+        '1': ['classmates', 'classmate', 'in the same class', 'same class', 'a'],
+        '2': ['favourite subject', 'favorite subject', 'english', 'b'],
+        '3': ['break time', 'at break time', 'c'],
+        '4': ['study together', 'study', 'd'],
+        '5': ['library', 'in the library', 'school library', 'e'],
+        '6': ['share', 'share ideas', 'f'],
+        '7': ['uniform', 'school uniform', 'g'],
+        '8': ['homework', 'do homework', 'h'],
+      },
+      '60144': {
+        '1': ['b, d, a, c', 'b,d,a,c', 'bdac', 'b d a c', 'b-d-a-c', 'b-c-d-a', 'a', 'b', '1'],
+        '2': ['c, a, d, b', 'c,a,d,b', 'cadb', 'c a d b', 'c-a-d-b', 'b-c-d-a-e', 'c', 'd', '2'],
+      },
+      '60163': {
+        '1': ['Our school has a large playground.', 'Our school has a large playground', '1'],
+        '2': ['We do not have classes on Sunday.', "We don't have classes on Sunday.", 'We do not have classes on Sunday', '2'],
+        '3': ['Does your school have a computer room?', 'Does your school have a computer room', '3'],
+        '4': ['I usually do my homework after school.', 'I usually do my homework after school', '4'],
+        '5': ['What do students do at break time?', 'What do students do at break time', '5'],
+      },
+      '60171': {
+        '1': ['uniform', '1'],
+        '2': ['science', '2'],
+        '3': ['compass', '3'],
+        '4': ['library', '4'],
+        '5': ['volleyball', '5'],
+        '6': ['homework', '6'],
+      },
+      '60174': {
+        '1': ['Our lessons start at 7.15.', 'Our lessons start at 7.15', 'Our lessons start at 7:15.', 'Our lessons start at 7:15', '1'],
+        '2': ["Linh doesn't go to school by bus.", 'Linh does not go to school by bus.', "Linh doesnt go to school by bus.", "Linh doesn't go to school by bus", '2'],
+        '3': ['Does Tom join the art club on Friday?', 'Does Tom join the art club on Friday', '3'],
+        '4': ['Students usually have lunch at school.', 'Students usually have lunch at school', '4'],
+        '5': ['The first lesson finishes at 8.15.', 'The first lesson finishes at 8.15', 'The first lesson finishes at 8:15.', 'The first lesson finishes at 8:15', '5'],
+      },
+    }
+    const taskDefaults = staticDefaults[taskData.code]
+    if (taskDefaults) {
+      const candidates =
+        taskDefaults[rawId] ||
+        taskDefaults[String(idx + 1)] ||
+        taskDefaults[String(it.id)] ||
+        taskDefaults[it.label] ||
+        taskDefaults[cleanLabel]
+      if (candidates) {
+        addAcceptedCandidate(candidates)
+      }
+    }
+
+    const isCorrect = acceptedList.length > 0 && acceptedList.some((acc) => areFillAnswersMatching(userVal, acc))
 
     if (isCorrect) {
       correctCount++
@@ -548,7 +672,15 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
         console.warn('RPC grading error, falling back to local grading:', rpcErr)
       }
 
-      if (!res) {
+      // Kiểm tra nếu server RPC trả về rỗng hoặc không có kết quả cho các câu hỏi
+      const hasValidGrading = Boolean(
+        res &&
+        res.results &&
+        Object.keys(res.results).length > 0 &&
+        itemsList.some((item) => res?.results?.[item.id] !== undefined)
+      )
+
+      if (!hasValidGrading || !res) {
         res = gradeAnswersLocally(taskData, answers, 1)
       }
 
@@ -630,7 +762,7 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
         console.warn('RPC retry grading error, falling back to local grading:', rpcErr)
       }
 
-      if (!res) {
+      if (!res || !res.results || res.results[activeId] === undefined) {
         res = gradeAnswersLocally(taskData, updatedAnswers, attempt + 1)
       }
 

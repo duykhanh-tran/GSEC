@@ -14,6 +14,20 @@ vi.mock('../../src/hooks/useCelebrationSound', () => ({
   useCelebrationSound: vi.fn(),
 }))
 
+vi.mock('../../src/lib/supabaseClient', () => ({
+  supabase: {
+    rpc: vi.fn().mockResolvedValue({ data: { success: false }, error: null }),
+    from: vi.fn().mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+          single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        }),
+      }),
+    }),
+  },
+}))
+
 const mockTask60121Def: TaskDefinition = {
   code: '60121',
   unit: 1,
@@ -150,5 +164,148 @@ describe('Form 2 Fill rendering and letter/word answer support', () => {
     await waitFor(() => {
       expect(screen.getAllByText(/Correct ✓/i).length).toBeGreaterThan(0)
     })
+  })
+
+  it('grades Task 60174 correctly with punctuation, smart quotes, and time formats', async () => {
+    const user = userEvent.setup()
+
+    const mockTask60174Def: TaskDefinition = {
+      code: '60174',
+      unit: 1,
+      lesson: 7,
+      worksheet: 7,
+      taskNumber: 4,
+      title: 'AI Tutor • WS 7 - Task 4',
+      subtitle: 'Unit 1',
+      status: 'migrated',
+      archetypes: ['standardized'],
+    }
+
+    const mockTask60174Data: DynamicTaskRecord = {
+      code: '60174',
+      worksheet: 7,
+      task_number: 4,
+      title: 'AI Tutor • WS 7 - Task 4',
+      form_type: 'FORM_2_FILL',
+      content: {
+        unit: 1,
+        lesson: 7,
+        intro: 'Check Task 4. Each sentence has one mistake. Write the correct sentence.',
+        items: [
+          { id: 1, label: '1', accepted: ['Our lessons start at 7.15.'], placeholder: 'Your answer' },
+          { id: 2, label: '2', accepted: ["Linh doesn't go to school by bus."], placeholder: 'Your answer' },
+          { id: 3, label: '3', accepted: ['Does Tom join the art club on Friday?'], placeholder: 'Your answer' },
+          { id: 4, label: '4', accepted: ['Students usually have lunch at school.'], placeholder: 'Your answer' },
+          { id: 5, label: '5', accepted: ['The first lesson finishes at 8.15.'], placeholder: 'Your answer' },
+        ],
+      },
+    }
+
+    render(
+      <MemoryRouter>
+        <DynamicTaskRunner task={mockTask60174Def} initialData={mockTask60174Data} />
+      </MemoryRouter>
+    )
+
+    const inputs = screen.getAllByRole('textbox')
+    // Học sinh gõ:
+    // 1: Giờ dùng dấu hai chấm và không có dấu chấm câu cuối: "our lessons start at 7:15"
+    // 2: Dấu nháy cong: "Linh doesn’t go to school by bus"
+    // 3: Không có dấu hỏi chấm: "Does Tom join the art club on Friday"
+    // 4: Có khoảng trắng thừa và chữ thường: "  students  usually have lunch at school.  "
+    // 5: Giờ 8:15: "The first lesson finishes at 8:15."
+    await user.type(inputs[0], 'our lessons start at 7:15')
+    await user.type(inputs[1], 'Linh doesn’t go to school by bus')
+    await user.type(inputs[2], 'Does Tom join the art club on Friday')
+    await user.type(inputs[3], '  students  usually have lunch at school.  ')
+    await user.type(inputs[4], 'The first lesson finishes at 8:15.')
+
+    const checkBtn = document.getElementById('initialCheckBtn')!
+    await user.click(checkBtn)
+
+    await waitFor(() => {
+      expect(screen.getAllByText(/Task complete/i).length).toBeGreaterThan(0)
+    }, { timeout: 3000 })
+  })
+
+  it('grades Task 60144 sequence format flexibly (comma, space, hyphen)', async () => {
+    const user = userEvent.setup()
+
+    const mockTask60144Def: TaskDefinition = {
+      code: '60144',
+      unit: 1,
+      lesson: 4,
+      worksheet: 4,
+      taskNumber: 4,
+      title: 'AI Tutor • WS 4 - Task 4',
+      subtitle: 'Unit 1',
+      status: 'migrated',
+      archetypes: ['standardized'],
+    }
+
+    const mockTask60144Data: DynamicTaskRecord = {
+      code: '60144',
+      worksheet: 4,
+      task_number: 4,
+      title: 'AI Tutor • WS 4 - Task 4',
+      form_type: 'FORM_2_FILL',
+      content: {
+        unit: 1,
+        lesson: 4,
+        intro: 'Check Task 4.',
+        items: [
+          { id: 1, label: '1', accepted: ['b-c-d-a'], placeholder: 'Your answer' },
+          { id: 2, label: '2', accepted: ['c-a-d-b'], placeholder: 'Your answer' },
+        ],
+      },
+    }
+
+    render(
+      <MemoryRouter>
+        <DynamicTaskRunner task={mockTask60144Def} initialData={mockTask60144Data} />
+      </MemoryRouter>
+    )
+
+    const inputs = screen.getAllByRole('textbox')
+    // Học sinh nhập cách nhau bằng dấu phẩy và khoảng trắng
+    await user.type(inputs[0], 'b, c, d, a')
+    await user.type(inputs[1], 'c a d b')
+
+    const checkBtn = document.getElementById('initialCheckBtn')!
+    await user.click(checkBtn)
+
+    await waitFor(() => {
+      expect(screen.getAllByText(/Task complete/i).length).toBeGreaterThan(0)
+    }, { timeout: 3000 })
+  })
+
+  it('safely recovers and grades correctly when server RPC returns empty results', async () => {
+    const user = userEvent.setup()
+    const { supabase } = await import('../../src/lib/supabaseClient')
+    const rpcSpy = vi.spyOn(supabase, 'rpc').mockResolvedValueOnce({
+      data: { success: true, score: 0, results: {} },
+      error: null,
+    } as any)
+
+    render(
+      <MemoryRouter>
+        <DynamicTaskRunner task={mockTask60121Def} initialData={mockTask60121Data} />
+      </MemoryRouter>
+    )
+
+    const inputs = screen.getAllByRole('textbox')
+    const wordAnswers = ['study', 'have', 'play', 'study', 'do', 'play', 'have', 'do']
+    for (let i = 0; i < 8; i++) {
+      await user.type(inputs[i], wordAnswers[i])
+    }
+
+    const checkBtn = document.getElementById('initialCheckBtn')!
+    await user.click(checkBtn)
+
+    await waitFor(() => {
+      expect(screen.getAllByText(/Task complete/i).length).toBeGreaterThan(0)
+    }, { timeout: 3000 })
+
+    rpcSpy.mockRestore()
   })
 })
