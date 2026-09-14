@@ -495,10 +495,9 @@ export function ListenRepeatRenderer({
       <div className="lr-header">
         <div>
           <h2>{config.intro || 'Listen & Repeat • Nghe và phát âm theo mẫu'}</h2>
-          <p>Nghe từng câu mẫu cẩn thận. Sau đó thu âm lặp lại và đạt trên {passScore}% để qua câu.</p>
         </div>
         <div className="lr-pass-badge">
-          🎯 Tiêu chuẩn qua câu: <strong>{passScore}%</strong>
+          🎯 Điểm yêu cầu: <strong>{passScore || 60}%</strong>
         </div>
       </div>
 
@@ -526,9 +525,9 @@ export function ListenRepeatRenderer({
                   setActiveWordTooltip(null)
                 }
               }}
-              title={isLocked ? 'Cần hoàn thành câu trước (> 80%) để mở khóa' : (it.label || `Câu ${idx + 1}`)}
+              title={isLocked ? 'Cần hoàn thành câu trước để mở khóa' : `Câu ${idx + 1}`}
             >
-              <span>{it.label || `Câu ${idx + 1}`}</span>
+              <span>{idx + 1}</span>
               {isPassed ? <span>✓</span> : isLocked ? <span style={{ fontSize: '11px', opacity: 0.7 }}>🔒</span> : null}
             </button>
           )
@@ -537,18 +536,6 @@ export function ListenRepeatRenderer({
 
       {/* 3. Thẻ tương tác chính của câu hiện tại */}
       <div className="lr-card">
-        {/* Header câu hiện tại (ĐÃ ẨN CÂU MẪU ĐỐI CHIẾU - CHỈ AI ĐỐI CHIẾU NGẦM) */}
-        <div className="lr-target-sentence-box">
-          <div className="lr-target-label">
-            🎧 {currentItem.label || `Câu ${currentIndex + 1}`} • Nghe audio mẫu và thu âm lặp lại
-          </div>
-          {currentItem.hints && currentItem.hints.length > 0 && (
-            <div className="lr-target-hint">
-              <span>💡 Gợi ý phát âm:</span> {currentItem.hints.join(' • ')}
-            </div>
-          )}
-        </div>
-
         {/* BƯỚC 1: KHUNG NGHE MẪU (NHỎ GỌN, KHOA HỌC) */}
         <div className="lr-compact-audio-bar">
           <button
@@ -619,7 +606,7 @@ export function ListenRepeatRenderer({
                 </div>
               ) : (
                 <div style={{ color: '#64748b', fontSize: '13px' }}>
-                  Nhấn biểu tượng Microphone để đọc lại câu vừa nghe
+                  Ấn để thu âm.
                 </div>
               )}
             </div>
@@ -664,21 +651,16 @@ export function ListenRepeatRenderer({
                 <span className="lr-minimal-score-denom">/100</span>
               </div>
               <div className="lr-minimal-score-desc">
-                <strong>
-                  {isCurrentItemPassed
-                    ? `✓ Đạt yêu cầu (${currentScoreResult.score} điểm • Đạt trên ${passScore}%)`
-                    : `⚠️ Chưa đạt (${currentScoreResult.score} điểm • Cần đạt trên ${passScore}%)`}
+                <strong style={{ fontSize: '15px' }}>
+                  {isCurrentItemPassed ? 'Đạt' : 'Chưa đạt'}
                 </strong>
-                <div style={{ fontSize: '12px', color: '#475569', marginTop: '2px' }}>
-                  {currentScoreResult.feedback_vi || (isCurrentItemPassed ? 'Phát âm tốt, chuẩn xác!' : 'Hãy nghe lại audio mẫu và thu âm lại câu này.')}
-                </div>
               </div>
             </div>
 
-            {/* PHẦN 1: ĐÁNH GIÁ TỪNG TỪ CỦA CÂU MẪU (Xanh lá / Vàng / Đỏ / Xám) */}
+            {/* PHẦN 1: ĐÁNH GIÁ TỪNG TỪ CỦA CÂU MẪU */}
             <div style={{ marginTop: '6px' }}>
-              <div style={{ fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                🎯 Đánh giá câu mẫu theo từng từ:
+              <div style={{ fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                Câu mẫu
               </div>
               {currentScoreResult.evaluatedWords && currentScoreResult.evaluatedWords.length > 0 && (
                 <div className="lr-minimal-words-wrap">
@@ -711,14 +693,6 @@ export function ListenRepeatRenderer({
                     })}
                 </div>
               )}
-
-              {/* Chú thích màu trực quan */}
-              <div className="color-legend-row">
-                <div className="legend-item"><span className="legend-dot correct" /><span>Đọc đúng (Xanh lá)</span></div>
-                <div className="legend-item"><span className="legend-dot unclear" /><span>Gần đúng (Vàng)</span></div>
-                <div className="legend-item"><span className="legend-dot mispronounced" /><span>Đọc sai (Đỏ)</span></div>
-                <div className="legend-item"><span className="legend-dot missing" /><span>Chưa đọc / Bỏ qua (Xám)</span></div>
-              </div>
             </div>
 
             {/* PHẦN 2: CÂU HỌC SINH ĐÃ ĐỌC THỰC TẾ & GẠCH ĐỎ TỪ THỪA */}
