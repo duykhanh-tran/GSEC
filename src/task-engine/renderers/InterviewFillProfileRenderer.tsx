@@ -6,6 +6,10 @@ import {
   getAssemblyAiApiKey,
   type TranscriptionProgress,
 } from '../../lib/assemblyAiService'
+import {
+  generatePedagogicalInterviewLeadIn,
+  getCuratedPedagogicalLeadIn,
+} from '../../lib/aiGradingService'
 import { ActionButton } from '../../components/task/ActionButton'
 import './interview-fill-profile.css'
 
@@ -112,9 +116,12 @@ export function InterviewFillProfileRenderer({
   // Audio tổng quan (Overall Audio)
   const overallAudioUrl = (config as any).audio_url || (config as any).audioUrl || ''
 
-  // Trạng thái câu hỏi hiện tại
+  // Trạng thái câu hỏi hiện tại (làm tuần tự từng câu 1)
   const [activeItemIndex, setActiveItemIndex] = useState(0)
   const [completedItemIds, setCompletedItemIds] = useState<Set<string>>(new Set())
+
+  // Trạng thái lời dẫn AI theo ngữ cảnh cho câu hiện tại
+  const [aiLeadInText, setAiLeadInText] = useState<string>('')
 
   // Trạng thái thu âm
   const [isRecording, setIsRecording] = useState(false)
@@ -126,11 +133,12 @@ export function InterviewFillProfileRenderer({
   const [playingAudioType, setPlayingAudioType] = useState<'prompt' | 'answer' | null>(null)
   const [playingItemId, setPlayingItemId] = useState<string | null>(null)
 
-  // Trạng thái phản hồi của AI cho câu hỏi
+  // Trạng thái phản hồi của AI cho từng câu hỏi
   const [itemFeedbacks, setItemFeedbacks] = useState<Record<string, {
     matched: boolean
     message: string
     spokenText?: string
+    showHint?: boolean
   }>>({})
 
   const [isAllCompleted, setIsAllCompleted] = useState(false)
@@ -143,6 +151,41 @@ export function InterviewFillProfileRenderer({
   const overallAudioRef = useRef<HTMLAudioElement | null>(null)
 
   const currentItem = items[activeItemIndex] || items[0]
+
+  // Cập nhật lời dẫn AI sư phạm mỗi khi chuyển câu
+  useEffect(() => {
+    if (!currentItem) return
+
+    // Thiết lập ngay lời dẫn mẫu sư phạm chuẩn mực
+    const completedList = items
+      .filter((it, idx) => idx < activeItemIndex && completedItemIds.has(it.id))
+      .map((it) => ({ label: it.label, answerText: it.answer_text_display }))
+
+    const fastLead = getCuratedPedagogicalLeadIn(
+      currentItem.label,
+      activeItemIndex,
+      items.length,
+      completedList
+    )
+    setAiLeadInText(fastLead)
+
+    // Gọi thêm Gemini AI nếu có key để tinh chỉnh lời dẫn sinh động theo ngữ cảnh
+    let isCancelled = false
+    generatePedagogicalInterviewLeadIn(
+      currentItem.label,
+      activeItemIndex,
+      items.length,
+      completedList
+    ).then((refined) => {
+      if (!isCancelled && refined) {
+        setAiLeadInText(refined)
+      }
+    }).catch(() => {})
+
+    return () => {
+      isCancelled = true
+    }
+  }, [activeItemIndex, currentItem?.id, completedItemIds])
 
   // Dọn dẹp stream microphone, timers & TTS khi unmount
   useEffect(() => {
@@ -157,7 +200,7 @@ export function InterviewFillProfileRenderer({
     }
   }, [])
 
-  // Phát Audio 1 (Prompt audio của AI)
+  // Phát Audio 1 (Prompt audio của AI hoặc đọc lời dẫn AI)
   const playPromptAudio = (item: Form62InterviewFieldItem) => {
     if (playingAudioType === 'prompt' && playingItemId === item.id) {
       if (audioPlayerRef.current) {
@@ -183,12 +226,12 @@ export function InterviewFillProfileRenderer({
         })
       }
     } else {
-      // Fallback TTS
+      // Fallback TTS đọc lời dẫn AI
       if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         window.speechSynthesis.cancel()
-        const textToSpeak = item.hints?.[0] || `Now, please ask me about his ${item.label}.`
+        const textToSpeak = aiLeadInText || getCuratedPedagogicalLeadIn(item.label, activeItemIndex, items.length)
         const utterance = new SpeechSynthesisUtterance(textToSpeak)
-        utterance.lang = 'en-US'
+        utterance.lang = 'vi-VN'
         utterance.rate = 0.95
         utterance.onend = () => {
           setPlayingAudioType(null)
@@ -206,7 +249,7 @@ export function InterviewFillProfileRenderer({
     }
   }
 
-  // Phát Audio 2 (Answer audio của AI khi trả lời đúng)
+  // Phát Audio 2 (Answer audio của AI khi học sinh hỏi đúng)
   const playAnswerAudio = (item: Form62InterviewFieldItem) => {
     if (playingAudioType === 'answer' && playingItemId === item.id) {
       if (audioPlayerRef.current) {
@@ -232,7 +275,7 @@ export function InterviewFillProfileRenderer({
         })
       }
     } else {
-      // Fallback TTS
+      // Fallback TTS tiếng Anh đọc câu trả lời của bạn
       if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         window.speechSynthesis.cancel()
         const textToSpeak = item.answer_text_display || `His ${item.label} is ${item.target_answer || 'known'}.`
@@ -290,7 +333,8 @@ export function InterviewFillProfileRenderer({
             ...prev,
             [currentItem.id]: {
               matched: false,
-              message: 'Bản ghi âm quá ngắn hoặc chưa rõ tiếng. Bạn hãy bấm thu âm lại và đặt câu hỏi to rõ ràng nhé!',
+              showHint: true,
+              message: 'Bản ghi âm quá ngắn hoặc chưa rõ tiếng. Em hãy đọc gợi ý bên dưới và bấm thu âm lại nhé!',
             },
           }))
           return
@@ -338,38 +382,31 @@ export function InterviewFillProfileRenderer({
         transcribedText = currentItem.question_bank[0] || "What is his name?"
       }
 
-      // Kiểm tra xem câu hỏi có khớp với câu hỏi hiện tại hoặc bất kỳ câu nào không
-      const matchResult = matchQuestionToField(transcribedText, items)
+      // Đối chiếu câu hỏi với câu hiện tại
+      const matchResult = matchQuestionToField(transcribedText, [currentItem])
 
-      // Ưu tiên khớp với câu hỏi hiện tại nếu câu hỏi có từ khóa của câu hiện tại
-      let matchedItem: Form62InterviewFieldItem | null = null
       if (matchResult.matchedFieldId === currentItem.id) {
-        matchedItem = currentItem
-      } else if (matchResult.matchedFieldId) {
-        matchedItem = items.find((it) => it.id === matchResult.matchedFieldId) || null
-      }
-
-      if (matchedItem) {
-        // Đặt câu hỏi đúng!
+        // ĐẶT CÂU HỎI ĐÚNG!
         playSuccessDing()
 
         const newCompleted = new Set(completedItemIds)
-        newCompleted.add(matchedItem.id)
+        newCompleted.add(currentItem.id)
         setCompletedItemIds(newCompleted)
 
         setItemFeedbacks((prev) => ({
           ...prev,
-          [matchedItem!.id]: {
+          [currentItem.id]: {
             matched: true,
             spokenText: transcribedText,
-            message: `Chính xác! AI đang trả lời: "${matchedItem!.answer_text_display || 'Thông tin đã được mở khóa.'}"`,
+            showHint: false, // Ẩn gợi ý khi đã làm đúng
+            message: `Chính xác! AI trả lời: "${currentItem.answer_text_display || 'Thông tin đã được mở khóa.'}"`,
           },
         }))
 
-        // Phát Audio 2 ngay lập tức
-        playAnswerAudio(matchedItem)
+        // Tự động phát Audio 2 câu trả lời
+        playAnswerAudio(currentItem)
 
-        // Kiểm tra xem đã hoàn thành tất cả các câu chưa
+        // Nếu đã hoàn thành tất cả các câu
         if (newCompleted.size >= items.length) {
           setIsAllCompleted(true)
           onComplete?.(100, {
@@ -378,15 +415,14 @@ export function InterviewFillProfileRenderer({
           })
         }
       } else {
-        // Chưa khớp câu hỏi nào
+        // HỌC SINH HỎI SAI: BÂY GIỜ MỚI HIỆN GỢI Ý!
         setItemFeedbacks((prev) => ({
           ...prev,
           [currentItem.id]: {
             matched: false,
             spokenText: transcribedText,
-            message:
-              currentItem.hints?.[0] ||
-              `Chưa nhận diện đúng câu hỏi cho "${currentItem.label}". Hãy thử hỏi: "${currentItem.question_bank[0] || 'What is his ' + currentItem.label}?"`,
+            showHint: true, // Chỉ hiện gợi ý khi học sinh hỏi sai!
+            message: 'Chưa đúng câu hỏi cần tìm. Em hãy xem gợi ý bên dưới và thử thu âm lại nhé!',
           },
         }))
       }
@@ -396,6 +432,7 @@ export function InterviewFillProfileRenderer({
         ...prev,
         [currentItem.id]: {
           matched: false,
+          showHint: true,
           message: msg,
         },
       }))
@@ -405,9 +442,14 @@ export function InterviewFillProfileRenderer({
     }
   }
 
-  // Điều hướng câu tiếp theo
+  // Chuyển sang câu tiếp theo (chỉ khi câu hiện tại đã hoàn thành đúng)
   const handleGoNext = () => {
     if (activeItemIndex < items.length - 1) {
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.pause()
+      }
+      setPlayingAudioType(null)
+      setPlayingItemId(null)
       setActiveItemIndex(activeItemIndex + 1)
     }
   }
@@ -455,14 +497,14 @@ export function InterviewFillProfileRenderer({
         <div style={{ fontWeight: 600, color: '#1e293b', flex: 1 }}>
           🎙️ {config.intro && !config.intro.toLowerCase().includes('check task')
             ? config.intro
-            : 'Phỏng vấn AI Tutor: Nghe lời dẫn (Audio 1), đặt câu hỏi và lắng nghe câu trả lời (Audio 2).'}
+            : 'Phỏng vấn AI Tutor: Lắng nghe lời dẫn, đặt câu hỏi đúng từng bước và nghe câu trả lời.'}
         </div>
         <div className="interview-progress-pill">
-          {completedCount}/{items.length} câu hoàn thành
+          Câu {activeItemIndex + 1}/{items.length} • {completedCount}/{items.length} hoàn thành
         </div>
       </div>
 
-      {/* AUDIO TỔNG (OVERALL AUDIO PLAYER) */}
+      {/* AUDIO TỔNG QUAN BÀI HỌC (NẾU CÓ) */}
       {overallAudioUrl && (
         <section className="interview-overall-audio-card" style={{
           background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
@@ -491,199 +533,201 @@ export function InterviewFillProfileRenderer({
         </section>
       )}
 
-      {/* TABS CHỌN CÂU HỎI */}
-      <div className="interview-tabs-nav" style={{
+      {/* TIẾN TRÌNH TỪNG CÂU TUẦN TỰ (ĐÚNG TỪNG CÂU 1, KHÔNG CHO NHẢY CÓC) */}
+      <div className="interview-sequential-stepper" style={{
         display: 'flex',
-        gap: '8px',
+        alignItems: 'center',
+        gap: '6px',
         overflowX: 'auto',
-        paddingBottom: '4px',
+        padding: '4px 2px',
       }}>
         {items.map((item, idx) => {
           const isDone = completedItemIds.has(item.id)
-          const isActive = idx === activeItemIndex
+          const isCurrent = idx === activeItemIndex
+          const isFuture = idx > activeItemIndex
+
           return (
-            <button
+            <div
               key={item.id}
-              type="button"
-              id={`interview-tab-${item.id}`}
-              className={`interview-tab-btn ${isActive ? 'active' : ''} ${isDone ? 'completed' : ''}`}
+              id={`step-indicator-${item.id}`}
+              className={`interview-step-pill ${isCurrent ? 'active' : ''} ${isDone ? 'done' : ''} ${isFuture ? 'locked' : ''}`}
               style={{
                 flex: '1 1 0',
-                minWidth: '110px',
-                padding: '10px 12px',
-                borderRadius: '12px',
-                border: isActive ? '2px solid #2563eb' : '1.5px solid #e2e8f0',
-                background: isActive ? '#eff6ff' : isDone ? '#f0fdf4' : '#ffffff',
-                color: isActive ? '#1d4ed8' : isDone ? '#166534' : '#475569',
-                fontWeight: isActive ? 700 : 600,
+                padding: '8px 10px',
+                borderRadius: '10px',
+                background: isCurrent ? '#eff6ff' : isDone ? '#f0fdf4' : '#f8fafc',
+                border: isCurrent ? '2px solid #2563eb' : isDone ? '1.5px solid #86efac' : '1px solid #e2e8f0',
+                color: isCurrent ? '#1d4ed8' : isDone ? '#166534' : '#94a3b8',
+                fontWeight: isCurrent ? 800 : 600,
                 fontSize: '13px',
-                cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '6px',
-                transition: 'all 0.2s ease',
+                whiteSpace: 'nowrap',
               }}
-              onClick={() => setActiveItemIndex(idx)}
             >
-              <span>{isDone ? '✓' : idx + 1}.</span>
-              <span style={{ whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{item.label}</span>
-            </button>
+              <span>{isDone ? '✓' : isCurrent ? '●' : idx + 1}.</span>
+              <span>{item.label}</span>
+            </div>
           )
         })}
       </div>
 
-      {/* KHUNG TƯƠNG TÁC CHÍNH CHO CÂU HỎI ĐANG CHỌN */}
-      <section className="interview-active-card" style={{
-        background: '#ffffff',
-        border: '1.5px solid #e2e8f0',
-        borderRadius: '16px',
-        padding: '22px 24px',
-        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '18px',
-      }}>
-        {/* TIÊU ĐỀ CÂU HỎI */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
-          <div>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Câu hỏi {activeItemIndex + 1} / {items.length}
-            </span>
-            <h3 style={{ margin: '4px 0 0', fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>
-              Hỏi về: {currentItem.label}
-            </h3>
-          </div>
-          {isCurrentCompleted ? (
-            <span style={{ background: '#dcfce7', color: '#15803d', padding: '6px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
-              ✓ Đã hỏi thành công
-            </span>
-          ) : (
-            <span style={{ background: '#fef3c7', color: '#b45309', padding: '6px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: 700 }}>
-              Chưa hoàn thành
-            </span>
-          )}
-        </div>
-
-        {/* BƯỚC 1: AUDIO 1 (AI DẪN NHẬP / CÂU HỎI CỦA AI) */}
-        <div style={{
-          background: '#f8fafc',
-          borderRadius: '12px',
-          padding: '14px 18px',
-          border: '1px solid #e2e8f0',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '12px',
-          flexWrap: 'wrap',
-        }}>
-          <div>
-            <div style={{ fontSize: '14px', fontWeight: 700, color: '#1e293b' }}>
-              🔊 Audio 1: AI dẫn mở đầu
-            </div>
-            <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
-              {currentItem.prompt_audio_url ? 'Bấm để nghe gợi mở từ AI cho câu hỏi này' : 'Nghe gợi mở bằng giọng đọc AI'}
-            </div>
-          </div>
-
-          <button
-            type="button"
-            id={`playAudio1Btn-${currentItem.id}`}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '8px 18px',
-              borderRadius: '10px',
-              border: 'none',
-              background: playingAudioType === 'prompt' && playingItemId === currentItem.id ? '#ea580c' : '#0284c7',
-              color: '#ffffff',
-              fontWeight: 700,
-              fontSize: '13px',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-            }}
-            onClick={() => playPromptAudio(currentItem)}
-          >
-            {playingAudioType === 'prompt' && playingItemId === currentItem.id ? '⏹️ Dừng nghe Audio 1' : '▶️ Nghe Audio 1'}
-          </button>
-        </div>
-
-        {/* BƯỚC 2: MICRO THU ÂM CÂU HỎI */}
-        <div style={{
+      {/* KHUNG TƯƠNG TÁC CHÍNH (TẬP TRUNG HOÀN TOÀN VÀO CÂU HIỆN TẠI) */}
+      {!isAllCompleted ? (
+        <section className="interview-active-card" style={{
+          background: '#ffffff',
+          border: '1.5px solid #e2e8f0',
+          borderRadius: '16px',
+          padding: '24px',
+          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)',
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center',
-          gap: '12px',
-          padding: '16px 0',
+          gap: '18px',
         }}>
-          <div style={{ textAlign: 'center', fontSize: '14px', color: '#475569', fontWeight: 600 }}>
-            {isCurrentCompleted
-              ? 'Bạn đã hỏi thành công câu này! Có thể thu âm lại để luyện tập phát âm rõ hơn:'
-              : 'Bấm micro bên dưới và đặt câu hỏi bằng tiếng Anh:'}
-          </div>
-
-          <div className="interview-voice-controls">
-            {!isRecording ? (
-              <button
-                type="button"
-                id="interviewMicBtn"
-                className={`interview-mic-btn ${isProcessingSTT ? 'processing' : 'idle'}`}
-                disabled={disabled || isProcessingSTT}
-                onClick={handleStartRecording}
-                style={{ minWidth: '220px', justifyContent: 'center' }}
-              >
-                {isProcessingSTT ? '⏳ Đang nhận diện...' : '🎙️ Bấm để đặt câu hỏi'}
-              </button>
+          {/* TIÊU ĐỀ BƯỚC CÂU HỎI */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
+            <div>
+              <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                CÂU HỎI {activeItemIndex + 1} / {items.length}
+              </span>
+              <h3 style={{ margin: '4px 0 0', fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>
+                Hỏi về: {currentItem.label}
+              </h3>
+            </div>
+            {isCurrentCompleted ? (
+              <span style={{ background: '#dcfce7', color: '#15803d', padding: '6px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                ✓ Đã hỏi thành công
+              </span>
             ) : (
-              <button
-                type="button"
-                id="interviewStopMicBtn"
-                className="interview-mic-btn recording"
-                onClick={handleStopRecording}
-                style={{ minWidth: '240px', justifyContent: 'center' }}
-              >
-                ⏹️ Dừng ghi ({recordingSeconds}s) • Kiểm tra
-              </button>
+              <span style={{ background: '#fef3c7', color: '#b45309', padding: '6px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: 700 }}>
+                Đang thực hiện
+              </span>
             )}
           </div>
 
-          {sttStageMessage && (
-            <div style={{ textAlign: 'center', fontSize: '13px', color: '#0284c7', fontStyle: 'italic' }}>
-              {sttStageMessage}
-            </div>
-          )}
-        </div>
-
-        {/* HIỂN THỊ CÂU HỎI HỌC SINH VỪA NÓI */}
-        {currentFeedback?.spokenText && (
-          <div className="interview-message-bubble user" style={{ margin: 0 }}>
-            <span className="interview-bubble-label">🗣️ Bạn vừa hỏi:</span>
-            <span className="interview-user-query">&ldquo;{currentFeedback.spokenText}&rdquo;</span>
-          </div>
-        )}
-
-        {/* BƯỚC 3: PHẢN HỒI CỦA AI VÀ AUDIO 2 */}
-        {currentFeedback && (
+          {/* LỜI DẪN AI THEO NGỮ CẢNH (SƯ PHẠM, NGHIÊM TÚC, TUYỆT ĐỐI KHÔNG ĐƯA ĐÁP ÁN) */}
           <div style={{
-            padding: '16px',
-            borderRadius: '12px',
-            background: currentFeedback.matched ? '#f0fdf4' : '#fffbeb',
-            border: currentFeedback.matched ? '1.5px solid #86efac' : '1.5px solid #fde68a',
+            background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+            borderRadius: '14px',
+            padding: '16px 18px',
+            border: '1.5px solid #cbd5e1',
             display: 'flex',
             flexDirection: 'column',
             gap: '12px',
           }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-              <span style={{ fontSize: '20px' }}>{currentFeedback.matched ? '🎉' : '💡'}</span>
-              <div style={{ flex: 1, fontSize: '14px', lineHeight: 1.5, color: currentFeedback.matched ? '#166534' : '#92400e', fontWeight: 600 }}>
-                {currentFeedback.message}
+              <span style={{ fontSize: '24px' }}>🤖</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
+                  Gia sư AI dẫn dắt:
+                </div>
+                <div style={{ fontSize: '14px', color: '#0f172a', fontWeight: 600, lineHeight: 1.5 }}>
+                  {aiLeadInText || getCuratedPedagogicalLeadIn(currentItem.label, activeItemIndex, items.length)}
+                </div>
               </div>
             </div>
 
-            {/* Khi hỏi đúng: Nút nghe lại Audio 2 và nút tiếp theo */}
-            {currentFeedback.matched && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', paddingTop: '6px' }}>
+            {/* Nút phát Audio 1 */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '4px', borderTop: '1px dashed #cbd5e1' }}>
+              <button
+                type="button"
+                id={`playAudio1Btn-${currentItem.id}`}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '8px 18px',
+                  borderRadius: '10px',
+                  border: 'none',
+                  background: playingAudioType === 'prompt' && playingItemId === currentItem.id ? '#ea580c' : '#0284c7',
+                  color: '#ffffff',
+                  fontWeight: 700,
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                }}
+                onClick={() => playPromptAudio(currentItem)}
+              >
+                {playingAudioType === 'prompt' && playingItemId === currentItem.id ? '⏹️ Dừng nghe Audio 1' : '▶️ Nghe Audio 1'}
+              </button>
+            </div>
+          </div>
+
+          {/* KHUNG MICRO GHI ÂM CÂU HỎI */}
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '12px',
+            padding: '12px 0 6px',
+          }}>
+            <div style={{ textAlign: 'center', fontSize: '14px', color: '#475569', fontWeight: 600 }}>
+              {isCurrentCompleted
+                ? 'Em đã hỏi thành công câu này! Có thể bấm Tiếp tục để sang câu sau hoặc thu âm lại:'
+                : 'Bấm micro bên dưới và đặt câu hỏi bằng tiếng Anh:'}
+            </div>
+
+            <div className="interview-voice-controls">
+              {!isRecording ? (
+                <button
+                  type="button"
+                  id="interviewMicBtn"
+                  className={`interview-mic-btn ${isProcessingSTT ? 'processing' : 'idle'}`}
+                  disabled={disabled || isProcessingSTT}
+                  onClick={handleStartRecording}
+                  style={{ minWidth: '220px', justifyContent: 'center' }}
+                >
+                  {isProcessingSTT ? '⏳ Đang nhận diện...' : '🎙️ Bấm để đặt câu hỏi'}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  id="interviewStopMicBtn"
+                  className="interview-mic-btn recording"
+                  onClick={handleStopRecording}
+                  style={{ minWidth: '240px', justifyContent: 'center' }}
+                >
+                  ⏹️ Dừng ghi ({recordingSeconds}s) • Kiểm tra
+                </button>
+              )}
+            </div>
+
+            {sttStageMessage && (
+              <div style={{ textAlign: 'center', fontSize: '13px', color: '#0284c7', fontStyle: 'italic' }}>
+                {sttStageMessage}
+              </div>
+            )}
+          </div>
+
+          {/* HIỂN THỊ CÂU HỎI HỌC SINH VỪA NÓI */}
+          {currentFeedback?.spokenText && (
+            <div className="interview-message-bubble user" style={{ margin: 0 }}>
+              <span className="interview-bubble-label">🗣️ Bạn vừa hỏi:</span>
+              <span className="interview-user-query">&ldquo;{currentFeedback.spokenText}&rdquo;</span>
+            </div>
+          )}
+
+          {/* KẾT QUẢ KHI HỌC SINH HỎI ĐÚNG -> NHẢ AUDIO 2 */}
+          {isCurrentCompleted && currentFeedback?.matched && (
+            <div style={{
+              padding: '16px',
+              borderRadius: '12px',
+              background: '#f0fdf4',
+              border: '1.5px solid #86efac',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                <span style={{ fontSize: '22px' }}>🎉</span>
+                <div style={{ flex: 1, fontSize: '14px', lineHeight: 1.5, color: '#166534', fontWeight: 600 }}>
+                  {currentFeedback.message}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', paddingTop: '4px' }}>
                 <button
                   type="button"
                   id={`playAudio2Btn-${currentItem.id}`}
@@ -708,190 +752,106 @@ export function InterviewFillProfileRenderer({
                 {activeItemIndex < items.length - 1 && (
                   <button
                     type="button"
+                    id="interviewNextStepBtn"
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '6px',
-                      padding: '8px 16px',
+                      padding: '8px 20px',
                       borderRadius: '8px',
-                      border: '1px solid #cbd5e1',
-                      background: '#ffffff',
-                      color: '#1e293b',
+                      border: 'none',
+                      background: '#2563eb',
+                      color: '#ffffff',
                       fontWeight: 700,
                       fontSize: '13px',
                       cursor: 'pointer',
                       marginLeft: 'auto',
+                      boxShadow: '0 2px 8px rgba(37, 99, 235, 0.25)',
                     }}
                     onClick={handleGoNext}
                   >
-                    Câu tiếp theo ➡️
+                    Tiếp tục câu tiếp theo ➡️
                   </button>
                 )}
               </div>
-            )}
-          </div>
-        )}
-
-        {/* GỢI Ý NẾU CHƯA HOÀN THÀNH */}
-        {!isCurrentCompleted && !currentFeedback && currentItem.hints && currentItem.hints.length > 0 && (
-          <div style={{
-            padding: '12px 16px',
-            borderRadius: '10px',
-            background: '#fefce8',
-            border: '1px solid #fef08a',
-            fontSize: '13px',
-            color: '#854d0e',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-          }}>
-            <span>💡</span>
-            <span>Gợi ý: {currentItem.hints[0]}</span>
-          </div>
-        )}
-      </section>
-
-      {/* DANH SÁCH TỔNG QUAN CÁC CÂU HỎI */}
-      <section className="interview-profile-sheet" style={{
-        background: '#ffffff',
-        border: '1.5px solid #e2e8f0',
-        borderRadius: '16px',
-        padding: '18px 20px',
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-          <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: '#1e293b' }}>
-            📋 Tiến độ các câu hỏi phỏng vấn
-          </h4>
-          <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>
-            {completedCount}/{items.length} câu hoàn thành
-          </span>
-        </div>
-
-        <div className="interview-fields-list">
-          {items.map((item, idx) => {
-            const isDone = completedItemIds.has(item.id)
-            const isSelected = idx === activeItemIndex
-            const isPlayingThisAnswer = playingAudioType === 'answer' && playingItemId === item.id
-
-            return (
-              <div
-                key={item.id}
-                className={`interview-field-card ${isSelected ? 'active-target' : ''} ${isPlayingThisAnswer ? 'playing-sound' : ''}`}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '12px 16px',
-                  borderRadius: '10px',
-                  background: isDone ? '#f0fdf4' : '#f8fafc',
-                  border: isSelected ? '2px solid #3b82f6' : isDone ? '1px solid #bbf7d0' : '1px solid #e2e8f0',
-                  gap: '12px',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
-                  <span style={{
-                    width: '26px',
-                    height: '26px',
-                    borderRadius: '50%',
-                    background: isDone ? '#22c55e' : '#cbd5e1',
-                    color: '#ffffff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '12px',
-                    fontWeight: 800,
-                  }}>
-                    {isDone ? '✓' : idx + 1}
-                  </span>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: '14px', color: '#1e293b' }}>
-                      {item.label}
-                    </div>
-                    <div style={{ fontSize: '12px', color: isDone ? '#166534' : '#64748b' }}>
-                      {isDone ? (item.answer_text_display || 'Đã hoàn thành') : 'Chưa đặt câu hỏi'}
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  {isDone && (
-                    <button
-                      type="button"
-                      id={`profile-audio-btn-${item.id}`}
-                      className={`interview-field-audio-btn ${isPlayingThisAnswer ? 'playing' : 'active'}`}
-                      title="Nghe lại Audio 2"
-                      onClick={() => playAnswerAudio(item)}
-                    >
-                      {isPlayingThisAnswer ? '🔊 Đang phát...' : '🔊 Audio 2'}
-                    </button>
-                  )}
-
-                  <button
-                    type="button"
-                    style={{
-                      padding: '6px 12px',
-                      borderRadius: '6px',
-                      border: '1px solid #cbd5e1',
-                      background: '#ffffff',
-                      fontSize: '12px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      color: '#475569',
-                    }}
-                    onClick={() => setActiveItemIndex(idx)}
-                  >
-                    {isSelected ? 'Đang chọn' : 'Chọn câu này'}
-                  </button>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-
-        {/* NÚT SUBMIT HOẶC KẾT THÚC BÀI HỌC */}
-        <div className="interview-submit-section" style={{ marginTop: '16px' }}>
-          {isAllCompleted ? (
-            <div className="interview-complete-box">
-              <div style={{ fontSize: '18px', fontWeight: 800, color: '#166534', marginBottom: '8px' }}>
-                🎉 Xuất sắc! 100/100 Điểm • Hoàn thành toàn bộ phỏng vấn!
-              </div>
-              <div style={{ fontSize: '13px', color: '#15803d', marginBottom: '14px' }}>
-                Bạn đã hoàn thành việc đặt câu hỏi và lắng nghe toàn bộ thông tin từ AI Tutor.
-              </div>
-              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-                <ActionButton id="interviewRestartBtn" variant="secondary" onClick={handleRestartAll}>
-                  🔄 Luyện lại
-                </ActionButton>
-                {onNavigateHome && (
-                  <ActionButton id="interviewHomeBtn" onClick={onNavigateHome}>
-                    ⌨️ Quay lại trang chủ
-                  </ActionButton>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-              <button
-                type="button"
-                id="interviewSubmitProfileBtn"
-                className="interview-submit-btn"
-                disabled={disabled}
-                onClick={() => {
-                  if (completedCount >= items.length) {
-                    setIsAllCompleted(true)
-                    playSuccessDing()
-                    onComplete?.(100, { completedItems: Array.from(completedItemIds) })
-                  } else {
-                    alert(`Bạn đã hoàn thành ${completedCount}/${items.length} câu. Hãy hỏi tiếp các câu còn lại để đạt 100 điểm nhé!`)
-                  }
-                }}
-              >
-                🚀 Hoàn thành bài ({completedCount}/{items.length})
-              </button>
             </div>
           )}
-        </div>
-      </section>
+
+          {/* KHI HỌC SINH HỎI SAI -> MỚI HIỆN GỢI Ý ĐÁP ÁN (CHỈ HIỆN KHI SAI) */}
+          {currentFeedback && !currentFeedback.matched && currentFeedback.showHint && (
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+            }}>
+              <div style={{
+                padding: '12px 16px',
+                borderRadius: '10px',
+                background: '#fef2f2',
+                border: '1.5px solid #fca5a5',
+                color: '#b91c1c',
+                fontSize: '13px',
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}>
+                <span>⚠️</span>
+                <span>{currentFeedback.message}</span>
+              </div>
+
+              {/* Hộp gợi ý nổi bật */}
+              <div style={{
+                padding: '14px 18px',
+                borderRadius: '12px',
+                background: '#fffbeb',
+                border: '1.5px solid #fcd34d',
+                color: '#92400e',
+                fontSize: '13px',
+                lineHeight: 1.5,
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '8px',
+              }}>
+                <span style={{ fontSize: '18px' }}>💡</span>
+                <div>
+                  <strong>Gợi ý câu hỏi:</strong>{' '}
+                  {currentItem.hints?.[0] || `Hãy thử đặt câu hỏi bắt đầu bằng: "${currentItem.question_bank[0] || 'What'}"`}
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+      ) : (
+        /* MÀN HÌNH HOÀN THÀNH TOÀN BỘ BÀI PHỎNG VẤN (100/100 ĐIỂM) */
+        <section className="interview-complete-box" style={{
+          background: '#ffffff',
+          border: '2px solid #86efac',
+          borderRadius: '16px',
+          padding: '32px 24px',
+          textAlign: 'center',
+          boxShadow: '0 6px 20px rgba(0, 0, 0, 0.05)',
+        }}>
+          <div style={{ fontSize: '42px', marginBottom: '10px' }}>🎉</div>
+          <div style={{ fontSize: '22px', fontWeight: 800, color: '#166534', marginBottom: '6px' }}>
+            Xuất sắc! 100/100 Điểm
+          </div>
+          <div style={{ fontSize: '15px', color: '#15803d', marginBottom: '20px', maxWidth: '460px', margin: '0 auto 24px' }}>
+            Em đã hoàn thành xuất sắc việc đặt toàn bộ {items.length} câu hỏi phỏng vấn và lắng nghe câu trả lời từ AI Tutor!
+          </div>
+
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <ActionButton id="interviewRestartBtn" variant="secondary" onClick={handleRestartAll}>
+              🔄 Luyện lại từ đầu
+            </ActionButton>
+            {onNavigateHome && (
+              <ActionButton id="interviewHomeBtn" onClick={onNavigateHome}>
+                ⌨️ Quay lại trang chủ
+              </ActionButton>
+            )}
+          </div>
+        </section>
+      )}
     </div>
   )
 }

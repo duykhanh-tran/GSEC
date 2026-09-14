@@ -1164,4 +1164,102 @@ Return strict JSON:
   }
 }
 
+/**
+ * Lời dẫn AI sư phạm chọn lọc chuẩn mực, hiểu ngữ cảnh và TUYỆT ĐỐI KHÔNG đưa ra đáp án hoặc gợi ý tiếng Anh
+ */
+export function getCuratedPedagogicalLeadIn(
+  currentLabel: string,
+  stepIndex: number,
+  totalSteps: number,
+  completedContext: Array<{ label: string; answerText?: string }> = []
+): string {
+  const normLabel = currentLabel.toLowerCase().trim()
+
+  if (normLabel.includes('name') || normLabel.includes('tên')) {
+    return 'Chào em! Chúng ta cùng làm quen với bạn học sinh mới nhé. Em hãy đặt câu hỏi để tìm hiểu xem tên của bạn ấy là gì nào.'
+  }
+  if (normLabel.includes('class') || normLabel.includes('lớp') || normLabel.includes('grade')) {
+    const prevName = completedContext.find((c) => c.label.toLowerCase().includes('name'))?.answerText
+    return prevName
+      ? `Rất tốt, em đã biết bạn tên là ${prevName} rồi! Bây giờ, em hãy đặt câu hỏi tiếp theo để xem bạn ấy đang học ở lớp nào nhé.`
+      : 'Rất tốt! Em đã biết thông tin trước rồi. Bây giờ, em hãy đặt câu hỏi tiếp theo để biết bạn ấy đang học ở lớp nào nhé.'
+  }
+  if (normLabel.includes('subject') || normLabel.includes('môn')) {
+    return 'Tuyệt vời! Chúng ta cùng tìm hiểu thêm nhé. Em hãy đặt câu hỏi xem môn học yêu thích nhất của bạn ấy là môn gì nào.'
+  }
+  if (normLabel.includes('activity') || normLabel.includes('after') || normLabel.includes('hoạt động')) {
+    return 'Hay lắm! Đến phần câu hỏi cuối cùng rồi, em hãy hỏi xem bạn ấy thường làm hoạt động gì sau giờ học nhé.'
+  }
+
+  // Mặc định sư phạm chuẩn mực cho các câu hỏi khác
+  if (stepIndex === 0) {
+    return `Chào em! Chúng ta cùng bắt đầu cuộc trò chuyện nhé. Em hãy đặt câu hỏi để tìm hiểu về ${currentLabel} của bạn ấy nào.`
+  }
+  if (stepIndex === totalSteps - 1) {
+    return `Hay lắm! Đến câu hỏi cuối cùng rồi, em hãy đặt câu hỏi để tìm hiểu về ${currentLabel} của bạn ấy nhé.`
+  }
+  return `Rất tốt! Tiếp theo, em hãy đặt câu hỏi để tìm hiểu thông tin về ${currentLabel} của bạn ấy nhé.`
+}
+
+/**
+ * Tạo lời dẫn AI sư phạm, chuẩn mực, hiểu ngữ cảnh cho Form 6.2 (Interview AI Tutor).
+ * YÊU CẦU BẮT BUỘC TỪ NGƯỜI DÙNG:
+ * 1. Phù hợp tuyệt đối với học sinh, chuẩn mực sư phạm, không sử dụng từ ngữ thiếu nghiêm túc.
+ * 2. Hiểu ngữ cảnh từng bước để dẫn dắt tự nhiên.
+ * 3. TUYỆT ĐỐI KHÔNG gợi ý mẫu câu tiếng Anh hay đưa ra đáp án (chấp hành tuyệt đối).
+ */
+export async function generatePedagogicalInterviewLeadIn(
+  currentLabel: string,
+  stepIndex: number,
+  totalSteps: number,
+  completedContext: Array<{ label: string; answerText?: string }> = [],
+  customApiKey?: string
+): Promise<string> {
+  const defaultLead = getCuratedPedagogicalLeadIn(currentLabel, stepIndex, totalSteps, completedContext)
+
+  const apiKey =
+    customApiKey ||
+    (typeof window !== 'undefined'
+      ? localStorage.getItem('gsec_gemini_api_key') || ''
+      : '') ||
+    import.meta.env.VITE_GEMINI_API_KEY ||
+    ''
+
+  if (!apiKey || !apiKey.trim()) {
+    return defaultLead
+  }
+
+  const prompt = `
+Em là một chuyên gia Gia sư AI sư phạm tiếng Anh cho học sinh phổ thông.
+Nhiệm vụ: Viết 1 lời dẫn dắt ngắn gọn (chỉ đúng 1 đến 2 câu) bằng tiếng Việt để dẫn dắt học sinh đặt câu hỏi tiếp theo trong bài phỏng vấn.
+Ngữ cảnh phỏng vấn hiện tại:
+- Bước: Câu hỏi ${stepIndex + 1}/${totalSteps}.
+- Mục tiêu cần học sinh tự hỏi: Tìm hiểu về "${currentLabel}".
+${completedContext.length > 0 ? `- Các thông tin đã biết trước đó: ${completedContext.map((c) => `${c.label}: ${c.answerText || 'đã biết'}`).join(', ')}` : '- Đây là câu hỏi đầu tiên mở đầu bài phỏng vấn.'}
+
+YÊU CẦU BẮT BUỘC (CHẤP HÀNH TUYỆT ĐỐI):
+1. Phù hợp tuyệt đối với lứa tuổi học sinh, phong cách sư phạm chuẩn mực, lịch sự, động viên và thân thiện.
+2. TUYỆT ĐỐI KHÔNG dùng từ ngữ cợt nhả hoặc thiếu nghiêm túc.
+3. TUYỆT ĐỐI KHÔNG đưa ra mẫu câu tiếng Anh (KHÔNG chứa "What is", "Which class", "Do you", etc.), KHÔNG gợi ý từ vựng tiếng Anh cần hỏi và KHÔNG đưa ra đáp án.
+4. Chỉ dẫn dắt mục tiêu giao tiếp bằng tiếng Việt tự nhiên (ví dụ: khích lệ học sinh đặt câu hỏi về điều đó).
+
+Chỉ xuất trực tiếp lời dẫn tiếng Việt, không kèm dấu ngoặc kép, không thêm lời chào mở đầu hay chú thích gì khác.
+`.trim()
+
+  try {
+    const raw = await callGeminiAPI(apiKey, prompt, undefined, 200)
+    if (!raw || !raw.trim()) return defaultLead
+    const cleaned = raw.trim().replace(/^["']|["']$/g, '')
+
+    // Kiểm tra an toàn: nếu vô tình có mẫu câu hỏi tiếng Anh thì dùng defaultLead để bảo đảm 100% tuân thủ yêu cầu
+    if (/\b(what|which|where|when|who|why|how|is his|are you|do you)\b/i.test(cleaned)) {
+      return defaultLead
+    }
+    return cleaned
+  } catch (err) {
+    return defaultLead
+  }
+}
+
+
 

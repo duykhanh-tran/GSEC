@@ -131,7 +131,7 @@ describe('Form 6 Renderers', () => {
       ],
     }
 
-    it('renders overall audio if present, question tabs, and mic button', () => {
+    it('renders overall audio if present, sequential step indicators, and mic button', () => {
       const configWithAudio: Form62InterviewConfig = {
         ...sample62Config,
         audio_url: 'https://example.com/overall.mp3',
@@ -145,14 +145,14 @@ describe('Form 6 Renderers', () => {
 
       expect(screen.getByText(/Audio tổng quan bài học/i)).toBeDefined()
       expect(document.getElementById('interviewMicBtn')).toBeDefined()
-      expect(document.getElementById('interview-tab-name')).toBeDefined()
-      expect(document.getElementById('interview-tab-class')).toBeDefined()
-      expect(document.getElementById('interview-tab-subject')).toBeDefined()
-      expect(document.getElementById('interview-tab-activity')).toBeDefined()
+      expect(document.getElementById('step-indicator-name')).toBeDefined()
+      expect(document.getElementById('step-indicator-class')).toBeDefined()
+      expect(document.getElementById('step-indicator-subject')).toBeDefined()
+      expect(document.getElementById('step-indicator-activity')).toBeDefined()
       expect(document.getElementById('playAudio1Btn-name')).toBeDefined()
     })
 
-    it('switches tabs and displays active question label', () => {
+    it('does not display hints initially and shows pedagogical AI lead-in without leaking answers', () => {
       render(
         <InterviewFillProfileRenderer
           config={sample62Config}
@@ -161,12 +161,11 @@ describe('Form 6 Renderers', () => {
       )
 
       expect(screen.getByText(/Hỏi về: Name/i)).toBeDefined()
+      expect(screen.getByText(/Gia sư AI dẫn dắt:/i)).toBeDefined()
 
-      const classTab = document.getElementById('interview-tab-class')!
-      fireEvent.click(classTab)
-
-      expect(screen.getByText(/Hỏi về: Class/i)).toBeDefined()
-      expect(document.getElementById('playAudio1Btn-class')).toBeDefined()
+      // Ban đầu khi chưa làm sai: TUYỆT ĐỐI KHÔNG HIỂN THỊ GỢI Ý
+      expect(screen.queryByText(/Gợi ý câu hỏi:/i)).toBeNull()
+      expect(screen.queryByText(/What is his name/i)).toBeNull()
     })
   })
 })
