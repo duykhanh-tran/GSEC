@@ -148,6 +148,8 @@ export interface Form61ProfileFieldItem {
 export interface Form61ProfileConfig {
   intro: string
   note?: string
+  audio_url?: string
+  audioUrl?: string
   profile_title?: string
   is_fixed_first_field?: boolean
   items: Form61ProfileFieldItem[]

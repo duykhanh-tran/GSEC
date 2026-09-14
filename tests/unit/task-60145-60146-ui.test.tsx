@@ -68,6 +68,18 @@ describe('Tasks 60145 & 60146 UI Requirements', () => {
       expect(screen.queryByText(/Task Complete • Hoàn thành xuất sắc/i)).toBeNull()
       expect(screen.getByText('100')).toBeDefined()
     })
+
+    it('supports overall audio and renders audio player with overall source', () => {
+      const configWithOverallAudio: Form61ProfileConfig = {
+        ...mockConfig61,
+        audio_url: 'https://example.com/overall-61.mp3',
+      }
+      const { container } = render(<ProfileListenAnswerRenderer config={configWithOverallAudio} taskCode="60145" />)
+
+      const audios = container.querySelectorAll('audio')
+      const hasOverallAudio = Array.from(audios).some((a) => a.src === 'https://example.com/overall-61.mp3')
+      expect(hasOverallAudio).toBe(true)
+    })
   })
 
   describe('Task 60146 (InterviewFillProfileRenderer)', () => {

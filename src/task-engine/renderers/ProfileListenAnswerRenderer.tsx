@@ -91,6 +91,12 @@ export function ProfileListenAnswerRenderer({
   const [isAllFinished, setIsAllFinished] = useState(false)
   const [isPlayingAudio, setIsPlayingAudio] = useState(false)
 
+  // Audio tổng quan (Overall Audio)
+  const overallAudioUrl = (config as any).audio_url || (config as any).audioUrl || ''
+  const overallAudioRef = useRef<HTMLAudioElement | null>(null)
+  const [isIntroPlaying, setIsIntroPlaying] = useState(false)
+  const [isAutoplayBlocked, setIsAutoplayBlocked] = useState(false)
+
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   // Khởi tạo thứ tự câu hỏi khi mount
@@ -111,20 +117,14 @@ export function ProfileListenAnswerRenderer({
 
   const currentItem = sequence[currentStepIndex]
 
-  // Tự động phát audio câu hỏi khi chuyển sang bước mới
-  useEffect(() => {
-    if (currentItem && !isAllFinished) {
-      playCurrentAudio()
-    }
-  }, [currentStepIndex, sequence])
+  // Phát âm thanh của câu hỏi
+  const playCurrentAudio = (idx?: number) => {
+    const item = typeof idx === 'number' ? sequence[idx] : currentItem
+    if (!item) return
 
-  // Phát âm thanh của câu hỏi hiện tại
-  const playCurrentAudio = () => {
-    if (!currentItem) return
-
-    if (currentItem.audio_url && currentItem.audio_url.trim()) {
+    if (item.audio_url && item.audio_url.trim()) {
       if (audioRef.current) {
-        audioRef.current.src = currentItem.audio_url
+        audioRef.current.src = item.audio_url
         setIsPlayingAudio(true)
         audioRef.current
           .play()
@@ -136,7 +136,7 @@ export function ProfileListenAnswerRenderer({
       // Fallback: Sử dụng Web Speech Synthesis đọc câu hỏi mẫu
       if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         window.speechSynthesis.cancel()
-        const questionText = getFallbackQuestionText(currentItem.label)
+        const questionText = getFallbackQuestionText(item.label)
         const utterance = new SpeechSynthesisUtterance(questionText)
         utterance.lang = 'en-US'
         utterance.rate = 0.9
@@ -147,6 +147,75 @@ export function ProfileListenAnswerRenderer({
       }
     }
   }
+
+  // Tự động phát Intro Audio hoặc Audio của Câu 1 khi học sinh vào bài
+  useEffect(() => {
+    if (overallAudioUrl && overallAudioRef.current) {
+      try {
+        const playPromise = overallAudioRef.current.play()
+        if (playPromise !== undefined && typeof (playPromise as any)?.then === 'function') {
+          playPromise
+            .then(() => {
+              setIsIntroPlaying(true)
+              setIsAutoplayBlocked(false)
+            })
+            .catch(() => {
+              // Trình duyệt chặn autoplay khi chưa có tương tác chạm
+              setIsAutoplayBlocked(true)
+            })
+        } else {
+          setIsIntroPlaying(true)
+          setIsAutoplayBlocked(false)
+        }
+      } catch {
+        setIsAutoplayBlocked(true)
+      }
+    } else {
+      // Không có audio tổng -> tự động phát audio của câu 1
+      const timer = setTimeout(() => {
+        playCurrentAudio(0)
+      }, 400)
+      return () => clearTimeout(timer)
+    }
+  }, [overallAudioUrl, sequence])
+
+  // Xử lý khi Audio Intro tự ngắt -> Audio của câu 1 tự phát ngay lập tức
+  const handleOverallAudioEnded = () => {
+    setIsIntroPlaying(false)
+    playCurrentAudio(0)
+  }
+
+  // Người dùng bấm kích hoạt nếu trình duyệt chặn autoplay lúc đầu
+  const handleManualStart = () => {
+    setIsAutoplayBlocked(false)
+    if (overallAudioUrl && overallAudioRef.current) {
+      try {
+        const playPromise = overallAudioRef.current.play()
+        if (playPromise !== undefined && typeof (playPromise as any)?.then === 'function') {
+          playPromise
+            .then(() => {
+              setIsIntroPlaying(true)
+            })
+            .catch(() => {
+              playCurrentAudio(0)
+            })
+        } else {
+          setIsIntroPlaying(true)
+        }
+      } catch {
+        playCurrentAudio(0)
+      }
+    } else {
+      playCurrentAudio(0)
+    }
+  }
+
+  // Tự động phát audio câu hỏi khi chuyển sang câu tiếp theo (currentStepIndex > 0)
+  useEffect(() => {
+    if (currentStepIndex > 0 && !isAllFinished) {
+      playCurrentAudio(currentStepIndex)
+    }
+  }, [currentStepIndex])
 
   const getFallbackQuestionText = (label: string): string => {
     const l = label.toLowerCase()
@@ -209,6 +278,24 @@ export function ProfileListenAnswerRenderer({
 
   const handleRestartAll = () => {
     initQuestionSequence()
+    if (audioRef.current) audioRef.current.pause()
+    setIsPlayingAudio(false)
+    if (overallAudioUrl && overallAudioRef.current) {
+      overallAudioRef.current.currentTime = 0
+      overallAudioRef.current
+        .play()
+        .then(() => {
+          setIsIntroPlaying(true)
+          setIsAutoplayBlocked(false)
+        })
+        .catch(() => {
+          playCurrentAudio(0)
+        })
+    } else {
+      setTimeout(() => {
+        playCurrentAudio(0)
+      }, 400)
+    }
     onRestart?.()
   }
 
@@ -279,6 +366,16 @@ export function ProfileListenAnswerRenderer({
         style={{ display: 'none' }}
       />
 
+      {/* Audio player ẩn cho Audio tổng quan (tự động phát ngầm) */}
+      {overallAudioUrl && (
+        <audio
+          ref={overallAudioRef}
+          src={overallAudioUrl}
+          onEnded={handleOverallAudioEnded}
+          style={{ display: 'none' }}
+        />
+      )}
+
       {/* HEADER BANNER */}
       <div className="profile-qa-header">
         <div style={{ fontWeight: 600, color: '#1e293b' }}>
@@ -288,6 +385,51 @@ export function ProfileListenAnswerRenderer({
           Câu {currentStepIndex + 1} / {sequence.length}
         </div>
       </div>
+
+      {/* NÚT BẮT ĐẦU NẾU TRÌNH DUYỆT CHẶN AUTOPLAY LẦN ĐẦU */}
+      {isAutoplayBlocked && (
+        <div style={{
+          background: '#eff6ff',
+          border: '1.5px solid #93c5fd',
+          borderRadius: '12px',
+          padding: '12px 18px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '12px',
+        }}>
+          <span style={{ fontSize: '14px', color: '#1d4ed8', fontWeight: 600 }}>
+            🎧 Bấm để bắt đầu nghe âm thanh bài học:
+          </span>
+          <button
+            type="button"
+            id="profileStartAudioBtn"
+            className="profile-play-btn"
+            onClick={handleManualStart}
+          >
+            ▶️ Bắt đầu bài học
+          </button>
+        </div>
+      )}
+
+      {/* THÔNG BÁO ĐANG PHÁT AUDIO INTRO */}
+      {isIntroPlaying && (
+        <div style={{
+          background: '#f0f9ff',
+          border: '1px solid #bae6fd',
+          borderRadius: '10px',
+          padding: '8px 14px',
+          fontSize: '13px',
+          color: '#0369a1',
+          fontWeight: 600,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+        }}>
+          <span style={{ animation: 'spin 2s linear infinite' }}>🎧</span>
+          <span>Đang phát phần giới thiệu bài học... Khi kết thúc, câu hỏi 1 sẽ tự động phát.</span>
+        </div>
+      )}
 
       {/* KHUNG HỘI THOẠI & TRẢ LỜI */}
       <div className="profile-qa-conversation" style={{ boxSizing: 'border-box', width: '100%' }}>
@@ -345,7 +487,7 @@ export function ProfileListenAnswerRenderer({
                     <button
                       type="button"
                       className="profile-play-btn"
-                      onClick={playCurrentAudio}
+                      onClick={() => playCurrentAudio(currentStepIndex)}
                       disabled={isPlayingAudio}
                     >
                       {isPlayingAudio ? '🔊 Đang phát...' : '▶️ Nghe lại câu hỏi'}

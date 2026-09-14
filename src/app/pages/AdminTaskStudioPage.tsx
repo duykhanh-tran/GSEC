@@ -652,6 +652,8 @@ export function AdminTaskStudioPage() {
         }
       } else if (targetFormType === 'FORM_6_1_PROFILE_QA') {
         setForm61ProfileTitle(content.profile_title || "New Classmate's Profile")
+        setTaskAudioUrl(content.audio_url || content.audioUrl || '')
+        setTaskAudioName(content.audio_name || '')
         if (content.items && Array.isArray(content.items) && content.items.length > 0) {
           setForm61Items(
             content.items.map((it: any) => ({
@@ -964,6 +966,8 @@ export function AdminTaskStudioPage() {
 
         contentPayload = {
           intro: taskIntro.trim() || "Look at your new classmate's profile. Listen to the AI Coach and answer.",
+          audio_url: taskAudioUrl.trim() || undefined,
+          audioUrl: taskAudioUrl.trim() || undefined,
           profile_title: form61ProfileTitle.trim() || "New Classmate's Profile",
           is_fixed_first_field: true,
           items: cleanItems,
@@ -1480,10 +1484,11 @@ export function AdminTaskStudioPage() {
                 </div>
               </div>
 
-              {/* AUDIO TỔNG (Dành cho Form 1, Form 2, Form 3, Form 6.2, Form 7) */}
+              {/* AUDIO TỔNG (Dành cho Form 1, Form 2, Form 3, Form 6.1, Form 6.2, Form 7) */}
               {(authoringFormType === 'FORM_1_CHOICE' ||
                 authoringFormType === 'FORM_2_FILL' ||
                 authoringFormType === 'FORM_3_WRITING' ||
+                authoringFormType === 'FORM_6_1_PROFILE_QA' ||
                 authoringFormType === 'FORM_6_2_INTERVIEW_PROFILE' ||
                 authoringFormType === 'FORM_7_TOPIC_SPEAKING') && (
                 <div
