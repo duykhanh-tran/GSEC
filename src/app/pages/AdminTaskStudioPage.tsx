@@ -100,7 +100,7 @@ export function AdminTaskStudioPage() {
   const [taskUnit, setTaskUnit] = useState<number | string>(1)
   const [taskLesson, setTaskLesson] = useState<number | string>(1)
   const [taskNumber, setTaskNumber] = useState<number | string>(1)
-  const [taskTitle, setTaskTitle] = useState<string>('AI Tutor • WS 1 - Task 1')
+  const [taskTitle, setTaskTitle] = useState<string>('AI Coach • WS 1 - Task 1')
   const [taskSubtitle, setTaskSubtitle] = useState<string>('Unit 1')
   const [taskIntro, setTaskIntro] = useState<string>('Check Task 1. Enter your answers.')
   const [savingTask, setSavingTask] = useState<boolean>(false)
@@ -112,11 +112,11 @@ export function AdminTaskStudioPage() {
   const [isUploadingAudio, setIsUploadingAudio] = useState(false)
   const audioInputRef = useRef<HTMLInputElement>(null)
 
-  // Helper sinh tiêu đề tự động theo Lesson và Số thứ tự bài (AI Tutor • WS {lesson} - Task {task_number})
+  // Helper sinh tiêu đề tự động theo Lesson và Số thứ tự bài (AI Coach • WS {lesson} - Task {task_number})
   const getAutoTaskTitle = (l: number | string, n: number | string) => {
     const lDisplay = l === '' ? '...' : l
     const nDisplay = n === '' ? '...' : n
-    return `AI Tutor • WS ${lDisplay} - Task ${nDisplay}`
+    return `AI Coach • WS ${lDisplay} - Task ${nDisplay}`
   }
 
   const handleUnitChange = (val: string) => {
@@ -570,10 +570,10 @@ export function AdminTaskStudioPage() {
               let correctStr = Array.isArray(keyObj?.accepted)
                 ? keyObj.accepted.join(', ')
                 : Array.isArray(keyObj)
-                ? keyObj.join(', ')
-                : typeof keyObj === 'string'
-                ? keyObj
-                : (it.correct || (Array.isArray(it.accepted) ? it.accepted.join(', ') : (typeof it.accepted === 'string' ? it.accepted : '')) || '')
+                  ? keyObj.join(', ')
+                  : typeof keyObj === 'string'
+                    ? keyObj
+                    : (it.correct || (Array.isArray(it.accepted) ? it.accepted.join(', ') : (typeof it.accepted === 'string' ? it.accepted : '')) || '')
 
               if (!correctStr && codeToEdit && FORM2_STUDIO_DEFAULTS[codeToEdit]) {
                 const defs = FORM2_STUDIO_DEFAULTS[codeToEdit]
@@ -600,8 +600,8 @@ export function AdminTaskStudioPage() {
           content.sub_mode === 'BOOK_KEYWORD'
             ? 'BOOK_KEYWORD'
             : isParagraph
-            ? 'PARAGRAPH'
-            : 'FREE_SENTENCE'
+              ? 'PARAGRAPH'
+              : 'FREE_SENTENCE'
         setForm3SubMode(resolvedSubMode)
         setForm3ScoringCriteria(content.scoring_criteria || keysData.scoring_criteria || '')
 
@@ -816,7 +816,7 @@ export function AdminTaskStudioPage() {
           const cleanHints = paragraphHints.map((h) => (h || '').trim()).filter(Boolean)
 
           contentPayload = {
-            intro: taskIntro.trim() || 'Write a short paragraph about the topic below. AI Tutor will assess your grammar and vocabulary.',
+            intro: taskIntro.trim() || 'Write a short paragraph about the topic below. AI Coach will assess your grammar and vocabulary.',
             sub_mode: 'PARAGRAPH',
             scoring_criteria: cleanGeneralCriteria,
             paragraph_config: {
@@ -1001,7 +1001,7 @@ export function AdminTaskStudioPage() {
         })
 
         contentPayload = {
-          intro: taskIntro.trim() || 'Listen to AI Tutor, ask questions, and complete the dialogue!',
+          intro: taskIntro.trim() || 'Listen to AI Coach, ask questions, and complete the dialogue!',
           audio_url: taskAudioUrl.trim() || undefined,
           audioUrl: taskAudioUrl.trim() || undefined,
           pass_score: Number(form62PassScore) || 80,
@@ -1014,7 +1014,7 @@ export function AdminTaskStudioPage() {
         }
 
         hintsPayload = {
-          h1: 'Listen to Audio 1 from AI Tutor, then ask your question clearly.',
+          h1: 'Listen to Audio 1 from AI Coach, then ask your question clearly.',
           h2: 'Ask questions matching the question bank to hear Audio 2.',
         }
       } else if (authoringFormType === 'FORM_7_TOPIC_SPEAKING') {
@@ -1350,7 +1350,7 @@ export function AdminTaskStudioPage() {
                   >
                     <option value="FORM_1_CHOICE">FORM 1: Trắc nghiệm (A/B/C hoặc T/F)</option>
                     <option value="FORM_2_FILL">FORM 2: Điền từ vào chỗ trống (Fill in Blanks)</option>
-                    <option value="FORM_3_WRITING">FORM 3: Viết câu / Đoạn văn (AI Tutor chấm điểm)</option>
+                    <option value="FORM_3_WRITING">FORM 3: Viết câu / Đoạn văn (AI Coach chấm điểm)</option>
                     <option value="FORM_4_SPEAKING">FORM 4: Đọc thành tiếng / Speaking</option>
                     <option value="FORM_5_LISTEN_REPEAT">FORM 5: Nghe & Nhại lại câu (Listen & Repeat)</option>
                     <option value="FORM_6_1_PROFILE_QA">FORM 6.1: Nghe & Trả lời thông tin nhân vật (Profile Q&A)</option>
@@ -1470,7 +1470,7 @@ export function AdminTaskStudioPage() {
 
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                    Lời dẫn dắt của AI Tutor (Intro Text):
+                    Lời dẫn dắt của AI Coach (Intro Text):
                   </label>
                   <input
                     type="text"
@@ -1490,77 +1490,77 @@ export function AdminTaskStudioPage() {
                 authoringFormType === 'FORM_6_1_PROFILE_QA' ||
                 authoringFormType === 'FORM_6_2_INTERVIEW_PROFILE' ||
                 authoringFormType === 'FORM_7_TOPIC_SPEAKING') && (
-                <div
-                  style={{
-                    background: '#f8fafc',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '10px',
-                    padding: '16px',
-                    marginTop: '10px',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <label style={{ fontSize: '13px', fontWeight: 700, color: '#334155' }}>
-                      🎧 File âm thanh bài nghe chung (Tùy chọn - Dành cho bài Listening):
-                    </label>
-                    <span style={{ fontSize: '11px', color: '#64748b' }}>Hỗ trợ MP3, WAV, M4A</span>
-                  </div>
+                  <div
+                    style={{
+                      background: '#f8fafc',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '10px',
+                      padding: '16px',
+                      marginTop: '10px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <label style={{ fontSize: '13px', fontWeight: 700, color: '#334155' }}>
+                        🎧 File âm thanh bài nghe chung (Tùy chọn - Dành cho bài Listening):
+                      </label>
+                      <span style={{ fontSize: '11px', color: '#64748b' }}>Hỗ trợ MP3, WAV, M4A</span>
+                    </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                    <input
-                      type="file"
-                      ref={audioInputRef}
-                      accept="audio/*"
-                      style={{ display: 'none' }}
-                      onChange={handleAudioFileUpload}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => audioInputRef.current?.click()}
-                      disabled={isUploadingAudio}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        padding: '8px 16px',
-                        borderRadius: '8px',
-                        border: '1px solid #fbcfe8',
-                        background: '#fdf2f8',
-                        color: '#be185d',
-                        fontSize: '12px',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <span>📁</span>
-                      <span>{isUploadingAudio ? 'Đang tải file lên...' : 'Tải file âm thanh từ máy'}</span>
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                      <input
+                        type="file"
+                        ref={audioInputRef}
+                        accept="audio/*"
+                        style={{ display: 'none' }}
+                        onChange={handleAudioFileUpload}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => audioInputRef.current?.click()}
+                        disabled={isUploadingAudio}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '8px 16px',
+                          borderRadius: '8px',
+                          border: '1px solid #fbcfe8',
+                          background: '#fdf2f8',
+                          color: '#be185d',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <span>📁</span>
+                        <span>{isUploadingAudio ? 'Đang tải file lên...' : 'Tải file âm thanh từ máy'}</span>
+                      </button>
 
-                    {taskAudioUrl && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: '240px' }}>
-                        {taskAudioName && <span style={{ fontSize: '12px', color: '#64748b' }}>({taskAudioName})</span>}
-                        <audio controls src={taskAudioUrl} style={{ height: '36px', flex: 1 }} />
-                        <button
-                          type="button"
-                          onClick={handleRemoveAudio}
-                          style={{
-                            padding: '6px 10px',
-                            borderRadius: '6px',
-                            border: '1px solid #fecaca',
-                            background: '#fff',
-                            color: '#dc2626',
-                            fontSize: '12px',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          Xóa audio
-                        </button>
-                      </div>
-                    )}
+                      {taskAudioUrl && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: '240px' }}>
+                          {taskAudioName && <span style={{ fontSize: '12px', color: '#64748b' }}>({taskAudioName})</span>}
+                          <audio controls src={taskAudioUrl} style={{ height: '36px', flex: 1 }} />
+                          <button
+                            type="button"
+                            onClick={handleRemoveAudio}
+                            style={{
+                              padding: '6px 10px',
+                              borderRadius: '6px',
+                              border: '1px solid #fecaca',
+                              background: '#fff',
+                              color: '#dc2626',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Xóa audio
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
             </div>
 
             {/* CARD 2: KHU VỰC SOẠN THẢO CHI TIẾT THEO TỪNG FORM ARCHETYPE */}
@@ -2091,7 +2091,7 @@ export function AdminTaskStudioPage() {
                       onChange={(e) => setForm3ScoringCriteria(e.target.value)}
                     />
                     <p style={{ margin: '6px 0 0', fontSize: '12px', color: '#64748b', lineHeight: 1.45 }}>
-                      💡 <strong>Hướng dẫn:</strong> Giáo viên nhập các yêu cầu cụ thể (thì ngữ pháp, viết hoa, dấu câu, từ vựng...). AI Tutor (Gemini) sẽ đối chiếu sát sao tiêu chí này khi chấm câu của học sinh ở cả <strong>Form 3.1 & 3.2</strong>, trừ điểm nếu vi phạm và yêu cầu sửa lại.
+                      💡 <strong>Hướng dẫn:</strong> Giáo viên nhập các yêu cầu cụ thể (thì ngữ pháp, viết hoa, dấu câu, từ vựng...). AI Coach (Gemini) sẽ đối chiếu sát sao tiêu chí này khi chấm câu của học sinh ở cả <strong>Form 3.1 & 3.2</strong>, trừ điểm nếu vi phạm và yêu cầu sửa lại.
                     </p>
                   </div>
 
@@ -2928,7 +2928,7 @@ export function AdminTaskStudioPage() {
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
                           <div>
                             <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#64748b', marginBottom: '4px' }}>
-                              Câu nói trả lời của AI Tutor (Answer text display):
+                              Câu nói trả lời của AI Coach (Answer text display):
                             </label>
                             <input
                               type="text"

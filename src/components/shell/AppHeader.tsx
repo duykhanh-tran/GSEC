@@ -42,15 +42,15 @@ export function AppHeader({ currentPortal = 'student', isTestingStudentMode, stu
     profile?.role === 'ADMIN'
       ? 'Admin'
       : profile?.role === 'TEACHER'
-      ? 'Giáo viên'
-      : 'Học sinh'
+        ? 'Giáo viên'
+        : 'Học sinh'
 
   const roleBadgeClass =
     profile?.role === 'ADMIN'
       ? 'app-role-badge--admin'
       : profile?.role === 'TEACHER'
-      ? 'app-role-badge--teacher'
-      : 'app-role-badge--student'
+        ? 'app-role-badge--teacher'
+        : 'app-role-badge--student'
 
   const isTeacherOrAdmin = profile?.role === 'ADMIN' || profile?.role === 'TEACHER'
 
@@ -175,7 +175,7 @@ export function AppHeader({ currentPortal = 'student', isTestingStudentMode, stu
                 <span>🎓</span>
               </div>
               <div className="app-brand-text">
-                <span className="app-brand-title">GSEC AI Tutor</span>
+                <span className="app-brand-title">GSEC AI Coach</span>
                 <span className="app-brand-badge">Hệ Thống Luyện Tập Tiếng Anh</span>
               </div>
             </Link>

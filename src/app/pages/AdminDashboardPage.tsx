@@ -954,7 +954,7 @@ export function AdminDashboardPage() {
                         <strong>{tasks.filter(t => t.form_type === 'FORM_2_FILL').length} bài</strong>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
-                        <span>✍️ Form 3: Luyện viết câu (AI Tutor)</span>
+                        <span>✍️ Form 3: Luyện viết câu (AI Coach)</span>
                         <strong>{tasks.filter(t => t.form_type === 'FORM_3_WRITING').length} bài</strong>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
