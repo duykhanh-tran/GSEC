@@ -12,6 +12,7 @@ import {
   type PronunciationScoreResult,
 } from '../../lib/pronunciationScorer'
 import type { Form5ListenRepeatConfig, ListenRepeatItemConfig } from '../dynamic-schema'
+import { getOptimizedAudioSrc } from '../../lib/taskCacheService'
 import './listen-repeat.css'
 
 interface ListenRepeatRendererProps {
@@ -158,10 +159,11 @@ export function ListenRepeatRenderer({
 
     // Trường hợp 1: Có URL file âm thanh
     if (currentItem.audio_url && currentItem.audio_url.trim()) {
+      const optimizedAudio = getOptimizedAudioSrc(currentItem.audio_url.trim())
       if (!audioModelRef.current) {
-        audioModelRef.current = new Audio(currentItem.audio_url.trim())
+        audioModelRef.current = new Audio(optimizedAudio)
       } else {
-        audioModelRef.current.src = currentItem.audio_url.trim()
+        audioModelRef.current.src = optimizedAudio
       }
 
       audioModelRef.current.playbackRate = audioSpeed

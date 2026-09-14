@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import type { Form61ProfileConfig, Form61ProfileFieldItem } from '../dynamic-schema'
 import { checkProfileAnswerMatch } from '../../lib/questionBankMatcher'
 import { ActionButton } from '../../components/task/ActionButton'
+import { getOptimizedAudioSrc } from '../../lib/taskCacheService'
 import './profile-listen-answer.css'
 
 function playSuccessDing() {
@@ -92,7 +93,8 @@ export function ProfileListenAnswerRenderer({
   const [isPlayingAudio, setIsPlayingAudio] = useState(false)
 
   // Audio tổng quan (Overall Audio)
-  const overallAudioUrl = (config as any).audio_url || (config as any).audioUrl || ''
+  const rawOverallUrl = (config as any).audio_url || (config as any).audioUrl || ''
+  const overallAudioUrl = useMemo(() => getOptimizedAudioSrc(rawOverallUrl), [rawOverallUrl])
   const overallAudioRef = useRef<HTMLAudioElement | null>(null)
   const [isIntroPlaying, setIsIntroPlaying] = useState(false)
   const [isAutoplayBlocked, setIsAutoplayBlocked] = useState(false)
@@ -124,7 +126,7 @@ export function ProfileListenAnswerRenderer({
 
     if (item.audio_url && item.audio_url.trim()) {
       if (audioRef.current) {
-        audioRef.current.src = item.audio_url
+        audioRef.current.src = getOptimizedAudioSrc(item.audio_url.trim())
         setIsPlayingAudio(true)
         audioRef.current
           .play()
@@ -361,6 +363,7 @@ export function ProfileListenAnswerRenderer({
       {/* Ẩn audio element để phát file mp3 */}
       <audio
         ref={audioRef}
+        preload="none"
         onEnded={() => setIsPlayingAudio(false)}
         onError={() => setIsPlayingAudio(false)}
         style={{ display: 'none' }}
@@ -371,6 +374,7 @@ export function ProfileListenAnswerRenderer({
         <audio
           ref={overallAudioRef}
           src={overallAudioUrl}
+          preload="auto"
           onEnded={handleOverallAudioEnded}
           style={{ display: 'none' }}
         />

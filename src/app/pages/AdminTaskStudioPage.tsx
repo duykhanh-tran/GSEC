@@ -652,8 +652,9 @@ export function AdminTaskStudioPage() {
         }
       } else if (targetFormType === 'FORM_6_1_PROFILE_QA') {
         setForm61ProfileTitle(content.profile_title || "New Classmate's Profile")
-        setTaskAudioUrl(content.audio_url || content.audioUrl || '')
-        setTaskAudioName(content.audio_name || '')
+        const f61Audio = content.audio_url || content.audioUrl || foundAudioUrl || ''
+        setTaskAudioUrl(f61Audio)
+        setTaskAudioName(f61Audio ? (content.audio_name || 'audio_task.mp3') : '')
         if (content.items && Array.isArray(content.items) && content.items.length > 0) {
           setForm61Items(
             content.items.map((it: any) => ({
@@ -968,6 +969,7 @@ export function AdminTaskStudioPage() {
           intro: taskIntro.trim() || "Look at your new classmate's profile. Listen to the AI Coach and answer.",
           audio_url: taskAudioUrl.trim() || undefined,
           audioUrl: taskAudioUrl.trim() || undefined,
+          audio_name: taskAudioName.trim() || (taskAudioUrl ? 'audio_task.mp3' : undefined),
           profile_title: form61ProfileTitle.trim() || "New Classmate's Profile",
           is_fixed_first_field: true,
           items: cleanItems,
@@ -1040,12 +1042,7 @@ export function AdminTaskStudioPage() {
         }
       }
 
-      const isCustomVoiceTask =
-        authoringFormType === 'FORM_4_SPEAKING' ||
-        authoringFormType === 'FORM_5_LISTEN_REPEAT' ||
-        authoringFormType === 'FORM_6_1_PROFILE_QA'
-
-      if (!isCustomVoiceTask && taskAudioUrl.trim()) {
+      if (taskAudioUrl.trim()) {
         contentPayload.audioUrl = taskAudioUrl.trim()
         contentPayload.audio_url = taskAudioUrl.trim()
       }
@@ -1054,10 +1051,12 @@ export function AdminTaskStudioPage() {
       const finalLesson = Math.max(1, parseInt(String(taskLesson), 10) || 1)
       const finalNumber = Math.max(1, parseInt(String(taskNumber), 10) || 1)
 
+      const finalAudioUrl = taskAudioUrl.trim() || contentPayload.audio_url || contentPayload.audioUrl || undefined
+
       const taskContent = {
         ...contentPayload,
-        audioUrl: !isCustomVoiceTask ? (taskAudioUrl.trim() || undefined) : undefined,
-        audio_url: !isCustomVoiceTask ? (taskAudioUrl.trim() || undefined) : undefined,
+        audioUrl: finalAudioUrl,
+        audio_url: finalAudioUrl,
         unit: finalUnit,
         lesson: finalLesson,
       }

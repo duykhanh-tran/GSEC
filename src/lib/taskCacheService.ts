@@ -51,6 +51,30 @@ export function getOptimizedAudioSrc(src?: string): string {
 }
 
 /**
+ * Làm ấm trước bộ đệm Audio (chuyển data base64 sang Blob Object URL ở background)
+ * giúp việc mở bài tập audio phản hồi tức thì, không lag giật main thread
+ */
+export function warmAudioCache(taskData: any): void {
+  if (!taskData || !taskData.content) return
+  try {
+    const c = taskData.content
+    if (c.audio_url) getOptimizedAudioSrc(c.audio_url)
+    if (c.audioUrl) getOptimizedAudioSrc(c.audioUrl)
+    if (taskData.audio_url) getOptimizedAudioSrc(taskData.audio_url)
+    if (taskData.audioUrl) getOptimizedAudioSrc(taskData.audioUrl)
+    if (c.items && Array.isArray(c.items)) {
+      c.items.forEach((it: any) => {
+        if (it.audio_url) getOptimizedAudioSrc(it.audio_url)
+        if (it.prompt_audio_url) getOptimizedAudioSrc(it.prompt_audio_url)
+        if (it.answer_audio_url) getOptimizedAudioSrc(it.answer_audio_url)
+      })
+    }
+  } catch {
+    // ignore
+  }
+}
+
+/**
  * Mở kết nối IndexedDB (hỗ trợ lưu trữ hàng trăm MB dữ liệu audio lâu dài trong trình duyệt)
  */
 function openIndexedDB(): Promise<IDBDatabase | null> {
@@ -166,6 +190,7 @@ async function getFromIndexedDB(code: string): Promise<CachedTaskRecord | null> 
             updated_at: res.updated_at,
             cached_at: res.cached_at || Date.now(),
           }
+          warmAudioCache(res.rawDbTask)
           resolve(record)
         }
 
@@ -260,6 +285,7 @@ class TaskCacheService {
         // Lưu vào RAM và IndexedDB
         memoryCache.set(cleanCode, record)
         saveToIndexedDB(record).catch(() => undefined)
+        warmAudioCache(dbTask)
 
         return { dynamicTask: dyn, rawDbTask: dbTask }
       }

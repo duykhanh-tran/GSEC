@@ -32,6 +32,7 @@ import {
 } from '../lib/aiGradingService'
 import { saveTaskAttempt } from '../lib/taskAttemptService'
 import { saveApprovedWriting } from '../lib/studentWritingStorageService'
+import { getOptimizedAudioSrc } from '../lib/taskCacheService'
 import '../components/assessment/guided-choice-task.css'
 import type {
   DynamicTaskRecord,
@@ -1816,7 +1817,8 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
                 </div>
                 <audio
                   controls
-                  src={currentRetryItem.audio_url}
+                  src={getOptimizedAudioSrc(currentRetryItem.audio_url)}
+                  preload="none"
                   style={{ width: '100%', height: '36px' }}
                 />
               </div>
@@ -1837,19 +1839,16 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
             >
               <div
                 style={{
-                  fontSize: '11px',
+                  fontSize: '14px',
                   fontWeight: 800,
                   color: attempt > 1 ? '#c2410c' : '#be185d',
                   marginBottom: '4px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '5px',
                 }}
               >
-                <span style={{ fontSize: '14px' }}>💡</span>
-                <span>GỢI Ý ĐÁP ÁN{attempt > 1 ? ' (LẦN 2)' : ''}:</span>
+                <span style={{ fontSize: '16px' }}>💡</span>
               </div>
               <div style={{ fontSize: '13.5px', fontWeight: 500, color: attempt > 1 ? '#7c2d12' : '#4c0519' }}>
                 {currentHint}
@@ -1910,19 +1909,16 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
             >
               <div
                 style={{
-                  fontSize: '11px',
+                  fontSize: '14px',
                   fontWeight: 800,
                   color: attempt > 1 ? '#c2410c' : '#be185d',
                   marginBottom: '4px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '5px',
                 }}
               >
-                <span style={{ fontSize: '14px' }}>💡</span>
-                <span>GỢI Ý ĐÁP ÁN{attempt > 1 ? ' (LẦN 2)' : ''}:</span>
+                <span style={{ fontSize: '16px' }}>💡</span>
               </div>
               <div style={{ fontSize: '13.5px', fontWeight: 500, color: attempt > 1 ? '#7c2d12' : '#4c0519' }}>
                 {currentHint}
@@ -2284,7 +2280,11 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
         {taskData.form_type === 'FORM_6_1_PROFILE_QA' && (
           <section className="task-panel" style={{ background: '#ffffff', padding: '20px', borderRadius: '16px', border: '1px solid var(--color-line, #e5e7eb)', boxShadow: '0 4px 16px rgba(0,0,0,0.04)' }}>
             <ProfileListenAnswerRenderer
-              config={taskData.content as Form61ProfileConfig}
+              config={{
+                ...((taskData.content || {}) as Form61ProfileConfig),
+                audio_url: (taskData.content as any)?.audio_url || (taskData.content as any)?.audioUrl || (taskData as any).audio_url || (taskData as any).audioUrl || '',
+                audioUrl: (taskData.content as any)?.audio_url || (taskData.content as any)?.audioUrl || (taskData as any).audio_url || (taskData as any).audioUrl || '',
+              }}
               taskCode={task.code}
               onComplete={(score, details) => {
                 setIsCompleted(true)

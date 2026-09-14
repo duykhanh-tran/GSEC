@@ -55,8 +55,14 @@ export function IndexPage() {
     // Tải trước ngầm các bài tập phổ biến/bài tập có audio để học sinh nhập mã là mở ngay tức thì
     if (import.meta.env.MODE !== 'test') {
       const timer = setTimeout(() => {
-        taskCacheService.preloadTasksBatch(['60111', '60112', '60123', '60124', '60125', '60126'])
-      }, 500)
+        taskCacheService.preloadTasksBatch([
+          '60111', '60112',
+          '60123', '60124', '60125', '60126',
+          '60145', '60146',
+          '60161', '60162',
+          '60182', '60183', '60184',
+        ])
+      }, 300)
       return () => clearTimeout(timer)
     }
   }, [])

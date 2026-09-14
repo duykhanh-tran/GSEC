@@ -168,10 +168,9 @@ describe('Navigation and Cue vs Hint Separation', () => {
     await waitFor(() => {
       // 1. Câu dẫn / Lời nhắc nằm ở bong bóng chat phía trên
       expect(screen.getByText(/Lan is a student at Trung Vuong Secondary School\. Look back at blank \(1\)\./i)).toBeInTheDocument()
-      // 2. Không còn hộp "Lời dẫn / Lời nhắc" thừa bên trong thẻ làm bài
-      expect(screen.queryByText(/Lời dẫn \/ Lời nhắc:/i)).not.toBeInTheDocument()
-      // 3. Trong thẻ chỉ còn lại duy nhất phần gợi ý đáp án nổi bật
-      expect(screen.getByText(/GỢI Ý ĐÁP ÁN/i)).toBeInTheDocument()
+      // 3. Trong thẻ chỉ còn lại duy nhất phần gợi ý đáp án nổi bật với biểu tượng bóng đèn
+      expect(screen.getByText(/💡/)).toBeInTheDocument()
+      expect(screen.queryByText(/GỢI Ý ĐÁP ÁN/i)).not.toBeInTheDocument()
       expect(screen.getByText(/English and science are school subjects\. Which verb goes with subjects\?/i)).toBeInTheDocument()
     }, { timeout: 4000 })
   })

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import type { Form62InterviewConfig, Form62InterviewFieldItem } from '../dynamic-schema'
 import { matchQuestionToField } from '../../lib/questionBankMatcher'
 import {
@@ -13,6 +13,7 @@ import {
   cleanLeadInText,
 } from '../../lib/aiGradingService'
 import { ActionButton } from '../../components/task/ActionButton'
+import { getOptimizedAudioSrc } from '../../lib/taskCacheService'
 import './interview-fill-profile.css'
 
 function playSuccessDing() {
@@ -116,7 +117,8 @@ export function InterviewFillProfileRenderer({
         ]
 
   // Audio tổng quan (Overall Audio)
-  const overallAudioUrl = (config as any).audio_url || (config as any).audioUrl || ''
+  const rawOverallUrl = (config as any).audio_url || (config as any).audioUrl || ''
+  const overallAudioUrl = useMemo(() => getOptimizedAudioSrc(rawOverallUrl), [rawOverallUrl])
 
   // Trạng thái câu hỏi hiện tại (làm tuần tự từng câu 1)
   const [activeItemIndex, setActiveItemIndex] = useState(0)
@@ -282,7 +284,7 @@ export function InterviewFillProfileRenderer({
 
     if (item.prompt_audio_url && item.prompt_audio_url.trim()) {
       if (audioPlayerRef.current) {
-        audioPlayerRef.current.src = item.prompt_audio_url
+        audioPlayerRef.current.src = getOptimizedAudioSrc(item.prompt_audio_url.trim())
         audioPlayerRef.current.onended = () => {
           setPlayingAudioType(null)
           setPlayingItemId(null)
@@ -353,7 +355,7 @@ export function InterviewFillProfileRenderer({
 
     if (item.answer_audio_url && item.answer_audio_url.trim()) {
       if (audioPlayerRef.current) {
-        audioPlayerRef.current.src = item.answer_audio_url
+        audioPlayerRef.current.src = getOptimizedAudioSrc(item.answer_audio_url.trim())
         audioPlayerRef.current.onended = onAudio2Ended
         try {
           const playPromise = audioPlayerRef.current.play()
@@ -567,6 +569,7 @@ export function InterviewFillProfileRenderer({
         <audio
           ref={overallAudioRef}
           src={overallAudioUrl}
+          preload="auto"
           onEnded={handleOverallAudioEnded}
           style={{ display: 'none' }}
         />
@@ -575,6 +578,7 @@ export function InterviewFillProfileRenderer({
       {/* Audio player ẩn cho Audio 1 & Audio 2 */}
       <audio
         ref={audioPlayerRef}
+        preload="none"
         onEnded={() => {
           setPlayingAudioType(null)
           setPlayingItemId(null)
