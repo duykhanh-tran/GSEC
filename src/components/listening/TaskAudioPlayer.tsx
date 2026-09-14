@@ -143,13 +143,15 @@ export function TaskAudioPlayer({
           </div>
           <div>
             <strong style={{ fontSize: '14px', color: '#1f2937' }}>{title}</strong>
-            <div style={{ fontSize: '12px', color: 'var(--color-muted)' }}>
-              {isUnlocked
-                ? '✓ Listen requirement met. Replay anytime.'
-                : requiredListens === 1
-                ? 'Listen to the audio once to start the task'
-                : `Listen ${requiredListens} times to unlock questions (${Math.max(0, requiredListens - listenCount)} left)`}
-            </div>
+            {isUnlocked ? (
+              <div style={{ fontSize: '12px', color: 'var(--color-muted)' }}>
+                ✓ Listen requirement met. Replay anytime.
+              </div>
+            ) : requiredListens > 1 ? (
+              <div style={{ fontSize: '12px', color: 'var(--color-muted)' }}>
+                {`Listen ${requiredListens} times to unlock questions (${Math.max(0, requiredListens - listenCount)} left)`}
+              </div>
+            ) : null}
           </div>
         </div>
 
@@ -272,7 +274,7 @@ export function TaskAudioPlayer({
             >
               <span>🔒</span>
               <span>
-                Task questions are currently locked. Listen to the recording <strong>{requiredListens === 1 ? '1 time' : `${requiredListens} times`}</strong> to start answering.
+                Listen {requiredListens === 1 ? '1 time' : `${requiredListens} times`} to start answering
               </span>
             </div>
           ) : (

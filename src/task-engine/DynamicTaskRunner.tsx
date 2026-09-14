@@ -1589,9 +1589,28 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
       }
     >
       <div className="task-flow" style={{ display: 'flex', flexDirection: 'column', gap: '16px', paddingBottom: '200px' }}>
-        {/* 1. Lời thoại Gia sư AI mở đầu (chỉ hiển thị introText, đã bỏ tiêu đề bài học vì đã có ở header) */}
+        {/* 1. Lời thoại Gia sư AI mở đầu (Check Task N. [Tên bài]) */}
         <TutorBubble>
-          {cleanLeadInText(introText)}
+          {(() => {
+            const cleaned = cleanLeadInText(introText).replace(/\s+\./g, '.')
+            const match = cleaned.match(/^(Check Task \d+\.?)(.*)/i)
+            if (match) {
+              const prefix = match[1].endsWith('.') ? match[1] : `${match[1]}.`
+              const rest = match[2].trim()
+              return (
+                <>
+                  <strong>{prefix}</strong>
+                  {rest ? (
+                    <>
+                      <br />
+                      {rest}
+                    </>
+                  ) : null}
+                </>
+              )
+            }
+            return cleaned
+          })()}
         </TutorBubble>
 
         {/* BỘ PHÁT ÂM THANH BÀI NGHE (CHỈ HIỆN KHI BÀI TẬP CÓ FILE AUDIO VÀ KHÔNG PHẢI FORM 6.2 TỰ ĐỘNG PHÁT) */}
@@ -1637,9 +1656,6 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
                 >
                   {isSubmitting ? 'Checking...' : 'Check'}
                 </ActionButton>
-              </div>
-              <div className="note" style={{ marginTop: '12px' }}>
-                Use the worksheet questions while entering your choices.
               </div>
             </div>
           </section>
@@ -1714,9 +1730,6 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
                 <ActionButton id="initialCheckBtn" disabled={isSubmitting} type="submit">
                   {isSubmitting ? 'Checking...' : 'Check'}
                 </ActionButton>
-              </div>
-              <div className="note" style={{ marginTop: '12px', fontSize: '12px', color: 'var(--color-muted)' }}>
-                Use the worksheet questions while entering your answers (letters a, b, c, d or words/phrases).
               </div>
             </form>
           </section>

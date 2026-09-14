@@ -1290,37 +1290,43 @@ export function cleanLeadInText(raw: string): string {
 export function getFormPedagogicalLeadIn(
   formType: string,
   content?: any,
-  _title?: string
+  title?: string
 ): string {
-  if (content?.intro && content.intro.trim() && !content.intro.toLowerCase().includes('check task')) {
-    return cleanLeadInText(content.intro)
+  if (content?.intro && content.intro.trim()) {
+    let intro = cleanLeadInText(content.intro)
+    intro = intro.replace(/Check Task (\d+)\s*\./gi, 'Check Task $1.')
+    return intro
   }
+
+  // Nếu không có intro sẵn trong content, tạo intro chuẩn theo Task number và title
+  const taskMatch = title ? title.match(/Task\s*(\d+)/i) : null
+  const taskNum = taskMatch ? taskMatch[1] : '2'
 
   switch (formType) {
     case 'FORM_1_CHOICE':
-      return 'Chào em! Em hãy đọc kỹ từng câu hỏi, quan sát các phương án và lựa chọn đáp án chính xác nhất nhé.'
+      return `Check Task ${taskNum}. Choose the correct answer.`
     case 'FORM_2_FILL':
-      return 'Chào em! Chúng ta cùng hoàn thành phiếu bài tập bằng cách điền câu trả lời chính xác vào từng ô trống nhé.'
+      return `Check Task ${taskNum}. Enter your answers from the worksheet.`
     case 'FORM_3_WRITING':
-      return 'Chào em! Bây giờ chúng ta cùng luyện kỹ năng viết tiếng Anh. Em hãy chú ý ngữ pháp, viết câu hoàn chỉnh và kiểm tra kỹ trước khi nộp bài nhé.'
+      return `Check Task ${taskNum}. Write full and complete sentences.`
     case 'FORM_4_SENTENCE_REPAIR':
-      return 'Chào em! Em hãy quan sát câu chưa chính xác và sửa lại cho đúng ngữ pháp nhé.'
+      return `Check Task ${taskNum}. Find and correct the mistakes in the sentences.`
     case 'FORM_4_SPEAKING':
-      return 'Chào em! Em hãy đọc to và rõ ràng từng câu tiếng Anh vào micro. AI sẽ lắng nghe và đánh giá độ chuẩn xác phát âm của em nhé.'
+      return `Check Task ${taskNum}. Speak clearly into the microphone.`
     case 'FORM_5_SEQUENCE':
-      return 'Chào em! Em hãy đọc kỹ các đoạn văn và sắp xếp lại theo đúng thứ tự logic của câu chuyện nhé.'
+      return `Check Task ${taskNum}. Arrange the sentences in the correct order.`
     case 'FORM_5_LISTEN_REPEAT':
-      return 'Chào em! Em hãy lắng nghe thật kỹ từng đoạn âm thanh mẫu, sau đó bấm micro và nhắc lại thật chuẩn xác nhé.'
+      return `Check Task ${taskNum}. Listen and repeat each sentence.`
     case 'FORM_6_1_PROFILE_QA':
-      return 'Chào em! Em hãy quan sát hồ sơ của bạn mới, lắng nghe câu hỏi từ Gia sư AI và trả lời thật tự tin nhé.'
+      return `Check Task ${taskNum}. Listen and answer questions about your classmate.`
     case 'FORM_6_2_INTERVIEW_PROFILE':
-      return 'Chào em! Chúng ta cùng tham gia buổi phỏng vấn bạn mới. Hãy lắng nghe lời dẫn và tự tin đặt câu hỏi bằng tiếng Anh nhé.'
+      return `Check Task ${taskNum}. Interview your classmate and ask questions.`
     case 'FORM_7_TOPIC_SPEAKING':
       return content?.prompt
-        ? `Chào em! Hãy chọn một chủ đề em yêu thích và tự tin trình bày bài nói nhé: "${cleanLeadInText(content.prompt)}".`
-        : 'Chào em! Em hãy chọn một chủ đề trong bảng và tự tin trình bày bài nói tiếng Anh của mình nhé.'
+        ? `Check Task ${taskNum}. Topic speaking: "${cleanLeadInText(content.prompt)}"`
+        : `Check Task ${taskNum}. Choose a topic and speak.`
     default:
-      return 'Chào em! Em hãy hoàn thành các yêu cầu của bài tập dưới đây thật cẩn thận và tự tin nhé.'
+      return `Check Task ${taskNum}. Complete the worksheet exercise.`
   }
 }
 
