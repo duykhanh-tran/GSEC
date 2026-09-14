@@ -166,13 +166,12 @@ describe('Navigation and Cue vs Hint Separation', () => {
 
     // Chờ vào giai đoạn Guided Retry
     await waitFor(() => {
-      // 1. Phải có nhãn rõ ràng cho Lời dẫn / Lời nhắc
-      expect(screen.getByText(/Lời dẫn \/ Lời nhắc:/i)).toBeInTheDocument()
-      // 2. Nội dung câu dẫn hiển thị chính xác dưới Question 1
-      expect(screen.getAllByText(/Lan is a student at Trung Vuong Secondary School\. Look back at blank \(1\)\./i).length).toBeGreaterThanOrEqual(1)
-      // 3. Phải có nhãn rõ ràng cho Gợi ý đáp án
-      expect(screen.getByText(/Gợi ý đáp án:/i)).toBeInTheDocument()
-      // 4. Nội dung gợi ý đáp án hiển thị riêng biệt bên dưới
+      // 1. Câu dẫn / Lời nhắc nằm ở bong bóng chat phía trên
+      expect(screen.getByText(/Lan is a student at Trung Vuong Secondary School\. Look back at blank \(1\)\./i)).toBeInTheDocument()
+      // 2. Không còn hộp "Lời dẫn / Lời nhắc" thừa bên trong thẻ làm bài
+      expect(screen.queryByText(/Lời dẫn \/ Lời nhắc:/i)).not.toBeInTheDocument()
+      // 3. Trong thẻ chỉ còn lại duy nhất phần gợi ý đáp án nổi bật
+      expect(screen.getByText(/GỢI Ý ĐÁP ÁN/i)).toBeInTheDocument()
       expect(screen.getByText(/English and science are school subjects\. Which verb goes with subjects\?/i)).toBeInTheDocument()
     }, { timeout: 4000 })
   })

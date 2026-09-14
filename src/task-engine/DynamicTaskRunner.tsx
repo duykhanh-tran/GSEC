@@ -1733,25 +1733,6 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
               <strong>{currentRetryItem?.label || `Question ${activeId}`}</strong>
               <StatusTag tone="warning">Attempt {attempt}</StatusTag>
             </div>
-            <div
-              className="bookcue"
-              style={{
-                fontSize: '13px',
-                color: '#334155',
-                marginBottom: '10px',
-                padding: '10px 12px',
-                borderRadius: '10px',
-                background: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                lineHeight: '1.45',
-              }}
-            >
-              <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span>📖</span>
-                <span>Lời dẫn / Lời nhắc:</span>
-              </div>
-              <div>{currentRetryItem?.cue || `Look back at Question ${activeId}.`}</div>
-            </div>
             {currentRetryItem?.audio_url && (
               <div
                 className="item-retry-audio-box"
@@ -1786,21 +1767,36 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
             <div
               className={`hint ${attempt > 1 ? 'deep' : ''}`}
               style={{
-                marginBottom: '12px',
-                padding: '10px 12px',
-                borderRadius: '10px',
-                background: attempt > 1 ? '#fff7ed' : '#fcedf3',
+                marginBottom: '14px',
+                padding: '12px 14px',
+                borderRadius: '12px',
+                background: attempt > 1 ? '#fff7ed' : '#fdf2f8',
                 color: attempt > 1 ? '#9a3412' : '#831843',
-                border: attempt > 1 ? '1px solid #fed7aa' : '1px solid #fbcfe8',
-                fontSize: '13px',
-                lineHeight: '1.45',
+                border: attempt > 1 ? '1.5px solid #fed7aa' : '1.5px solid #fbcfe8',
+                fontSize: '13.5px',
+                lineHeight: '1.5',
+                boxShadow: '0 2px 8px rgba(244, 63, 94, 0.05)',
               }}
             >
-              <div style={{ fontSize: '11px', fontWeight: 700, color: attempt > 1 ? '#c2410c' : '#9d174d', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span>💡</span>
-                <span>Gợi ý đáp án{attempt > 1 ? ' (Lần 2)' : ''}:</span>
+              <div
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 800,
+                  color: attempt > 1 ? '#c2410c' : '#be185d',
+                  marginBottom: '4px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                }}
+              >
+                <span style={{ fontSize: '14px' }}>💡</span>
+                <span>GỢI Ý ĐÁP ÁN{attempt > 1 ? ' (LẦN 2)' : ''}:</span>
               </div>
-              <div>{currentHint}</div>
+              <div style={{ fontSize: '13.5px', fontWeight: 500, color: attempt > 1 ? '#7c2d12' : '#4c0519' }}>
+                {currentHint}
+              </div>
             </div>
             <ChoiceGroup
               ariaLabel={`${currentRetryItem?.label || `Question ${activeId}`} retry`}
@@ -1842,42 +1838,38 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
               <StatusTag tone="warning">Attempt {attempt}</StatusTag>
             </div>
             <div
-              className="bookcue"
-              style={{
-                fontSize: '13px',
-                color: '#334155',
-                marginBottom: '10px',
-                padding: '10px 12px',
-                borderRadius: '10px',
-                background: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                lineHeight: '1.45',
-              }}
-            >
-              <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span>📖</span>
-                <span>Lời dẫn / Lời nhắc:</span>
-              </div>
-              <div>{currentRetryItem?.cue || `Look back at Question ${currentRetryItem?.numBadge || activeId} from the worksheet.`}</div>
-            </div>
-            <div
               className={`hint ${attempt > 1 ? 'deep' : ''}`}
               style={{
-                marginBottom: '12px',
-                padding: '10px 12px',
-                borderRadius: '10px',
-                background: attempt > 1 ? '#fff7ed' : '#fcedf3',
+                marginBottom: '14px',
+                padding: '12px 14px',
+                borderRadius: '12px',
+                background: attempt > 1 ? '#fff7ed' : '#fdf2f8',
                 color: attempt > 1 ? '#9a3412' : '#831843',
-                border: attempt > 1 ? '1px solid #fed7aa' : '1px solid #fbcfe8',
-                fontSize: '13px',
-                lineHeight: '1.45',
+                border: attempt > 1 ? '1.5px solid #fed7aa' : '1.5px solid #fbcfe8',
+                fontSize: '13.5px',
+                lineHeight: '1.5',
+                boxShadow: '0 2px 8px rgba(244, 63, 94, 0.05)',
               }}
             >
-              <div style={{ fontSize: '11px', fontWeight: 700, color: attempt > 1 ? '#c2410c' : '#9d174d', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span>💡</span>
-                <span>Gợi ý đáp án{attempt > 1 ? ' (Lần 2)' : ''}:</span>
+              <div
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 800,
+                  color: attempt > 1 ? '#c2410c' : '#be185d',
+                  marginBottom: '4px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                }}
+              >
+                <span style={{ fontSize: '14px' }}>💡</span>
+                <span>GỢI Ý ĐÁP ÁN{attempt > 1 ? ' (LẦN 2)' : ''}:</span>
               </div>
-              <div>{currentHint}</div>
+              <div style={{ fontSize: '13.5px', fontWeight: 500, color: attempt > 1 ? '#7c2d12' : '#4c0519' }}>
+                {currentHint}
+              </div>
             </div>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <input
