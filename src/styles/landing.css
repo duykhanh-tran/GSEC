@@ -47,6 +47,12 @@
   -webkit-font-smoothing: antialiased;
   padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.gsec-landing-page > footer {
+  margin-top: auto;
 }
 
 .gsec-landing-page a {
