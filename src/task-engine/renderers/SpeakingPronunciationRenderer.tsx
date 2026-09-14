@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ActionButton } from '../../components/task/ActionButton'
 import {
   transcribeAudioWithAssemblyAI,
@@ -36,6 +37,7 @@ export function SpeakingPronunciationRenderer({
   onNavigateHome,
   disabled = false,
 }: SpeakingPronunciationRendererProps) {
+  const navigate = useNavigate()
   const linkedTaskCode = config.linked_task_code || '60115'
   const passScore = config.pass_score ?? 80
 
@@ -90,7 +92,7 @@ export function SpeakingPronunciationRenderer({
 
       setWritingData(data)
 
-      if (data.found && data.sentences.length > 0) {
+      if (data?.found && data.sentences && data.sentences.length > 0) {
         setSentences(data.sentences)
       } else if (config.fallback_sentences && config.fallback_sentences.length > 0) {
         setSentences(config.fallback_sentences)
@@ -400,8 +402,9 @@ export function SpeakingPronunciationRenderer({
           Hiện chưa có dữ liệu bài viết đã hoàn thành của bạn. Vui lòng làm bài tập {linkedTaskCode} trước nhé!
         </p>
         <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
-          <a
-            href={`/${linkedTaskCode}`}
+          <button
+            type="button"
+            onClick={() => navigate(`/tasks/${linkedTaskCode}`)}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -412,33 +415,32 @@ export function SpeakingPronunciationRenderer({
               borderRadius: '10px',
               fontWeight: 700,
               fontSize: '14px',
-              textDecoration: 'none',
+              border: 'none',
+              cursor: 'pointer',
               boxShadow: '0 2px 8px rgba(37,99,235,0.25)',
             }}
           >
             ✏️ Đến làm bài tập {linkedTaskCode}
-          </a>
-          {onNavigateHome && (
-            <button
-              type="button"
-              onClick={onNavigateHome}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '10px 18px',
-                background: '#f1f5f9',
-                color: '#475569',
-                borderRadius: '10px',
-                fontWeight: 600,
-                fontSize: '14px',
-                border: '1px solid #cbd5e1',
-                cursor: 'pointer',
-              }}
-            >
-              Quay lại danh sách bài
-            </button>
-          )}
+          </button>
+          <button
+            type="button"
+            onClick={() => (onNavigateHome ? onNavigateHome() : navigate('/?mode=code'))}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '10px 18px',
+              background: '#f1f5f9',
+              color: '#475569',
+              borderRadius: '10px',
+              fontWeight: 600,
+              fontSize: '14px',
+              border: '1px solid #cbd5e1',
+              cursor: 'pointer',
+            }}
+          >
+            Quay lại danh sách bài
+          </button>
         </div>
       </div>
     )

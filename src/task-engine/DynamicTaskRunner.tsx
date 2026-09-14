@@ -546,21 +546,25 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
 
     let itemRef: any = null
     let label = `Question ${id}`
+    let cue = ''
 
     if (taskData.form_type === 'FORM_1_CHOICE') {
       const form1Config = taskData.content as Form1ChoiceConfig
       itemRef = form1Config.items?.find((i) => String(i.id) === id)
       label = itemRef?.label || `Question ${id}`
+      cue = itemRef?.cue || `Look back at Question ${id}.`
     } else if (taskData.form_type === 'FORM_2_FILL') {
       const form2Config = taskData.content as any
       const rawList = form2Config?.fields || form2Config?.items || []
       itemRef = rawList.find((f: any, idx: number) => String(f.id !== undefined && f.id !== null ? f.id : idx + 1) === id)
-      const cleanNum = (itemRef?.label || id).replace(/^câu\s*/i, '').replace(/^question\s*/i, '').replace(/:\s*$/, '').trim()
+      const cleanNum = (itemRef?.label || id).replace(/^câu\s*/i, '').replace(/^question\s*/i, '').replace(/:\s*$/, '').trim() || id
       label = `Question ${cleanNum}`
+      cue = itemRef?.cue || `Look back at Question ${cleanNum} from the worksheet.`
     } else if (taskData.form_type === 'FORM_3_WRITING') {
       const form3Config = taskData.content as Form3WritingConfig
       itemRef = form3Config.items?.find((i, idx) => String(i.id || idx + 1) === id)
       label = itemRef?.label || `Question ${id}`
+      cue = itemRef?.cue || `Look back at Question ${id} from your worksheet.`
       setRetryChosenValue(answers[id] || '')
     }
 
@@ -571,7 +575,7 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
       <>
         <strong>{label}</strong>
         <br />
-        {hint}
+        {cue}
       </>
     )
     schedule(() => scrollToLatest(), 80)
@@ -801,17 +805,20 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
 
           let itemRef: any = null
           let label = `Question ${activeId}`
+          let cue = ''
 
           if (taskData.form_type === 'FORM_1_CHOICE') {
             const form1Config = taskData.content as Form1ChoiceConfig
             itemRef = form1Config.items?.find((i) => String(i.id) === activeId)
             label = itemRef?.label || `Question ${activeId}`
+            cue = itemRef?.cue || `Look back at Question ${activeId}.`
           } else if (taskData.form_type === 'FORM_2_FILL') {
             const form2Config = taskData.content as any
             const rawList = form2Config?.fields || form2Config?.items || []
             itemRef = rawList.find((f: any, idx: number) => String(f.id !== undefined && f.id !== null ? f.id : idx + 1) === activeId)
-            const cleanNum = (itemRef?.label || activeId).replace(/^câu\s*/i, '').replace(/^question\s*/i, '').replace(/:\s*$/, '').trim()
+            const cleanNum = (itemRef?.label || activeId).replace(/^câu\s*/i, '').replace(/^question\s*/i, '').replace(/:\s*$/, '').trim() || activeId
             label = `Question ${cleanNum}`
+            cue = itemRef?.cue || `Look back at Question ${cleanNum} from the worksheet.`
           }
 
           const deepHint = getRandomHint(activeId, itemRef, res?.results)
@@ -821,7 +828,7 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
             <>
               <strong>{label}</strong>
               <br />
-              Not yet. {deepHint}
+              Not yet. {cue}
             </>
           )
         }, 700)
@@ -1726,8 +1733,24 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
               <strong>{currentRetryItem?.label || `Question ${activeId}`}</strong>
               <StatusTag tone="warning">Attempt {attempt}</StatusTag>
             </div>
-            <div className="bookcue">
-              {currentRetryItem?.cue || `Look back at Question ${activeId}.`}
+            <div
+              className="bookcue"
+              style={{
+                fontSize: '13px',
+                color: '#334155',
+                marginBottom: '10px',
+                padding: '10px 12px',
+                borderRadius: '10px',
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                lineHeight: '1.45',
+              }}
+            >
+              <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span>📖</span>
+                <span>Lời dẫn / Lời nhắc:</span>
+              </div>
+              <div>{currentRetryItem?.cue || `Look back at Question ${activeId}.`}</div>
             </div>
             {currentRetryItem?.audio_url && (
               <div
@@ -1760,8 +1783,24 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
                 />
               </div>
             )}
-            <div className={`hint ${attempt > 1 ? 'deep' : ''}`}>
-              💡 {currentHint}
+            <div
+              className={`hint ${attempt > 1 ? 'deep' : ''}`}
+              style={{
+                marginBottom: '12px',
+                padding: '10px 12px',
+                borderRadius: '10px',
+                background: attempt > 1 ? '#fff7ed' : '#fcedf3',
+                color: attempt > 1 ? '#9a3412' : '#831843',
+                border: attempt > 1 ? '1px solid #fed7aa' : '1px solid #fbcfe8',
+                fontSize: '13px',
+                lineHeight: '1.45',
+              }}
+            >
+              <div style={{ fontSize: '11px', fontWeight: 700, color: attempt > 1 ? '#c2410c' : '#9d174d', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span>💡</span>
+                <span>Gợi ý đáp án{attempt > 1 ? ' (Lần 2)' : ''}:</span>
+              </div>
+              <div>{currentHint}</div>
             </div>
             <ChoiceGroup
               ariaLabel={`${currentRetryItem?.label || `Question ${activeId}`} retry`}
@@ -1806,11 +1845,20 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
               className="bookcue"
               style={{
                 fontSize: '13px',
-                color: 'var(--color-muted, #6b7280)',
+                color: '#334155',
                 marginBottom: '10px',
+                padding: '10px 12px',
+                borderRadius: '10px',
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                lineHeight: '1.45',
               }}
             >
-              {currentRetryItem?.cue || `Look back at Question ${currentRetryItem?.numBadge || activeId} from the worksheet.`}
+              <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span>📖</span>
+                <span>Lời dẫn / Lời nhắc:</span>
+              </div>
+              <div>{currentRetryItem?.cue || `Look back at Question ${currentRetryItem?.numBadge || activeId} from the worksheet.`}</div>
             </div>
             <div
               className={`hint ${attempt > 1 ? 'deep' : ''}`}
@@ -1818,13 +1866,18 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
                 marginBottom: '12px',
                 padding: '10px 12px',
                 borderRadius: '10px',
-                background: '#fcedf3',
-                color: '#6a4055',
+                background: attempt > 1 ? '#fff7ed' : '#fcedf3',
+                color: attempt > 1 ? '#9a3412' : '#831843',
+                border: attempt > 1 ? '1px solid #fed7aa' : '1px solid #fbcfe8',
                 fontSize: '13px',
                 lineHeight: '1.45',
               }}
             >
-              💡 {currentHint}
+              <div style={{ fontSize: '11px', fontWeight: 700, color: attempt > 1 ? '#c2410c' : '#9d174d', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span>💡</span>
+                <span>Gợi ý đáp án{attempt > 1 ? ' (Lần 2)' : ''}:</span>
+              </div>
+              <div>{currentHint}</div>
             </div>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <input

@@ -226,13 +226,14 @@ export function AdminTaskStudioPage() {
   // ================= FORM 2 BUILDER STATE =================
   const [fillItems, setFillItems] = useState<Array<{
     label: string
+    cue?: string
     placeholder?: string
     correctAnswers: string
     hints: string[]
     h1?: string
     h2?: string
   }>>([
-    { label: '1', placeholder: 'Your answer', correctAnswers: 'school, a school', hints: ['', ''] },
+    { label: '1', cue: 'Look back at Question 1 from the worksheet.', placeholder: 'Your answer', correctAnswers: 'school, a school', hints: ['', ''] },
   ])
 
   // ================= FORM 3 WRITING BUILDER STATE =================
@@ -536,7 +537,7 @@ export function AdminTaskStudioPage() {
               const pHints = hintsData[key]?.hints || it.hints || []
               return {
                 label: it.label || `Question ${idx + 1}`,
-                cue: it.cue || '',
+                cue: it.cue || hintsData[key]?.cue || `Look back at Question ${idx + 1}.`,
                 correct: correctVal,
                 hints: [pHints[0] || it.firstHint || '', pHints[1] || it.secondHint || ''],
                 audio_url: it.audio_url || '',
@@ -571,6 +572,7 @@ export function AdminTaskStudioPage() {
               const pHints = hintsData[key]?.hints || hintsData[cleanNum]?.hints || it.hints || []
               return {
                 label: it.label || String(idx + 1),
+                cue: it.cue || hintsData[key]?.cue || hintsData[cleanNum]?.cue || `Look back at Question ${cleanNum || idx + 1} from the worksheet.`,
                 placeholder: it.placeholder || '',
                 correctAnswers: correctStr,
                 hints: [pHints[0] || it.firstHint || '', pHints[1] || it.secondHint || ''],
@@ -731,6 +733,7 @@ export function AdminTaskStudioPage() {
           const cleanHints = (item.hints || []).map((h) => h.trim()).filter(Boolean)
           keysPayload[key] = item.correct.trim().toUpperCase()
           hintsPayload[key] = {
+            cue: item.cue?.trim() || undefined,
             hints: cleanHints,
             h1: cleanHints[0] || 'Check the question again.',
             h2: cleanHints[1] || cleanHints[0] || 'Look back at your worksheet.',
@@ -751,6 +754,7 @@ export function AdminTaskStudioPage() {
           return {
             id: index + 1,
             label: item.label || String(index + 1),
+            cue: item.cue?.trim() || undefined,
             placeholder: item.placeholder || 'Your answer (a, b, c, d or word/phrase)',
             hints: cleanHints,
             accepted: cleanAnswers,
@@ -771,6 +775,7 @@ export function AdminTaskStudioPage() {
           const cleanHints = (item.hints || []).map((h) => h.trim()).filter(Boolean)
           keysPayload[key] = cleanAnswers.map((a) => a.toLowerCase().trim())
           hintsPayload[key] = {
+            cue: item.cue?.trim() || undefined,
             hints: cleanHints,
             h1: cleanHints[0] || 'Check the sentence carefully.',
             h2: cleanHints[1] || cleanHints[0] || 'Look back at the worksheet.',
@@ -1655,6 +1660,25 @@ export function AdminTaskStudioPage() {
                           </div>
                         </div>
 
+                        {/* Lời dẫn / Lời nhắc câu hỏi (Cue) */}
+                        <div style={{ marginBottom: '12px' }}>
+                          <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#64748b', marginBottom: '4px' }}>
+                            📖 Lời dẫn / Lời nhắc câu hỏi (Câu dẫn / Cue):
+                          </label>
+                          <input
+                            type="text"
+                            className="auth-input"
+                            style={{ width: '100%', padding: '8px 10px', fontSize: '13px' }}
+                            placeholder="Ví dụ: Look back at Question 1 from the worksheet."
+                            value={item.cue || ''}
+                            onChange={(e) => {
+                              const next = [...choiceItems]
+                              next[index].cue = e.target.value
+                              setChoiceItems(next)
+                            }}
+                          />
+                        </div>
+
                         {/* File âm thanh câu hỏi */}
                         <div style={{ marginBottom: '12px', padding: '10px', background: '#ffffff', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
                           <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#64748b', marginBottom: '6px' }}>
@@ -1758,6 +1782,7 @@ export function AdminTaskStudioPage() {
                           ...fillItems,
                           {
                             label: String(fillItems.length + 1),
+                            cue: `Look back at Question ${fillItems.length + 1} from the worksheet.`,
                             placeholder: 'Your answer',
                             correctAnswers: '',
                             hints: ['', ''],
@@ -1847,6 +1872,25 @@ export function AdminTaskStudioPage() {
                               }}
                             />
                           </div>
+                        </div>
+
+                        {/* Lời dẫn / Lời nhắc câu hỏi (Cue) */}
+                        <div style={{ marginBottom: '12px' }}>
+                          <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#64748b', marginBottom: '4px' }}>
+                            📖 Lời dẫn / Lời nhắc câu hỏi (Câu dẫn / Cue):
+                          </label>
+                          <input
+                            type="text"
+                            className="auth-input"
+                            style={{ width: '100%', padding: '8px 10px', fontSize: '13px' }}
+                            placeholder="Ví dụ: Look back at Question 1 from the worksheet."
+                            value={item.cue || ''}
+                            onChange={(e) => {
+                              const next = [...fillItems]
+                              next[index].cue = e.target.value
+                              setFillItems(next)
+                            }}
+                          />
                         </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
