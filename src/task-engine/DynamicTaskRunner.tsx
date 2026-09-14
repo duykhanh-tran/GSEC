@@ -27,6 +27,8 @@ import {
   evaluateSentenceWithAI,
   evaluateBatchSentencesWithAI,
   evaluateParagraphWithAI,
+  getFormPedagogicalLeadIn,
+  cleanLeadInText,
 } from '../lib/aiGradingService'
 import { saveTaskAttempt } from '../lib/taskAttemptService'
 import { saveApprovedWriting } from '../lib/studentWritingStorageService'
@@ -1474,21 +1476,7 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
     }
   }
 
-  const introText =
-    (taskData.content as any)?.intro ||
-    (taskData.form_type === 'FORM_2_FILL'
-      ? 'Check Task 1. Enter your answers from the worksheet.'
-      : taskData.form_type === 'FORM_4_SPEAKING'
-      ? 'Read aloud the sentences you wrote in the previous writing task. AI will evaluate your pronunciation clarity.'
-      : taskData.form_type === 'FORM_5_LISTEN_REPEAT'
-      ? 'Listen to each audio clip carefully. Repeat aloud into your microphone to get scored.'
-      : taskData.form_type === 'FORM_6_1_PROFILE_QA'
-      ? "Look at your new classmate's profile. Listen to the AI Coach and answer."
-      : taskData.form_type === 'FORM_6_2_INTERVIEW_PROFILE'
-      ? 'Ask AI Tutor, listen to Audio 1, ask questions and listen to answers!'
-      : taskData.form_type === 'FORM_7_TOPIC_SPEAKING'
-      ? ((taskData.content as any)?.prompt || 'Choose ONE good thing to do at school and talk about it.')
-      : 'Enter your answers below.')
+  const introText = getFormPedagogicalLeadIn(taskData.form_type, taskData.content, task.title)
 
   const isCustomInteractiveForm =
     taskData.form_type === 'FORM_4_SPEAKING' ||
@@ -1567,11 +1555,11 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
       <div className="task-flow" style={{ display: 'flex', flexDirection: 'column', gap: '16px', paddingBottom: '200px' }}>
         {/* 1. Lời thoại Gia sư AI mở đầu (chỉ hiển thị introText, đã bỏ tiêu đề bài học vì đã có ở header) */}
         <TutorBubble>
-          {introText}
+          {cleanLeadInText(introText)}
         </TutorBubble>
 
-        {/* BỘ PHÁT ÂM THANH BÀI NGHE (CHỈ HIỆN KHI BÀI TẬP CÓ FILE AUDIO) */}
-        {hasAudio && audioUrl && (
+        {/* BỘ PHÁT ÂM THANH BÀI NGHE (CHỈ HIỆN KHI BÀI TẬP CÓ FILE AUDIO VÀ KHÔNG PHẢI FORM 6.2 TỰ ĐỘNG PHÁT) */}
+        {hasAudio && audioUrl && taskData.form_type !== 'FORM_6_2_INTERVIEW_PROFILE' && (
           <TaskAudioPlayer
             src={audioUrl}
             title={`${task.title} • Listening`}

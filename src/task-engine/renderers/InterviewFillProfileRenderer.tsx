@@ -9,6 +9,7 @@ import {
 import {
   generatePedagogicalInterviewLeadIn,
   getCuratedPedagogicalLeadIn,
+  cleanLeadInText,
 } from '../../lib/aiGradingService'
 import { ActionButton } from '../../components/task/ActionButton'
 import './interview-fill-profile.css'
@@ -123,17 +124,19 @@ export function InterviewFillProfileRenderer({
   // Trạng thái lời dẫn AI theo ngữ cảnh cho câu hiện tại
   const [aiLeadInText, setAiLeadInText] = useState<string>('')
 
+  // Trạng thái phát âm thanh
+  const [isIntroPlaying, setIsIntroPlaying] = useState(false)
+  const [isAutoplayBlocked, setIsAutoplayBlocked] = useState(false)
+  const [playingAudioType, setPlayingAudioType] = useState<'prompt' | 'answer' | null>(null)
+  const [playingItemId, setPlayingItemId] = useState<string | null>(null)
+
   // Trạng thái thu âm
   const [isRecording, setIsRecording] = useState(false)
   const [recordingSeconds, setRecordingSeconds] = useState(0)
   const [isProcessingSTT, setIsProcessingSTT] = useState(false)
   const [sttStageMessage, setSttStageMessage] = useState('')
 
-  // Trạng thái phát âm thanh
-  const [playingAudioType, setPlayingAudioType] = useState<'prompt' | 'answer' | null>(null)
-  const [playingItemId, setPlayingItemId] = useState<string | null>(null)
-
-  // Trạng thái phản hồi của AI cho từng câu hỏi
+  // Trạng thái phản hồi cho câu hỏi
   const [itemFeedbacks, setItemFeedbacks] = useState<Record<string, {
     matched: boolean
     message: string
@@ -156,7 +159,6 @@ export function InterviewFillProfileRenderer({
   useEffect(() => {
     if (!currentItem) return
 
-    // Thiết lập ngay lời dẫn mẫu sư phạm chuẩn mực
     const completedList = items
       .filter((it, idx) => idx < activeItemIndex && completedItemIds.has(it.id))
       .map((it) => ({ label: it.label, answerText: it.answer_text_display }))
@@ -167,9 +169,8 @@ export function InterviewFillProfileRenderer({
       items.length,
       completedList
     )
-    setAiLeadInText(fastLead)
+    setAiLeadInText(cleanLeadInText(fastLead))
 
-    // Gọi thêm Gemini AI nếu có key để tinh chỉnh lời dẫn sinh động theo ngữ cảnh
     let isCancelled = false
     generatePedagogicalInterviewLeadIn(
       currentItem.label,
@@ -178,7 +179,7 @@ export function InterviewFillProfileRenderer({
       completedList
     ).then((refined) => {
       if (!isCancelled && refined) {
-        setAiLeadInText(refined)
+        setAiLeadInText(cleanLeadInText(refined))
       }
     }).catch(() => {})
 
@@ -200,6 +201,68 @@ export function InterviewFillProfileRenderer({
     }
   }, [])
 
+  // Tự động phát Intro Audio hoặc Audio 1 của Câu 1 khi học sinh vào bài
+  useEffect(() => {
+    if (overallAudioUrl && overallAudioRef.current) {
+      try {
+        const playPromise = overallAudioRef.current.play()
+        if (playPromise !== undefined && typeof (playPromise as any)?.then === 'function') {
+          playPromise
+            .then(() => {
+              setIsIntroPlaying(true)
+              setIsAutoplayBlocked(false)
+            })
+            .catch(() => {
+              // Trình duyệt chặn autoplay khi chưa có thao tác chạm của người dùng
+              setIsAutoplayBlocked(true)
+            })
+        } else {
+          setIsIntroPlaying(true)
+          setIsAutoplayBlocked(false)
+        }
+      } catch {
+        setIsAutoplayBlocked(true)
+      }
+    } else {
+      // Không có audio intro -> tự động phát Audio 1 của câu 1
+      const timer = setTimeout(() => {
+        playPromptAudio(items[0])
+      }, 400)
+      return () => clearTimeout(timer)
+    }
+  }, [overallAudioUrl])
+
+  // Xử lý khi Audio Intro tự ngắt -> Audio 1 của câu 1 tự phát ngay lập tức
+  const handleOverallAudioEnded = () => {
+    setIsIntroPlaying(false)
+    playPromptAudio(items[0])
+  }
+
+  // Người dùng bấm kích hoạt nếu trình duyệt chặn autoplay lúc đầu
+  const handleManualStart = () => {
+    setIsAutoplayBlocked(false)
+    if (overallAudioUrl && overallAudioRef.current) {
+      try {
+        const playPromise = overallAudioRef.current.play()
+        if (playPromise !== undefined && typeof (playPromise as any)?.then === 'function') {
+          playPromise
+            .then(() => {
+              setIsIntroPlaying(true)
+            })
+            .catch(() => {
+              playPromptAudio(items[0])
+            })
+        } else {
+          setIsIntroPlaying(true)
+        }
+      } catch {
+        playPromptAudio(items[0])
+      }
+    } else {
+      playPromptAudio(items[0])
+    }
+  }
+
   // Phát Audio 1 (Prompt audio của AI hoặc đọc lời dẫn AI)
   const playPromptAudio = (item: Form62InterviewFieldItem) => {
     if (playingAudioType === 'prompt' && playingItemId === item.id) {
@@ -220,16 +283,28 @@ export function InterviewFillProfileRenderer({
     if (item.prompt_audio_url && item.prompt_audio_url.trim()) {
       if (audioPlayerRef.current) {
         audioPlayerRef.current.src = item.prompt_audio_url
-        audioPlayerRef.current.play().catch(() => {
+        audioPlayerRef.current.onended = () => {
           setPlayingAudioType(null)
           setPlayingItemId(null)
-        })
+        }
+        try {
+          const playPromise = audioPlayerRef.current.play()
+          if (playPromise !== undefined && typeof (playPromise as any)?.catch === 'function') {
+            playPromise.catch(() => {
+              setPlayingAudioType(null)
+              setPlayingItemId(null)
+            })
+          }
+        } catch {
+          setPlayingAudioType(null)
+          setPlayingItemId(null)
+        }
       }
     } else {
       // Fallback TTS đọc lời dẫn AI
       if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         window.speechSynthesis.cancel()
-        const textToSpeak = aiLeadInText || getCuratedPedagogicalLeadIn(item.label, activeItemIndex, items.length)
+        const textToSpeak = cleanLeadInText(aiLeadInText) || getCuratedPedagogicalLeadIn(item.label, activeItemIndex, items.length)
         const utterance = new SpeechSynthesisUtterance(textToSpeak)
         utterance.lang = 'vi-VN'
         utterance.rate = 0.95
@@ -249,51 +324,61 @@ export function InterviewFillProfileRenderer({
     }
   }
 
-  // Phát Audio 2 (Answer audio của AI khi học sinh hỏi đúng)
-  const playAnswerAudio = (item: Form62InterviewFieldItem) => {
-    if (playingAudioType === 'answer' && playingItemId === item.id) {
-      if (audioPlayerRef.current) {
-        audioPlayerRef.current.pause()
-      }
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel()
-      }
-      setPlayingAudioType(null)
-      setPlayingItemId(null)
-      return
-    }
-
+  // Phát Audio 2 (Answer audio của AI khi trả lời đúng) & TỰ ĐỘNG CHUYỂN CÂU KHI PHÁT XONG
+  const playAnswerAudio = (item: Form62InterviewFieldItem, autoAdvanceNext: boolean = true) => {
     setPlayingAudioType('answer')
     setPlayingItemId(item.id)
+
+    const onAudio2Ended = () => {
+      setPlayingAudioType(null)
+      setPlayingItemId(null)
+
+      // Khi Audio 2 dừng: tự động chuyển sang câu tiếp theo và tự phát Audio 1 của câu đó
+      if (autoAdvanceNext) {
+        if (activeItemIndex < items.length - 1) {
+          const nextIndex = activeItemIndex + 1
+          setActiveItemIndex(nextIndex)
+          setTimeout(() => {
+            playPromptAudio(items[nextIndex])
+          }, 500)
+        } else {
+          setIsAllCompleted(true)
+          onComplete?.(100, {
+            completedItems: items.map((i) => i.id),
+            totalItems: items.length,
+          })
+        }
+      }
+    }
 
     if (item.answer_audio_url && item.answer_audio_url.trim()) {
       if (audioPlayerRef.current) {
         audioPlayerRef.current.src = item.answer_audio_url
-        audioPlayerRef.current.play().catch(() => {
-          setPlayingAudioType(null)
-          setPlayingItemId(null)
-        })
+        audioPlayerRef.current.onended = onAudio2Ended
+        try {
+          const playPromise = audioPlayerRef.current.play()
+          if (playPromise !== undefined && typeof (playPromise as any)?.catch === 'function') {
+            playPromise.catch(() => {
+              onAudio2Ended()
+            })
+          }
+        } catch {
+          onAudio2Ended()
+        }
       }
     } else {
-      // Fallback TTS tiếng Anh đọc câu trả lời của bạn
+      // Fallback TTS tiếng Anh đọc câu trả lời
       if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         window.speechSynthesis.cancel()
         const textToSpeak = item.answer_text_display || `His ${item.label} is ${item.target_answer || 'known'}.`
         const utterance = new SpeechSynthesisUtterance(textToSpeak)
         utterance.lang = 'en-US'
         utterance.rate = 0.9
-        utterance.onend = () => {
-          setPlayingAudioType(null)
-          setPlayingItemId(null)
-        }
-        utterance.onerror = () => {
-          setPlayingAudioType(null)
-          setPlayingItemId(null)
-        }
+        utterance.onend = onAudio2Ended
+        utterance.onerror = onAudio2Ended
         window.speechSynthesis.speak(utterance)
       } else {
-        setPlayingAudioType(null)
-        setPlayingItemId(null)
+        onAudio2Ended()
       }
     }
   }
@@ -301,6 +386,12 @@ export function InterviewFillProfileRenderer({
   // Bắt đầu ghi âm câu hỏi của học sinh
   const handleStartRecording = async () => {
     if (disabled || isRecording || isProcessingSTT) return
+
+    // Tắt audio đang phát nếu có
+    if (audioPlayerRef.current) audioPlayerRef.current.pause()
+    if (overallAudioRef.current) overallAudioRef.current.pause()
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel()
+    setPlayingAudioType(null)
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
@@ -334,7 +425,7 @@ export function InterviewFillProfileRenderer({
             [currentItem.id]: {
               matched: false,
               showHint: true,
-              message: 'Bản ghi âm quá ngắn hoặc chưa rõ tiếng. Em hãy đọc gợi ý bên dưới và bấm thu âm lại nhé!',
+              message: 'Bản ghi âm quá ngắn hoặc chưa rõ tiếng. Em hãy xem gợi ý bên dưới và bấm thu âm lại nhé!',
             },
           }))
           return
@@ -365,7 +456,7 @@ export function InterviewFillProfileRenderer({
   // Gửi audio qua AssemblyAI và xử lý đối chiếu ngân hàng câu hỏi
   const processSpokenQuestion = async (audioBlob: Blob) => {
     setIsProcessingSTT(true)
-    setSttStageMessage('Đang nhận diện giọng nói qua AssemblyAI...')
+    setSttStageMessage('Đang nhận diện câu hỏi qua AssemblyAI...')
 
     try {
       const apiKey = getAssemblyAiApiKey()
@@ -398,22 +489,13 @@ export function InterviewFillProfileRenderer({
           [currentItem.id]: {
             matched: true,
             spokenText: transcribedText,
-            showHint: false, // Ẩn gợi ý khi đã làm đúng
+            showHint: false, // Ẩn gợi ý khi đã hỏi đúng
             message: `Chính xác! AI trả lời: "${currentItem.answer_text_display || 'Thông tin đã được mở khóa.'}"`,
           },
         }))
 
-        // Tự động phát Audio 2 câu trả lời
-        playAnswerAudio(currentItem)
-
-        // Nếu đã hoàn thành tất cả các câu
-        if (newCompleted.size >= items.length) {
-          setIsAllCompleted(true)
-          onComplete?.(100, {
-            completedItems: Array.from(newCompleted),
-            totalItems: items.length,
-          })
-        }
+        // Tự động phát Audio 2 (câu trả lời) và chuyển câu tiếp theo khi phát xong
+        playAnswerAudio(currentItem, true)
       } else {
         // HỌC SINH HỎI SAI: BÂY GIỜ MỚI HIỆN GỢI Ý!
         setItemFeedbacks((prev) => ({
@@ -422,7 +504,7 @@ export function InterviewFillProfileRenderer({
             matched: false,
             spokenText: transcribedText,
             showHint: true, // Chỉ hiện gợi ý khi học sinh hỏi sai!
-            message: 'Chưa đúng câu hỏi cần tìm. Em hãy xem gợi ý bên dưới và thử thu âm lại nhé!',
+            message: 'Chưa đúng câu hỏi cần tìm. Em hãy xem gợi ý bên dưới và bấm thu âm lại nhé!',
           },
         }))
       }
@@ -442,15 +524,17 @@ export function InterviewFillProfileRenderer({
     }
   }
 
-  // Chuyển sang câu tiếp theo (chỉ khi câu hiện tại đã hoàn thành đúng)
+  // Chuyển sang câu tiếp theo thủ công (nếu học sinh muốn chủ động bấm)
   const handleGoNext = () => {
     if (activeItemIndex < items.length - 1) {
-      if (audioPlayerRef.current) {
-        audioPlayerRef.current.pause()
-      }
+      if (audioPlayerRef.current) audioPlayerRef.current.pause()
       setPlayingAudioType(null)
       setPlayingItemId(null)
-      setActiveItemIndex(activeItemIndex + 1)
+      const nextIndex = activeItemIndex + 1
+      setActiveItemIndex(nextIndex)
+      setTimeout(() => {
+        playPromptAudio(items[nextIndex])
+      }, 400)
     }
   }
 
@@ -462,12 +546,14 @@ export function InterviewFillProfileRenderer({
     setIsAllCompleted(false)
     setPlayingAudioType(null)
     setPlayingItemId(null)
-    if (audioPlayerRef.current) {
-      audioPlayerRef.current.pause()
-    }
+    if (audioPlayerRef.current) audioPlayerRef.current.pause()
     if (overallAudioRef.current) {
-      overallAudioRef.current.pause()
       overallAudioRef.current.currentTime = 0
+      overallAudioRef.current.play().catch(() => {})
+    } else {
+      setTimeout(() => {
+        playPromptAudio(items[0])
+      }, 400)
     }
     onRestart?.()
   }
@@ -475,9 +561,20 @@ export function InterviewFillProfileRenderer({
   const completedCount = completedItemIds.size
   const isCurrentCompleted = completedItemIds.has(currentItem.id)
   const currentFeedback = itemFeedbacks[currentItem.id]
+  const cleanLeadText = cleanLeadInText(aiLeadInText || getCuratedPedagogicalLeadIn(currentItem.label, activeItemIndex, items.length))
 
   return (
     <div className="interview-profile-container">
+      {/* Audio player ẩn cho Audio tổng quan (tự động phát ngầm) */}
+      {overallAudioUrl && (
+        <audio
+          ref={overallAudioRef}
+          src={overallAudioUrl}
+          onEnded={handleOverallAudioEnded}
+          style={{ display: 'none' }}
+        />
+      )}
+
       {/* Audio player ẩn cho Audio 1 & Audio 2 */}
       <audio
         ref={audioPlayerRef}
@@ -496,7 +593,7 @@ export function InterviewFillProfileRenderer({
       <div className="interview-header-banner">
         <div style={{ fontWeight: 600, color: '#1e293b', flex: 1 }}>
           🎙️ {config.intro && !config.intro.toLowerCase().includes('check task')
-            ? config.intro
+            ? cleanLeadInText(config.intro)
             : 'Phỏng vấn AI Tutor: Lắng nghe lời dẫn, đặt câu hỏi đúng từng bước và nghe câu trả lời.'}
         </div>
         <div className="interview-progress-pill">
@@ -504,36 +601,51 @@ export function InterviewFillProfileRenderer({
         </div>
       </div>
 
-      {/* AUDIO TỔNG QUAN BÀI HỌC (NẾU CÓ) */}
-      {overallAudioUrl && (
-        <section className="interview-overall-audio-card" style={{
-          background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
-          border: '1.5px solid #7dd3fc',
-          borderRadius: '16px',
-          padding: '16px 20px',
+      {/* NÚT BẮT ĐẦU NẾU TRÌNH DUYỆT CHẶN AUTOPLAY LẦN ĐẦU */}
+      {isAutoplayBlocked && (
+        <div style={{
+          background: '#eff6ff',
+          border: '1.5px solid #93c5fd',
+          borderRadius: '12px',
+          padding: '12px 18px',
           display: 'flex',
-          flexDirection: 'column',
-          gap: '10px',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '12px',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, color: '#0369a1', fontSize: '15px' }}>
-              <span>🎧</span>
-              <span>Audio tổng quan bài học</span>
-            </div>
-            <span style={{ fontSize: '12px', color: '#0284c7', background: '#ffffff', padding: '3px 10px', borderRadius: '12px', fontWeight: 600 }}>
-              Nghe tổng quát trước khi hỏi
-            </span>
-          </div>
-          <audio
-            ref={overallAudioRef}
-            src={overallAudioUrl}
-            controls
-            style={{ width: '100%', height: '40px', borderRadius: '8px' }}
-          />
-        </section>
+          <span style={{ fontSize: '14px', color: '#1d4ed8', fontWeight: 600 }}>
+            🎧 Bấm để bắt đầu nghe âm thanh bài học:
+          </span>
+          <button
+            type="button"
+            className="interview-audio1-btn"
+            onClick={handleManualStart}
+          >
+            ▶️ Bắt đầu bài học
+          </button>
+        </div>
       )}
 
-      {/* TIẾN TRÌNH TỪNG CÂU TUẦN TỰ (ĐÚNG TỪNG CÂU 1, KHÔNG CHO NHẢY CÓC) */}
+      {/* THÔNG BÁO ĐANG PHÁT AUDIO INTRO */}
+      {isIntroPlaying && (
+        <div style={{
+          background: '#f0f9ff',
+          border: '1px solid #bae6fd',
+          borderRadius: '10px',
+          padding: '8px 14px',
+          fontSize: '13px',
+          color: '#0369a1',
+          fontWeight: 600,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+        }}>
+          <span style={{ animation: 'spin 2s linear infinite' }}>🎧</span>
+          <span>Đang phát phần giới thiệu bài học... Khi kết thúc, câu hỏi 1 sẽ tự động phát.</span>
+        </div>
+      )}
+
+      {/* TIẾN TRÌNH TỪNG CÂU TUẦN TỰ (ĐÚNG TỪNG CÂU 1) */}
       <div className="interview-sequential-stepper" style={{
         display: 'flex',
         alignItems: 'center',
@@ -574,41 +686,20 @@ export function InterviewFillProfileRenderer({
         })}
       </div>
 
-      {/* KHUNG TƯƠNG TÁC CHÍNH (TẬP TRUNG HOÀN TOÀN VÀO CÂU HIỆN TẠI) */}
+      {/* KHUNG TƯƠNG TÁC CHÍNH (ĐÃ BỎ TIÊU ĐỀ "CÂU HỎI 1/4" VÀ "HỎI VỀ: NAME") */}
       {!isAllCompleted ? (
         <section className="interview-active-card" style={{
           background: '#ffffff',
           border: '1.5px solid #e2e8f0',
           borderRadius: '16px',
-          padding: '24px',
+          padding: '22px',
           boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)',
           display: 'flex',
           flexDirection: 'column',
           gap: '18px',
         }}>
-          {/* TIÊU ĐỀ BƯỚC CÂU HỎI */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
-            <div>
-              <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                CÂU HỎI {activeItemIndex + 1} / {items.length}
-              </span>
-              <h3 style={{ margin: '4px 0 0', fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>
-                Hỏi về: {currentItem.label}
-              </h3>
-            </div>
-            {isCurrentCompleted ? (
-              <span style={{ background: '#dcfce7', color: '#15803d', padding: '6px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                ✓ Đã hỏi thành công
-              </span>
-            ) : (
-              <span style={{ background: '#fef3c7', color: '#b45309', padding: '6px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: 700 }}>
-                Đang thực hiện
-              </span>
-            )}
-          </div>
-
-          {/* LỜI DẪN AI THEO NGỮ CẢNH (SƯ PHẠM, NGHIÊM TÚC, TUYỆT ĐỐI KHÔNG ĐƯA ĐÁP ÁN) */}
-          <div style={{
+          {/* GIA SƯ AI DẪN DẮT (GIAO DIỆN ĐẸP, ĐÃ BỎ HOÀN TOÀN DẤU { VÀ DẤU ") */}
+          <div className="interview-ai-lead-card" style={{
             background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
             borderRadius: '14px',
             padding: '16px 18px',
@@ -617,37 +708,34 @@ export function InterviewFillProfileRenderer({
             flexDirection: 'column',
             gap: '12px',
           }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-              <span style={{ fontSize: '24px' }}>🤖</span>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '12px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
-                  Gia sư AI dẫn dắt:
-                </div>
-                <div style={{ fontSize: '14px', color: '#0f172a', fontWeight: 600, lineHeight: 1.5 }}>
-                  {aiLeadInText || getCuratedPedagogicalLeadIn(currentItem.label, activeItemIndex, items.length)}
-                </div>
-              </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '22px' }}>🤖</span>
+              <span style={{
+                fontSize: '13px',
+                fontWeight: 800,
+                color: '#0369a1',
+                textTransform: 'uppercase',
+                letterSpacing: '0.6px',
+              }}>
+                Gia sư AI dẫn dắt:
+              </span>
             </div>
 
-            {/* Nút phát Audio 1 */}
+            <div style={{
+              fontSize: '15px',
+              color: '#1e293b',
+              fontWeight: 600,
+              lineHeight: 1.6,
+              paddingLeft: '2px',
+            }}>
+              {cleanLeadText}
+            </div>
+
             <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '4px', borderTop: '1px dashed #cbd5e1' }}>
               <button
                 type="button"
                 id={`playAudio1Btn-${currentItem.id}`}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '8px 18px',
-                  borderRadius: '10px',
-                  border: 'none',
-                  background: playingAudioType === 'prompt' && playingItemId === currentItem.id ? '#ea580c' : '#0284c7',
-                  color: '#ffffff',
-                  fontWeight: 700,
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                }}
+                className="interview-audio1-btn"
                 onClick={() => playPromptAudio(currentItem)}
               >
                 {playingAudioType === 'prompt' && playingItemId === currentItem.id ? '⏹️ Dừng nghe Audio 1' : '▶️ Nghe Audio 1'}
@@ -661,7 +749,7 @@ export function InterviewFillProfileRenderer({
             flexDirection: 'column',
             alignItems: 'center',
             gap: '12px',
-            padding: '12px 0 6px',
+            padding: '8px 0 4px',
           }}>
             <div style={{ textAlign: 'center', fontSize: '14px', color: '#475569', fontWeight: 600 }}>
               {isCurrentCompleted
@@ -744,7 +832,7 @@ export function InterviewFillProfileRenderer({
                     fontSize: '13px',
                     cursor: 'pointer',
                   }}
-                  onClick={() => playAnswerAudio(currentItem)}
+                  onClick={() => playAnswerAudio(currentItem, false)}
                 >
                   {playingAudioType === 'answer' && playingItemId === currentItem.id ? '🔊 Đang phát Audio 2...' : '🔊 Nghe lại Audio 2'}
                 </button>

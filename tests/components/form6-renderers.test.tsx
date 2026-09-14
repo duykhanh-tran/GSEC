@@ -131,7 +131,7 @@ describe('Form 6 Renderers', () => {
       ],
     }
 
-    it('renders overall audio if present, sequential step indicators, and mic button', () => {
+    it('renders sequential step indicators, mic button, and Audio 1 button without redundant audio box', () => {
       const configWithAudio: Form62InterviewConfig = {
         ...sample62Config,
         audio_url: 'https://example.com/overall.mp3',
@@ -143,7 +143,9 @@ describe('Form 6 Renderers', () => {
         />
       )
 
-      expect(screen.getByText(/Audio tổng quan bài học/i)).toBeDefined()
+      // Không còn hiển thị box audio tổng quan dạng thanh nghe
+      expect(screen.queryByText(/Audio tổng quan bài học/i)).toBeNull()
+
       expect(document.getElementById('interviewMicBtn')).toBeDefined()
       expect(document.getElementById('step-indicator-name')).toBeDefined()
       expect(document.getElementById('step-indicator-class')).toBeDefined()
@@ -152,7 +154,7 @@ describe('Form 6 Renderers', () => {
       expect(document.getElementById('playAudio1Btn-name')).toBeDefined()
     })
 
-    it('does not display hints initially and shows pedagogical AI lead-in without leaking answers', () => {
+    it('does not display redundant headers (CÂU HỎI 1 / 4 & Hỏi về: Name), hides hints initially, and shows clean pedagogical AI lead-in', () => {
       render(
         <InterviewFillProfileRenderer
           config={sample62Config}
@@ -160,8 +162,12 @@ describe('Form 6 Renderers', () => {
         />
       )
 
-      expect(screen.getByText(/Hỏi về: Name/i)).toBeDefined()
-      expect(screen.getByText(/Gia sư AI dẫn dắt:/i)).toBeDefined()
+      // Đã bỏ hoàn toàn "CÂU HỎI 1 / 4" và "Hỏi về: Name"
+      expect(screen.queryByText(/CÂU HỎI 1 \/ 4/i)).toBeNull()
+      expect(screen.queryByText(/Hỏi về:/i)).toBeNull()
+
+      // Hiển thị ô Gia sư AI dẫn dắt
+      expect(screen.getByText(/Gia sư AI dẫn dắt/i)).toBeDefined()
 
       // Ban đầu khi chưa làm sai: TUYỆT ĐỐI KHÔNG HIỂN THỊ GỢI Ý
       expect(screen.queryByText(/Gợi ý câu hỏi:/i)).toBeNull()

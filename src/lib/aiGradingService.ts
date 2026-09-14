@@ -138,15 +138,14 @@ export function detectGibberish(text: string): { isGibberish: boolean; token?: s
 }
 
 /**
- * Danh sách các Model Gemini ưu tiên thử nghiệm tuần tự (Flash 3.5 -> 3.5-Lite -> 3.1-Lite -> 3.6 -> Latest)
- * gemini-3.5-flash phản hồi nhanh và ổn định nhất trên free tier, tránh lỗi 503 của 3.6.
+ * Danh sách các Model Gemini chính thức của Google (ưu tiên Flash 2.5 -> 2.0 -> 1.5)
  */
 export const GEMINI_MODELS = [
-  'gemini-3.5-flash',
-  'gemini-3.5-flash-lite',
-  'gemini-3.1-flash-lite',
-  'gemini-3.6-flash',
-  'gemini-flash-latest',
+  'gemini-2.5-flash',
+  'gemini-2.0-flash',
+  'gemini-1.5-flash',
+  'gemini-1.5-flash-8b',
+  'gemini-1.5-pro',
 ]
 
 /**
@@ -157,6 +156,7 @@ async function callGeminiAPI(
   userPrompt: string,
   systemInstruction?: string,
   maxOutputTokens: number = 2048,
+  responseMimeType: string = 'application/json',
 ): Promise<string | null> {
   for (const model of GEMINI_MODELS) {
     try {
@@ -166,13 +166,17 @@ async function callGeminiAPI(
       const payload: any = {
         contents: [{ parts: [{ text: userPrompt }] }],
         generationConfig: {
-          responseMimeType: 'application/json',
-          temperature: 0.1,
+          responseMimeType,
+          temperature: 0.2,
           maxOutputTokens,
-          thinkingConfig: {
-            thinkingBudget: 0, // Vô hiệu hóa thinking để tránh tiêu tốn 800+ token làm cụt JSON
-          },
         },
+      }
+
+      // thinkingConfig chỉ gửi với model 2.5 để tránh lỗi 400 Bad Request ở model 1.5/2.0
+      if (model.includes('2.5')) {
+        payload.generationConfig.thinkingConfig = {
+          thinkingBudget: 0,
+        }
       }
 
       if (systemInstruction) {
@@ -1165,6 +1169,86 @@ Return strict JSON:
 }
 
 /**
+ * Làm sạch văn bản lời dẫn: tự động loại bỏ định dạng JSON, nhãn "guidance", các dấu ngoặc nhọn { }, ngoặc kép " "
+ */
+export function cleanLeadInText(raw: string): string {
+  if (!raw) return ''
+  let text = raw.trim()
+
+  // Xóa markdown code block nếu có
+  text = text.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim()
+
+  // Nếu là chuỗi JSON
+  if (text.startsWith('{') && text.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(text)
+      const val =
+        parsed.guidance ||
+        parsed.lead_in ||
+        parsed.leadIn ||
+        parsed.message ||
+        parsed.text ||
+        parsed.prompt ||
+        Object.values(parsed)[0]
+      if (typeof val === 'string') {
+        text = val
+      }
+    } catch {
+      const match = text.match(/"(?:guidance|lead_in|message|prompt|text)"?\s*:\s*"([^"]+)"/)
+      if (match && match[1]) {
+        text = match[1]
+      } else {
+        text = text.replace(/^[{}"\s]+|[}{"\s]+$/g, '').trim()
+      }
+    }
+  }
+
+  // Loại bỏ các dấu { } " " thừa ở đầu và cuối
+  text = text.replace(/^[{\s"“”'«]+|[}\s"“”'»]+$/g, '').trim()
+  return text
+}
+
+/**
+ * Lời dẫn dắt sư phạm mặc định cho TẤT CẢ các dạng bài (Form 1 đến Form 7)
+ */
+export function getFormPedagogicalLeadIn(
+  formType: string,
+  content?: any,
+  _title?: string
+): string {
+  if (content?.intro && content.intro.trim() && !content.intro.toLowerCase().includes('check task')) {
+    return cleanLeadInText(content.intro)
+  }
+
+  switch (formType) {
+    case 'FORM_1_CHOICE':
+      return 'Chào em! Em hãy đọc kỹ từng câu hỏi, quan sát các phương án và lựa chọn đáp án chính xác nhất nhé.'
+    case 'FORM_2_FILL':
+      return 'Chào em! Chúng ta cùng hoàn thành phiếu bài tập bằng cách điền câu trả lời chính xác vào từng ô trống nhé.'
+    case 'FORM_3_WRITING':
+      return 'Chào em! Bây giờ chúng ta cùng luyện kỹ năng viết tiếng Anh. Em hãy chú ý ngữ pháp, viết câu hoàn chỉnh và kiểm tra kỹ trước khi nộp bài nhé.'
+    case 'FORM_4_SENTENCE_REPAIR':
+      return 'Chào em! Em hãy quan sát câu chưa chính xác và sửa lại cho đúng ngữ pháp nhé.'
+    case 'FORM_4_SPEAKING':
+      return 'Chào em! Em hãy đọc to và rõ ràng từng câu tiếng Anh vào micro. AI sẽ lắng nghe và đánh giá độ chuẩn xác phát âm của em nhé.'
+    case 'FORM_5_SEQUENCE':
+      return 'Chào em! Em hãy đọc kỹ các đoạn văn và sắp xếp lại theo đúng thứ tự logic của câu chuyện nhé.'
+    case 'FORM_5_LISTEN_REPEAT':
+      return 'Chào em! Em hãy lắng nghe thật kỹ từng đoạn âm thanh mẫu, sau đó bấm micro và nhắc lại thật chuẩn xác nhé.'
+    case 'FORM_6_1_PROFILE_QA':
+      return 'Chào em! Em hãy quan sát hồ sơ của bạn mới, lắng nghe câu hỏi từ Gia sư AI và trả lời thật tự tin nhé.'
+    case 'FORM_6_2_INTERVIEW_PROFILE':
+      return 'Chào em! Chúng ta cùng tham gia buổi phỏng vấn bạn mới. Hãy lắng nghe lời dẫn và tự tin đặt câu hỏi bằng tiếng Anh nhé.'
+    case 'FORM_7_TOPIC_SPEAKING':
+      return content?.prompt
+        ? `Chào em! Hãy chọn một chủ đề em yêu thích và tự tin trình bày bài nói nhé: "${cleanLeadInText(content.prompt)}".`
+        : 'Chào em! Em hãy chọn một chủ đề trong bảng và tự tin trình bày bài nói tiếng Anh của mình nhé.'
+    default:
+      return 'Chào em! Em hãy hoàn thành các yêu cầu của bài tập dưới đây thật cẩn thận và tự tin nhé.'
+  }
+}
+
+/**
  * Lời dẫn AI sư phạm chọn lọc chuẩn mực, hiểu ngữ cảnh và TUYỆT ĐỐI KHÔNG đưa ra đáp án hoặc gợi ý tiếng Anh
  */
 export function getCuratedPedagogicalLeadIn(
@@ -1176,7 +1260,7 @@ export function getCuratedPedagogicalLeadIn(
   const normLabel = currentLabel.toLowerCase().trim()
 
   if (normLabel.includes('name') || normLabel.includes('tên')) {
-    return 'Chào em! Chúng ta cùng làm quen với bạn học sinh mới nhé. Em hãy đặt câu hỏi để tìm hiểu xem tên của bạn ấy là gì nào.'
+    return 'Chào em! Chúng ta hãy bắt đầu bài phỏng vấn bằng việc đặt một câu hỏi để làm quen và tìm hiểu về tên của người đối diện nhé.'
   }
   if (normLabel.includes('class') || normLabel.includes('lớp') || normLabel.includes('grade')) {
     const prevName = completedContext.find((c) => c.label.toLowerCase().includes('name'))?.answerText
@@ -1243,19 +1327,19 @@ YÊU CẦU BẮT BUỘC (CHẤP HÀNH TUYỆT ĐỐI):
 3. TUYỆT ĐỐI KHÔNG đưa ra mẫu câu tiếng Anh (KHÔNG chứa "What is", "Which class", "Do you", etc.), KHÔNG gợi ý từ vựng tiếng Anh cần hỏi và KHÔNG đưa ra đáp án.
 4. Chỉ dẫn dắt mục tiêu giao tiếp bằng tiếng Việt tự nhiên (ví dụ: khích lệ học sinh đặt câu hỏi về điều đó).
 
-Chỉ xuất trực tiếp lời dẫn tiếng Việt, không kèm dấu ngoặc kép, không thêm lời chào mở đầu hay chú thích gì khác.
+Chỉ xuất trực tiếp lời dẫn tiếng Việt dạng văn bản thuần, không dùng định dạng JSON, không kèm dấu ngoặc nhọn hay ngoặc kép.
 `.trim()
 
   try {
-    const raw = await callGeminiAPI(apiKey, prompt, undefined, 200)
+    const raw = await callGeminiAPI(apiKey, prompt, undefined, 200, 'text/plain')
     if (!raw || !raw.trim()) return defaultLead
-    const cleaned = raw.trim().replace(/^["']|["']$/g, '')
+    const cleaned = cleanLeadInText(raw)
 
     // Kiểm tra an toàn: nếu vô tình có mẫu câu hỏi tiếng Anh thì dùng defaultLead để bảo đảm 100% tuân thủ yêu cầu
     if (/\b(what|which|where|when|who|why|how|is his|are you|do you)\b/i.test(cleaned)) {
       return defaultLead
     }
-    return cleaned
+    return cleaned || defaultLead
   } catch (err) {
     return defaultLead
   }
