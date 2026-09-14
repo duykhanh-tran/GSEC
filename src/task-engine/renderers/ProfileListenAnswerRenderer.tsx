@@ -101,25 +101,7 @@ export function ProfileListenAnswerRenderer({
   const initQuestionSequence = () => {
     if (!items || items.length === 0) return
 
-    let finalSequence: Form61ProfileFieldItem[] = []
-    const isFixedFirst = config.is_fixed_first_field !== false
-
-    if (isFixedFirst && items.length > 1) {
-      const firstItem = items[0]
-      const remaining = [...items.slice(1)]
-      // Xáo trộn 3 câu còn lại (Fisher-Yates)
-      for (let i = remaining.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1))
-        const temp = remaining[i]
-        remaining[i] = remaining[j]
-        remaining[j] = temp
-      }
-      finalSequence = [firstItem, ...remaining]
-    } else {
-      finalSequence = [...items]
-    }
-
-    setSequence(finalSequence)
+    setSequence([...items])
     setCurrentStepIndex(0)
     setStepStatuses({})
     setCurrentInput('')
@@ -211,18 +193,17 @@ export function ProfileListenAnswerRenderer({
         setCurrentStepIndex((prev) => prev + 1)
       }
     } else {
-      // Sai: hiển thị gợi ý
-      const hint = currentItem.hints?.[0] || 'Chưa chính xác, hãy nhìn lại bảng thông tin hồ sơ và nghe lại câu hỏi nhé!'
+      // Sai: hiển thị Try again
       setStepStatuses({
         ...stepStatuses,
         [currentStepIndex]: {
           correct: false,
           userText: trimmedInput,
           attempts: prevAttempts + 1,
-          hint,
+          hint: 'Try again',
         },
       })
-      setFeedbackMessage(hint)
+      setFeedbackMessage('Try again')
     }
   }
 
@@ -233,11 +214,11 @@ export function ProfileListenAnswerRenderer({
 
   if (isAllFinished) {
     return (
-      <div className="profile-qa-container">
-        <section className="profile-all-summary">
+      <div className="profile-qa-container" style={{ width: '100%', boxSizing: 'border-box' }}>
+        <section className="profile-all-summary" style={{ width: '100%', boxSizing: 'border-box' }}>
           <div style={{ fontSize: '40px' }}>🎉</div>
-          <h2 style={{ fontSize: '20px', fontWeight: 800, margin: 0, color: '#166534' }}>
-            Task Complete • Hoàn thành xuất sắc!
+          <h2 style={{ fontSize: '22px', fontWeight: 800, margin: 0, color: '#166534' }}>
+            Congratulation
           </h2>
           <p style={{ fontSize: '14px', color: '#475569', margin: 0 }}>
             Bạn đã nghe hiểu và trả lời chính xác toàn bộ thông tin trong hồ sơ của bạn học!
@@ -249,21 +230,23 @@ export function ProfileListenAnswerRenderer({
             <span style={{ fontSize: '14px', color: '#166534' }}>/100</span>
           </div>
 
-          <div style={{ width: '100%', maxWidth: '420px', display: 'flex', flexDirection: 'column', gap: '8px', textAlign: 'left' }}>
+          <div style={{ width: '100%', maxWidth: '420px', display: 'flex', flexDirection: 'column', gap: '8px', textAlign: 'left', boxSizing: 'border-box' }}>
             {sequence.map((item, idx) => (
               <div
                 key={idx}
                 style={{
                   display: 'flex',
                   justifyContent: 'space-between',
-                  padding: '8px 12px',
+                  alignItems: 'center',
+                  padding: '10px 14px',
                   borderRadius: '8px',
                   background: '#f8fafc',
                   border: '1px solid #e2e8f0',
                   fontSize: '13px',
+                  boxSizing: 'border-box',
                 }}
               >
-                <span style={{ fontWeight: 600 }}>{idx + 1}. {item.label}:</span>
+                <span style={{ fontWeight: 600, color: '#334155' }}>{idx + 1}. {item.label}:</span>
                 <span style={{ color: '#16a34a', fontWeight: 700 }}>
                   {stepStatuses[idx]?.userText || item.profile_value} ✓
                 </span>
@@ -271,7 +254,7 @@ export function ProfileListenAnswerRenderer({
             ))}
           </div>
 
-          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '14px' }}>
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '14px', flexWrap: 'wrap' }}>
             <ActionButton id="profileRestartBtn" variant="secondary" onClick={handleRestartAll}>
               🔄 Luyện lại
             </ActionButton>
@@ -307,102 +290,144 @@ export function ProfileListenAnswerRenderer({
       </div>
 
       {/* KHUNG HỘI THOẠI & TRẢ LỜI */}
-      <div className="profile-qa-conversation">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px' }}>
-          <div style={{ fontSize: '13px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            💬 Conversation with AI Coach
-          </div>
-          <div style={{ fontSize: '12px', color: '#64748b' }}>
-            📖 Nhìn vào hồ sơ trong phiếu bài tập để trả lời
-          </div>
-        </div>
+      <div className="profile-qa-conversation" style={{ boxSizing: 'border-box', width: '100%' }}>
+        <div className="profile-dialogue-list">
+          {sequence.map((seqItem, idx) => {
+            const status = stepStatuses[idx]
+            const isCurrent = idx === currentStepIndex
+            const isDone = Boolean(status?.correct || idx < currentStepIndex)
 
-          <div className="profile-dialogue-list">
-            {sequence.map((seqItem, idx) => {
-              const status = stepStatuses[idx]
-              const isCurrent = idx === currentStepIndex
-              const isPast = idx < currentStepIndex
-
+            if (isDone) {
               return (
-                <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <div
-                    className={`profile-dialogue-row ${isCurrent ? 'active' : ''} ${status?.correct ? 'correct' : ''} ${status && !status.correct ? 'wrong' : ''}`}
-                  >
-                    <span style={{ fontWeight: 700, color: '#334155', minWidth: '60px' }}>
-                      {idx + 1}. You:
+                <div
+                  key={idx}
+                  className="profile-question-card completed"
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '12px 16px',
+                    borderRadius: '10px',
+                    background: '#f0fdf4',
+                    border: '1.5px solid #86efac',
+                    boxSizing: 'border-box',
+                  }}
+                >
+                  <span style={{ fontWeight: 600, color: '#166534', fontSize: '14px' }}>
+                    {idx + 1}. You: {status?.userText || seqItem.profile_value}
+                  </span>
+                  <span style={{ color: '#16a34a', fontWeight: 800, fontSize: '16px' }}>✓</span>
+                </div>
+              )
+            }
+
+            if (isCurrent) {
+              return (
+                <div
+                  key={idx}
+                  className="profile-question-card active"
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px',
+                    padding: '16px',
+                    borderRadius: '12px',
+                    background: '#ffffff',
+                    border: '2px solid #0284c7',
+                    boxShadow: '0 4px 12px rgba(2, 132, 199, 0.08)',
+                    boxSizing: 'border-box',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#0369a1' }}>
+                      🎙️ AI Coach
                     </span>
-                    <span style={{ flex: 1, color: status?.correct ? '#166534' : '#0f172a', fontWeight: status?.correct ? 700 : 500 }}>
-                      {status?.correct ? (
-                        <>
-                          {status.userText}{' '}
-                          <span style={{ color: '#16a34a', fontWeight: 800 }}>✓</span>
-                        </>
-                      ) : isPast ? (
-                        status?.userText || '...'
-                      ) : isCurrent ? (
-                        <span style={{ color: '#0284c7', fontStyle: 'italic' }}>Đang lắng nghe & nhập câu trả lời...</span>
-                      ) : (
-                        <span style={{ color: '#94a3b8' }}>___________________________</span>
-                      )}
-                    </span>
+                    <button
+                      type="button"
+                      className="profile-play-btn"
+                      onClick={playCurrentAudio}
+                      disabled={isPlayingAudio}
+                    >
+                      {isPlayingAudio ? '🔊 Đang phát...' : '▶️ Nghe lại câu hỏi'}
+                    </button>
                   </div>
 
-                  {/* KHUNG AUDIO & Ô NHẬP LIỆU CHO CÂU HIỆN TẠI */}
-                  {isCurrent && (
-                    <div className="profile-active-audio-box">
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ fontSize: '13px', fontWeight: 700, color: '#0369a1' }}>
-                          🎙️ AI Coach hỏi ({seqItem.label}):
-                        </span>
-                        <button
-                          type="button"
-                          className="profile-play-btn"
-                          onClick={playCurrentAudio}
-                          disabled={isPlayingAudio}
-                        >
-                          {isPlayingAudio ? '🔊 Đang phát...' : '▶️ Nghe lại câu hỏi'}
-                        </button>
-                      </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <input
+                      id={`profile-answer-input-${idx}`}
+                      type="text"
+                      className="profile-answer-input"
+                      placeholder="Gõ câu trả lời của bạn vào đây..."
+                      value={currentInput}
+                      disabled={disabled}
+                      onChange={(e) => setCurrentInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleCheckCurrent()
+                        }
+                      }}
+                      autoFocus
+                      style={{ width: '100%', boxSizing: 'border-box' }}
+                    />
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                      <button
+                        type="button"
+                        id="profileSubmitBtn"
+                        className="profile-submit-btn"
+                        disabled={!currentInput.trim() || disabled}
+                        onClick={handleCheckCurrent}
+                        style={{ minWidth: '100px' }}
+                      >
+                        Check ✓
+                      </button>
+                    </div>
+                  </div>
 
-                      <div className="profile-input-group">
-                        <input
-                          id={`profile-answer-input-${idx}`}
-                          type="text"
-                          className="profile-answer-input"
-                          placeholder="Gõ câu trả lời của bạn vào đây..."
-                          value={currentInput}
-                          disabled={disabled}
-                          onChange={(e) => setCurrentInput(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              handleCheckCurrent()
-                            }
-                          }}
-                          autoFocus
-                        />
-                        <button
-                          type="button"
-                          id="profileSubmitBtn"
-                          className="profile-submit-btn"
-                          disabled={!currentInput.trim() || disabled}
-                          onClick={handleCheckCurrent}
-                        >
-                          Check ✓
-                        </button>
-                      </div>
-
-                      {feedbackMessage && (
-                        <div style={{ fontSize: '12px', color: '#b91c1c', background: '#fee2e2', padding: '6px 10px', borderRadius: '6px' }}>
-                          💡 Gợi ý: {feedbackMessage}
-                        </div>
-                      )}
+                  {feedbackMessage && (
+                    <div style={{
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      color: '#b91c1c',
+                      background: '#fee2e2',
+                      border: '1.5px solid #fca5a5',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}>
+                      <span>⚠️</span>
+                      <span>Try again</span>
                     </div>
                   )}
                 </div>
               )
-            })}
-          </div>
+            }
+
+            return (
+              <div
+                key={idx}
+                className="profile-question-card locked"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '12px 16px',
+                  borderRadius: '10px',
+                  background: '#f8fafc',
+                  border: '1px dashed #cbd5e1',
+                  color: '#94a3b8',
+                  fontSize: '14px',
+                  gap: '8px',
+                  boxSizing: 'border-box',
+                }}
+              >
+                <span style={{ fontWeight: 600 }}>{idx + 1}.</span>
+                <span>___________________________</span>
+              </div>
+            )
+          })}
         </div>
+      </div>
       </div>
   )
 }

@@ -46,7 +46,7 @@ describe('Form 6 Renderers', () => {
       ],
     }
 
-    it('renders conversation interface and initiates with first question (Name)', () => {
+    it('renders conversation interface with clean card layout and initiates with first question (Name)', () => {
       render(
         <ProfileListenAnswerRenderer
           config={sample61Config}
@@ -54,16 +54,19 @@ describe('Form 6 Renderers', () => {
         />
       )
 
-      // Kiểm tra tiêu đề và hướng dẫn kết hợp sách
-      expect(screen.getByText(/Conversation with AI Coach/i)).toBeDefined()
-      expect(screen.getByText(/Nhìn vào hồ sơ trong phiếu bài tập để trả lời/i)).toBeDefined()
+      // Đã bỏ tiêu đề "Conversation with AI Coach" và "Nhìn vào hồ sơ trong phiếu bài tập để trả lời"
+      expect(screen.queryByText(/Conversation with AI Coach/i)).toBeNull()
+      expect(screen.queryByText(/Nhìn vào hồ sơ trong phiếu bài tập để trả lời/i)).toBeNull()
 
-      // Kiểm tra dòng 1 là câu hỏi đầu tiên
-      expect(screen.getByText(/1\. You:/i)).toBeDefined()
+      // Header câu hỏi hiển thị "AI Coach" thay vì "AI Coach hỏi (name)"
+      expect(screen.getByText('🎙️ AI Coach')).toBeDefined()
+      expect(screen.queryByText(/AI Coach hỏi/i)).toBeNull()
+
       expect(screen.getByPlaceholderText(/Gõ câu trả lời của bạn vào đây/i)).toBeDefined()
+      expect(document.getElementById('profileSubmitBtn')).toBeDefined()
     })
 
-    it('validates answer and progresses when correct answer is submitted', () => {
+    it('validates answer and shows "Try again" when wrong, progresses when correct', () => {
       const onComplete = vi.fn()
       render(
         <ProfileListenAnswerRenderer
@@ -76,16 +79,16 @@ describe('Form 6 Renderers', () => {
       const input = screen.getByPlaceholderText(/Gõ câu trả lời của bạn vào đây/i)
       const submitBtn = document.getElementById('profileSubmitBtn')!
 
-      // Nhập sai trước
+      // Nhập sai -> Hiển thị "Try again"
       fireEvent.change(input, { target: { value: 'Wrong Answer' } })
       fireEvent.click(submitBtn)
-      expect(screen.getByText(/Look at the Name row/i)).toBeDefined()
+      expect(screen.getByText(/Try again/i)).toBeDefined()
 
       // Nhập đúng
       fireEvent.change(input, { target: { value: 'Nam' } })
       fireEvent.click(submitBtn)
 
-      // Row 1 đã đúng và có dấu tick ✓
+      // Đã hoàn thành câu 1 với tick xanh ✓
       expect(screen.getByText('✓')).toBeDefined()
       expect(screen.getByText(/Nam/)).toBeDefined()
     })
@@ -131,7 +134,7 @@ describe('Form 6 Renderers', () => {
       ],
     }
 
-    it('renders sequential step indicators, mic button, and Audio 1 button without redundant audio box', () => {
+    it('renders numbered step indicators (1, 2, 3, 4), mic button, and Audio 1 button without redundant headers', () => {
       const configWithAudio: Form62InterviewConfig = {
         ...sample62Config,
         audio_url: 'https://example.com/overall.mp3',
@@ -143,18 +146,24 @@ describe('Form 6 Renderers', () => {
         />
       )
 
-      // Không còn hiển thị box audio tổng quan dạng thanh nghe
-      expect(screen.queryByText(/Audio tổng quan bài học/i)).toBeNull()
+      // Đã bỏ card "Phỏng vấn AI Tutor ..."
+      expect(screen.queryByText(/Phỏng vấn AI Tutor/i)).toBeNull()
 
-      expect(document.getElementById('interviewMicBtn')).toBeDefined()
-      expect(document.getElementById('step-indicator-name')).toBeDefined()
-      expect(document.getElementById('step-indicator-class')).toBeDefined()
-      expect(document.getElementById('step-indicator-subject')).toBeDefined()
-      expect(document.getElementById('step-indicator-activity')).toBeDefined()
+      // Các thẻ bước hiển thị 1, 2, 3, 4 thay vì Name, Class
+      expect(document.getElementById('step-indicator-name')?.textContent?.trim()).toBe('1')
+      expect(document.getElementById('step-indicator-class')?.textContent?.trim()).toBe('2')
+      expect(document.getElementById('step-indicator-subject')?.textContent?.trim()).toBe('3')
+      expect(document.getElementById('step-indicator-activity')?.textContent?.trim()).toBe('4')
+
+      // Nút Audio 1 vẫn hiển thị đầy đủ
       expect(document.getElementById('playAudio1Btn-name')).toBeDefined()
+
+      // Hướng dẫn và nút mic đổi thành "Bấm để hỏi"
+      expect(screen.getByText('Bấm để hỏi')).toBeDefined()
+      expect(document.getElementById('interviewMicBtn')?.textContent).toContain('Bấm để hỏi')
     })
 
-    it('does not display redundant headers (CÂU HỎI 1 / 4 & Hỏi về: Name), hides hints initially, and shows clean pedagogical AI lead-in', () => {
+    it('does not display redundant AI lead text, hides hints initially', () => {
       render(
         <InterviewFillProfileRenderer
           config={sample62Config}
@@ -162,12 +171,8 @@ describe('Form 6 Renderers', () => {
         />
       )
 
-      // Đã bỏ hoàn toàn "CÂU HỎI 1 / 4" và "Hỏi về: Name"
-      expect(screen.queryByText(/CÂU HỎI 1 \/ 4/i)).toBeNull()
-      expect(screen.queryByText(/Hỏi về:/i)).toBeNull()
-
-      // Hiển thị ô Gia sư AI dẫn dắt
-      expect(screen.getByText(/Gia sư AI dẫn dắt/i)).toBeDefined()
+      // Đã bỏ tiêu đề và text "Gia sư AI dẫn dắt"
+      expect(screen.queryByText(/Gia sư AI dẫn dắt/i)).toBeNull()
 
       // Ban đầu khi chưa làm sai: TUYỆT ĐỐI KHÔNG HIỂN THỊ GỢI Ý
       expect(screen.queryByText(/Gợi ý câu hỏi:/i)).toBeNull()

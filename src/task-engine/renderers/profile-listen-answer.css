@@ -157,4 +157,6 @@
   flex-direction: column;
   gap: 14px;
   align-items: center;
+  box-sizing: border-box;
+  width: 100%;
 }

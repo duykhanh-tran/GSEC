@@ -6,6 +6,7 @@ import {
   getAssemblyAiApiKey,
   type TranscriptionProgress,
 } from '../../lib/assemblyAiService'
+
 import {
   generatePedagogicalInterviewLeadIn,
   getCuratedPedagogicalLeadIn,
@@ -120,9 +121,8 @@ export function InterviewFillProfileRenderer({
   // Trạng thái câu hỏi hiện tại (làm tuần tự từng câu 1)
   const [activeItemIndex, setActiveItemIndex] = useState(0)
   const [completedItemIds, setCompletedItemIds] = useState<Set<string>>(new Set())
-
-  // Trạng thái lời dẫn AI theo ngữ cảnh cho câu hiện tại
   const [aiLeadInText, setAiLeadInText] = useState<string>('')
+
 
   // Trạng thái phát âm thanh
   const [isIntroPlaying, setIsIntroPlaying] = useState(false)
@@ -490,32 +490,31 @@ export function InterviewFillProfileRenderer({
             matched: true,
             spokenText: transcribedText,
             showHint: false, // Ẩn gợi ý khi đã hỏi đúng
-            message: `Chính xác! AI trả lời: "${currentItem.answer_text_display || 'Thông tin đã được mở khóa.'}"`,
+            message: 'Correct',
           },
         }))
 
         // Tự động phát Audio 2 (câu trả lời) và chuyển câu tiếp theo khi phát xong
         playAnswerAudio(currentItem, true)
       } else {
-        // HỌC SINH HỎI SAI: BÂY GIỜ MỚI HIỆN GỢI Ý!
+        // HỌC SINH HỎI SAI
         setItemFeedbacks((prev) => ({
           ...prev,
           [currentItem.id]: {
             matched: false,
             spokenText: transcribedText,
-            showHint: true, // Chỉ hiện gợi ý khi học sinh hỏi sai!
-            message: 'Chưa đúng câu hỏi cần tìm. Em hãy xem gợi ý bên dưới và bấm thu âm lại nhé!',
+            showHint: true,
+            message: 'Try again',
           },
         }))
       }
     } catch (error: any) {
-      const msg = error?.message || 'Có lỗi xảy ra khi xử lý giọng nói. Hãy thử hỏi lại nhé!'
       setItemFeedbacks((prev) => ({
         ...prev,
         [currentItem.id]: {
           matched: false,
           showHint: true,
-          message: msg,
+          message: 'Try again',
         },
       }))
     } finally {
@@ -558,10 +557,8 @@ export function InterviewFillProfileRenderer({
     onRestart?.()
   }
 
-  const completedCount = completedItemIds.size
   const isCurrentCompleted = completedItemIds.has(currentItem.id)
   const currentFeedback = itemFeedbacks[currentItem.id]
-  const cleanLeadText = cleanLeadInText(aiLeadInText || getCuratedPedagogicalLeadIn(currentItem.label, activeItemIndex, items.length))
 
   return (
     <div className="interview-profile-container">
@@ -589,17 +586,7 @@ export function InterviewFillProfileRenderer({
         style={{ display: 'none' }}
       />
 
-      {/* HEADER BANNER */}
-      <div className="interview-header-banner">
-        <div style={{ fontWeight: 600, color: '#1e293b', flex: 1 }}>
-          🎙️ {config.intro && !config.intro.toLowerCase().includes('check task')
-            ? cleanLeadInText(config.intro)
-            : 'Phỏng vấn AI Tutor: Lắng nghe lời dẫn, đặt câu hỏi đúng từng bước và nghe câu trả lời.'}
-        </div>
-        <div className="interview-progress-pill">
-          Câu {activeItemIndex + 1}/{items.length} • {completedCount}/{items.length} hoàn thành
-        </div>
-      </div>
+
 
       {/* NÚT BẮT ĐẦU NẾU TRÌNH DUYỆT CHẶN AUTOPLAY LẦN ĐẦU */}
       {isAutoplayBlocked && (
@@ -679,14 +666,14 @@ export function InterviewFillProfileRenderer({
                 whiteSpace: 'nowrap',
               }}
             >
-              <span>{isDone ? '✓' : isCurrent ? '●' : idx + 1}.</span>
-              <span>{item.label}</span>
+              <span>{idx + 1}</span>
+              {isDone && <span>✓</span>}
             </div>
           )
         })}
       </div>
 
-      {/* KHUNG TƯƠNG TÁC CHÍNH (ĐÃ BỎ TIÊU ĐỀ "CÂU HỎI 1/4" VÀ "HỎI VỀ: NAME") */}
+      {/* KHUNG TƯƠNG TÁC CHÍNH */}
       {!isAllCompleted ? (
         <section className="interview-active-card" style={{
           background: '#ffffff',
@@ -698,49 +685,21 @@ export function InterviewFillProfileRenderer({
           flexDirection: 'column',
           gap: '18px',
         }}>
-          {/* GIA SƯ AI DẪN DẮT (GIAO DIỆN ĐẸP, ĐÃ BỎ HOÀN TOÀN DẤU { VÀ DẤU ") */}
-          <div className="interview-ai-lead-card" style={{
-            background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
-            borderRadius: '14px',
-            padding: '16px 18px',
-            border: '1.5px solid #cbd5e1',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '22px' }}>🤖</span>
-              <span style={{
-                fontSize: '13px',
-                fontWeight: 800,
-                color: '#0369a1',
-                textTransform: 'uppercase',
-                letterSpacing: '0.6px',
-              }}>
-                Gia sư AI dẫn dắt:
-              </span>
-            </div>
-
-            <div style={{
-              fontSize: '15px',
-              color: '#1e293b',
-              fontWeight: 600,
-              lineHeight: 1.6,
-              paddingLeft: '2px',
-            }}>
-              {cleanLeadText}
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '4px', borderTop: '1px dashed #cbd5e1' }}>
-              <button
-                type="button"
-                id={`playAudio1Btn-${currentItem.id}`}
-                className="interview-audio1-btn"
-                onClick={() => playPromptAudio(currentItem)}
-              >
-                {playingAudioType === 'prompt' && playingItemId === currentItem.id ? '⏹️ Dừng nghe Audio 1' : '▶️ Nghe Audio 1'}
-              </button>
-            </div>
+          {/* NÚT NGHE AUDIO 1 (CHỈ ĐỂ LẠI NÚT AUDIO) */}
+          <div style={{ display: 'flex', justifyContent: 'center', margin: '4px 0' }}>
+            <button
+              type="button"
+              id={`playAudio1Btn-${currentItem.id}`}
+              className="interview-audio1-btn"
+              onClick={() => playPromptAudio(currentItem)}
+              style={{
+                padding: '10px 22px',
+                fontSize: '14px',
+                borderRadius: '10px',
+              }}
+            >
+              {playingAudioType === 'prompt' && playingItemId === currentItem.id ? '⏹️ Dừng nghe Audio 1' : '▶️ Nghe Audio 1'}
+            </button>
           </div>
 
           {/* KHUNG MICRO GHI ÂM CÂU HỎI */}
@@ -752,9 +711,7 @@ export function InterviewFillProfileRenderer({
             padding: '8px 0 4px',
           }}>
             <div style={{ textAlign: 'center', fontSize: '14px', color: '#475569', fontWeight: 600 }}>
-              {isCurrentCompleted
-                ? 'Em đã hỏi thành công câu này! Có thể bấm Tiếp tục để sang câu sau hoặc thu âm lại:'
-                : 'Bấm micro bên dưới và đặt câu hỏi bằng tiếng Anh:'}
+              Bấm để hỏi
             </div>
 
             <div className="interview-voice-controls">
@@ -767,7 +724,7 @@ export function InterviewFillProfileRenderer({
                   onClick={handleStartRecording}
                   style={{ minWidth: '220px', justifyContent: 'center' }}
                 >
-                  {isProcessingSTT ? '⏳ Đang nhận diện...' : '🎙️ Bấm để đặt câu hỏi'}
+                  {isProcessingSTT ? '⏳ Đang nhận diện...' : '🎙️ Bấm để hỏi'}
                 </button>
               ) : (
                 <button
@@ -808,10 +765,10 @@ export function InterviewFillProfileRenderer({
               flexDirection: 'column',
               gap: '12px',
             }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                <span style={{ fontSize: '22px' }}>🎉</span>
-                <div style={{ flex: 1, fontSize: '14px', lineHeight: 1.5, color: '#166534', fontWeight: 600 }}>
-                  {currentFeedback.message}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '20px' }}>✓</span>
+                <div style={{ flex: 1, fontSize: '15px', color: '#166534', fontWeight: 700 }}>
+                  Correct
                 </div>
               </div>
 
@@ -865,48 +822,23 @@ export function InterviewFillProfileRenderer({
             </div>
           )}
 
-          {/* KHI HỌC SINH HỎI SAI -> MỚI HIỆN GỢI Ý ĐÁP ÁN (CHỈ HIỆN KHI SAI) */}
-          {currentFeedback && !currentFeedback.matched && currentFeedback.showHint && (
+          {/* KHI HỌC SINH HỎI SAI */}
+          {currentFeedback && !currentFeedback.matched && (
             <div style={{
+              padding: '12px 16px',
+              borderRadius: '10px',
+              background: '#fef2f2',
+              border: '1.5px solid #fca5a5',
+              color: '#b91c1c',
+              fontSize: '14px',
+              fontWeight: 600,
               display: 'flex',
-              flexDirection: 'column',
-              gap: '10px',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
             }}>
-              <div style={{
-                padding: '12px 16px',
-                borderRadius: '10px',
-                background: '#fef2f2',
-                border: '1.5px solid #fca5a5',
-                color: '#b91c1c',
-                fontSize: '13px',
-                fontWeight: 600,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}>
-                <span>⚠️</span>
-                <span>{currentFeedback.message}</span>
-              </div>
-
-              {/* Hộp gợi ý nổi bật */}
-              <div style={{
-                padding: '14px 18px',
-                borderRadius: '12px',
-                background: '#fffbeb',
-                border: '1.5px solid #fcd34d',
-                color: '#92400e',
-                fontSize: '13px',
-                lineHeight: 1.5,
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '8px',
-              }}>
-                <span style={{ fontSize: '18px' }}>💡</span>
-                <div>
-                  <strong>Gợi ý câu hỏi:</strong>{' '}
-                  {currentItem.hints?.[0] || `Hãy thử đặt câu hỏi bắt đầu bằng: "${currentItem.question_bank[0] || 'What'}"`}
-                </div>
-              </div>
+              <span>⚠️</span>
+              <span>Try again</span>
             </div>
           )}
         </section>
@@ -919,13 +851,17 @@ export function InterviewFillProfileRenderer({
           padding: '32px 24px',
           textAlign: 'center',
           boxShadow: '0 6px 20px rgba(0, 0, 0, 0.05)',
+          width: '100%',
+          boxSizing: 'border-box',
         }}>
           <div style={{ fontSize: '42px', marginBottom: '10px' }}>🎉</div>
-          <div style={{ fontSize: '22px', fontWeight: 800, color: '#166534', marginBottom: '6px' }}>
-            Xuất sắc! 100/100 Điểm
+          <div style={{ fontSize: '24px', fontWeight: 800, color: '#166534', marginBottom: '6px' }}>
+            Congratulation
           </div>
-          <div style={{ fontSize: '15px', color: '#15803d', marginBottom: '20px', maxWidth: '460px', margin: '0 auto 24px' }}>
-            Em đã hoàn thành xuất sắc việc đặt toàn bộ {items.length} câu hỏi phỏng vấn và lắng nghe câu trả lời từ AI Tutor!
+          <div style={{ display: 'inline-flex', alignItems: 'baseline', gap: '6px', margin: '10px auto 20px', background: '#f0fdf4', border: '1.5px solid #86efac', padding: '8px 24px', borderRadius: '12px' }}>
+            <span style={{ fontSize: '14px', fontWeight: 700, color: '#166534' }}>Điểm số:</span>
+            <span style={{ fontSize: '28px', fontWeight: 800, color: '#15803d' }}>100</span>
+            <span style={{ fontSize: '14px', color: '#166534' }}>/100</span>
           </div>
 
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
