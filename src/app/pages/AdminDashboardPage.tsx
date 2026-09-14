@@ -1106,8 +1106,8 @@ export function AdminDashboardPage() {
                       <option value="FORM_3_WRITING">Form 3: Viết câu & Đoạn văn (AI Grammar)</option>
                       <option value="FORM_4_SPEAKING">Form 4: Luyện nói & Chấm phát âm (AssemblyAI)</option>
                       <option value="FORM_5_LISTEN_REPEAT">Form 5: Nghe & Ghi âm lặp lại (AssemblyAI &gt; 80%)</option>
-                      <option value="FORM_6_1_PROFILE_QA">Form 6.1: Nghe & Trả lời theo hồ sơ (4 audio)</option>
-                      <option value="FORM_6_2_INTERVIEW_PROFILE">Form 6.2: Phỏng vấn AI Tutor điền hồ sơ (AssemblyAI)</option>
+                      <option value="FORM_6_2_INTERVIEW_PROFILE">Form 6.2: Phỏng vấn giọng nói (Interview Dialogue)</option>
+                      <option value="FORM_7_TOPIC_SPEAKING">Form 7: Chọn chủ đề & Nói (Topic Speaking)</option>
                     </select>
                   </div>
 

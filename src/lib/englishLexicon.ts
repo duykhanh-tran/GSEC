@@ -112,6 +112,9 @@ export const COMMON_ENGLISH_WORDS = new Set<string>([
   'stop', 'stops', 'stopped', 'stopping',
   'clean', 'cleans', 'cleaned', 'cleaning',
   'wash', 'washes', 'washed', 'washing',
+  'brush', 'brushes', 'brushed', 'brushing',
+  'leave', 'leaves', 'left', 'leaving',
+  'arrive', 'arrives', 'arrived', 'arriving',
   'wear', 'wears', 'wore', 'worn', 'wearing',
   'use', 'uses', 'used', 'using',
   'find', 'finds', 'found', 'finding',
@@ -142,7 +145,8 @@ export const COMMON_ENGLISH_WORDS = new Set<string>([
   'library', 'libraries', 'yard', 'playground', 'gym', 'canteen', 'lab', 'laboratory',
 
   // Thời gian & Lịch trình (Time & Calendar)
-  'time', 'times', 'minute', 'minutes', 'hour', 'hours', 'day', 'days', 'week', 'weeks', 'month', 'months', 'year', 'years',
+  'time', 'times', 'minute', 'minutes', 'hour', 'hours', 'second', 'seconds', 'day', 'days', 'week', 'weeks', 'month', 'months', 'year', 'years',
+  'am', 'pm', 'a.m.', 'p.m.', "o'clock", 'oclock', 'half', 'past', 'quarter', 'quarters',
   'morning', 'mornings', 'afternoon', 'afternoons', 'evening', 'evenings', 'night', 'nights',
   'noon', 'midnight', 'weekend', 'weekends',
   'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
@@ -182,8 +186,9 @@ export const COMMON_ENGLISH_WORDS = new Set<string>([
   'game', 'games', 'sport', 'sports', 'football', 'soccer', 'badminton', 'basketball', 'volleyball', 'tennis',
   'swimming', 'running', 'cycling', 'table tennis', 'chess', 'music', 'song', 'movie', 'film', 'photo', 'picture',
 
-  // Thức ăn & Đồ uống (Food & Drinks)
+  // Thức ăn, Đồ uống & Bữa ăn (Food, Drinks & Meals)
   'food', 'rice', 'bread', 'meat', 'chicken', 'fish', 'egg', 'eggs', 'noodle', 'noodles',
+  'breakfast', 'lunch', 'dinner', 'meal', 'meals', 'snack', 'snacks',
   'water', 'milk', 'tea', 'coffee', 'juice', 'apple', 'banana', 'orange', 'pizza', 'cake',
 ])
 
@@ -237,6 +242,9 @@ export const ACCEPTABLE_PROPER_NOUNS = new Set<string>([
 export function isKnownWord(word: string): boolean {
   const w = word.toLowerCase().trim()
   if (!w) return true
+
+  // Cho phép các số, giờ giấc, hoặc token chứa chữ số (e.g. 5.30, 5:30, 5pm, 5.30pm, 1st, 10, v.v.)
+  if (/\d/.test(w)) return true
 
   // Kiểm tra trực tiếp trong danh mục từ điển hoặc tên riêng
   if (COMMON_ENGLISH_WORDS.has(w) || ACCEPTABLE_PROPER_NOUNS.has(w)) return true
@@ -379,7 +387,8 @@ export function checkSentenceLexicon(sentence: string): LexiconCheckResult {
   for (let idx = 0; idx < tokens.length; idx++) {
     const rawToken = tokens[idx]
     const clean = rawToken.replace(/^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$/g, '')
-    if (!clean || clean.length <= 1 || /^\d+$/.test(clean)) continue
+    // Bỏ qua rỗng, từ 1 chữ cái, hoặc token chứa chữ số (giờ giấc, số đếm: 5.30, 5:30, 5pm, 5.30pm, 1st, v.v.)
+    if (!clean || clean.length <= 1 || /\d/.test(clean)) continue
 
     const check = checkConcatenatedToken(rawToken)
     if (check.hasError) {

@@ -8,6 +8,7 @@ export type StandardFormType =
   | 'FORM_5_LISTEN_REPEAT'
   | 'FORM_6_1_PROFILE_QA'
   | 'FORM_6_2_INTERVIEW_PROFILE'
+  | 'FORM_7_TOPIC_SPEAKING'
 
 export interface ChoiceItemConfig {
   id: number | string
@@ -155,9 +156,10 @@ export interface Form61ProfileConfig {
 export interface Form62InterviewFieldItem {
   id: string
   label: string
-  target_answer: string
+  target_answer?: string
   accepted_values?: string[]
-  answer_audio_url?: string
+  prompt_audio_url?: string // Audio 1: Câu nói dẫn / Câu hỏi của AI
+  answer_audio_url?: string // Audio 2: Câu trả lời của AI khi học sinh hỏi đúng
   answer_text_display?: string
   question_bank: string[]
   hints?: string[]
@@ -166,8 +168,29 @@ export interface Form62InterviewFieldItem {
 export interface Form62InterviewConfig {
   intro: string
   note?: string
+  audio_url?: string
+  audioUrl?: string
   pass_score?: number
   items: Form62InterviewFieldItem[]
+}
+
+export interface Form7TopicOption {
+  id: string
+  text: string
+  is_other?: boolean
+}
+
+export interface Form7TopicSpeakingConfig {
+  intro?: string
+  prompt: string // e.g. "Choose ONE good thing to do at school."
+  options: Form7TopicOption[]
+  allow_other_idea?: boolean
+  scoring_criteria: string
+  pass_score?: number
+  audio_url?: string
+  audioUrl?: string
+  hints?: string[]
+  min_duration_seconds?: number
 }
 
 export interface DynamicTaskRecord {
@@ -190,6 +213,7 @@ export interface DynamicTaskRecord {
     | Form5ListenRepeatConfig
     | Form61ProfileConfig
     | Form62InterviewConfig
+    | Form7TopicSpeakingConfig
     | Record<string, any>
 }
 

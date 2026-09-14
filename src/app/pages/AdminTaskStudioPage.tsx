@@ -388,8 +388,9 @@ export function AdminTaskStudioPage() {
     Array<{
       id: string
       label: string
-      target_answer: string
-      accepted_values: string
+      target_answer?: string
+      accepted_values?: string
+      prompt_audio_url?: string
       answer_audio_url?: string
       answer_text_display?: string
       question_bank: string
@@ -399,8 +400,7 @@ export function AdminTaskStudioPage() {
     {
       id: 'name',
       label: 'Name',
-      target_answer: 'Nam',
-      accepted_values: 'Nam\nhis name is Nam',
+      prompt_audio_url: '',
       answer_audio_url: '',
       answer_text_display: 'His name is Nam.',
       question_bank: "What is his name?\nWhat's his name?\nWho is he?\nCan you tell me his name?\nTell me his name",
@@ -409,8 +409,7 @@ export function AdminTaskStudioPage() {
     {
       id: 'class',
       label: 'Class',
-      target_answer: '6A',
-      accepted_values: '6A\nclass 6A\nin class 6A',
+      prompt_audio_url: '',
       answer_audio_url: '',
       answer_text_display: 'He is in class 6A.',
       question_bank: "Which class is he in?\nWhat class is he in?\nWhich class?\nWhat is his class?",
@@ -419,8 +418,7 @@ export function AdminTaskStudioPage() {
     {
       id: 'subject',
       label: 'Favourite subject',
-      target_answer: 'English',
-      accepted_values: 'English\nhis favourite subject is English',
+      prompt_audio_url: '',
       answer_audio_url: '',
       answer_text_display: 'His favourite subject is English.',
       question_bank: "What is his favourite subject?\nWhat's his favourite subject?\nWhat is his favorite subject?\nWhich subject does he like?\nWhat subject does he like most?",
@@ -429,8 +427,7 @@ export function AdminTaskStudioPage() {
     {
       id: 'activity',
       label: 'Activity after',
-      target_answer: 'play football',
-      accepted_values: 'play football\nplays football\nhe plays football',
+      prompt_audio_url: '',
       answer_audio_url: '',
       answer_text_display: 'He usually plays football after school.',
       question_bank: "What does he do after school?\nWhat is his activity after school?\nWhat does he usually do after school?\nWhat activity does he do?",
@@ -438,7 +435,11 @@ export function AdminTaskStudioPage() {
     },
   ])
 
-  const handleForm62AudioUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleForm62AudioUpload = async (
+    index: number,
+    field: 'prompt_audio_url' | 'answer_audio_url',
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = e.target.files?.[0]
     if (!file) return
     const reader = new FileReader()
@@ -446,13 +447,13 @@ export function AdminTaskStudioPage() {
       const base64Url = ev.target?.result as string
       setForm62Items((prev) => {
         const next = [...prev]
-        next[index] = { ...next[index], answer_audio_url: base64Url }
+        next[index] = { ...next[index], [field]: base64Url }
         return next
       })
 
       try {
         const fileExt = file.name.split('.').pop() || 'mp3'
-        const filePath = `tasks/form62_${Date.now()}_${Math.random().toString(36).slice(2, 7)}.${fileExt}`
+        const filePath = `tasks/form62_${field}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}.${fileExt}`
         const { data, error } = await supabase.storage.from('task-audio').upload(filePath, file, {
           cacheControl: '3600',
           upsert: true,
@@ -462,17 +463,30 @@ export function AdminTaskStudioPage() {
           if (pubUrl?.publicUrl) {
             setForm62Items((prev) => {
               const next = [...prev]
-              next[index] = { ...next[index], answer_audio_url: pubUrl.publicUrl }
+              next[index] = { ...next[index], [field]: pubUrl.publicUrl }
               return next
             })
           }
         }
       } catch (err) {
-        console.warn('Form 6.2 audio upload error, using base64 fallback:', err)
+        console.warn('Form 6.2 item audio upload error, using base64 fallback:', err)
       }
     }
     reader.readAsDataURL(file)
   }
+
+  // ================= FORM 7 TOPIC SPEAKING STATE =================
+  const [form7Prompt, setForm7Prompt] = useState('Choose ONE good thing to do at school.')
+  const [form7Options, setForm7Options] = useState<Array<{ id: string; text: string }>>([
+    { id: '1', text: 'Keep my desk and classroom tidy.' },
+    { id: '2', text: 'Help a classmate.' },
+    { id: '3', text: 'Take care of our school things.' },
+  ])
+  const [form7AllowOther, setForm7AllowOther] = useState(true)
+  const [form7ScoringCriteria, setForm7ScoringCriteria] = useState(
+    '- Nói rõ hành động đã chọn và giải thích lý do\n- Nói ít nhất 2 câu hoàn chỉnh bằng tiếng Anh\n- Sử dụng thì hiện tại đơn đúng ngữ pháp\n- Phát âm rõ ràng, dễ nghe',
+  )
+  const [form7PassScore, setForm7PassScore] = useState(80)
 
   // ================= TẢI DỮ LIỆU KHI CHỈNH SỬA (EDIT MODE) =================
   const fetchTaskToEdit = useCallback(async (codeToEdit: string) => {
@@ -659,6 +673,7 @@ export function AdminTaskStudioPage() {
               label: it.label,
               target_answer: it.target_answer || '',
               accepted_values: Array.isArray(it.accepted_values) ? it.accepted_values.join('\n') : (it.accepted_values || ''),
+              prompt_audio_url: it.prompt_audio_url || '',
               answer_audio_url: it.answer_audio_url || '',
               answer_text_display: it.answer_text_display || '',
               question_bank: Array.isArray(it.question_bank) ? it.question_bank.join('\n') : (it.question_bank || ''),
@@ -666,6 +681,14 @@ export function AdminTaskStudioPage() {
             }))
           )
         }
+      } else if (targetFormType === 'FORM_7_TOPIC_SPEAKING') {
+        setForm7Prompt(content.prompt || 'Choose ONE good thing to do at school.')
+        if (content.options && Array.isArray(content.options) && content.options.length > 0) {
+          setForm7Options(content.options)
+        }
+        setForm7AllowOther(content.allow_other_idea !== false)
+        setForm7ScoringCriteria(content.scoring_criteria || '')
+        setForm7PassScore(content.pass_score || 80)
       }
     } catch (err: any) {
       console.error('Lỗi tải bài tập để sửa:', err)
@@ -956,13 +979,6 @@ export function AdminTaskStudioPage() {
         }
       } else if (authoringFormType === 'FORM_6_2_INTERVIEW_PROFILE') {
         const cleanItems = form62Items.map((item) => {
-          const accepted = item.accepted_values
-            .split('\n')
-            .map((s) => s.trim())
-            .filter(Boolean)
-          if (accepted.length === 0 && item.target_answer.trim()) {
-            accepted.push(item.target_answer.trim())
-          }
           const questions = item.question_bank
             .split('\n')
             .map((s) => s.trim())
@@ -970,8 +986,7 @@ export function AdminTaskStudioPage() {
           return {
             id: item.id,
             label: item.label.trim(),
-            target_answer: item.target_answer.trim(),
-            accepted_values: accepted,
+            prompt_audio_url: item.prompt_audio_url?.trim() || undefined,
             answer_audio_url: item.answer_audio_url?.trim() || undefined,
             answer_text_display: item.answer_text_display?.trim() || undefined,
             question_bank: questions,
@@ -980,7 +995,9 @@ export function AdminTaskStudioPage() {
         })
 
         contentPayload = {
-          intro: taskIntro.trim() || 'Ask AI Tutor, fill in the profile, and hit Submit!',
+          intro: taskIntro.trim() || 'Listen to AI Tutor, ask questions, and complete the dialogue!',
+          audio_url: taskAudioUrl.trim() || undefined,
+          audioUrl: taskAudioUrl.trim() || undefined,
           pass_score: Number(form62PassScore) || 80,
           items: cleanItems,
         }
@@ -991,20 +1008,42 @@ export function AdminTaskStudioPage() {
         }
 
         hintsPayload = {
-          h1: 'Ask questions to the AI Tutor to discover classmate information.',
-          h2: 'Fill all fields in the profile, then click Submit.',
+          h1: 'Listen to Audio 1 from AI Tutor, then ask your question clearly.',
+          h2: 'Ask questions matching the question bank to hear Audio 2.',
+        }
+      } else if (authoringFormType === 'FORM_7_TOPIC_SPEAKING') {
+        contentPayload = {
+          intro: taskIntro.trim() || 'Choose ONE topic and speak aloud.',
+          prompt: form7Prompt.trim() || 'Choose ONE good thing to do at school.',
+          options: form7Options.map((opt) => ({
+            id: opt.id,
+            text: opt.text.trim(),
+          })),
+          allow_other_idea: form7AllowOther,
+          scoring_criteria: form7ScoringCriteria.trim(),
+          pass_score: Number(form7PassScore) || 80,
+          audio_url: taskAudioUrl.trim() || undefined,
+          audioUrl: taskAudioUrl.trim() || undefined,
+        }
+
+        keysPayload = {
+          pass_score: Number(form7PassScore) || 80,
+        }
+
+        hintsPayload = {
+          h1: 'Select one topic and express your ideas clearly.',
+          h2: 'Speak at least 2 full sentences using simple present tense.',
         }
       }
 
       const isCustomVoiceTask =
-        authoringFormType === 'FORM_3_WRITING' ||
         authoringFormType === 'FORM_4_SPEAKING' ||
         authoringFormType === 'FORM_5_LISTEN_REPEAT' ||
-        authoringFormType === 'FORM_6_1_PROFILE_QA' ||
-        authoringFormType === 'FORM_6_2_INTERVIEW_PROFILE'
+        authoringFormType === 'FORM_6_1_PROFILE_QA'
 
       if (!isCustomVoiceTask && taskAudioUrl.trim()) {
         contentPayload.audioUrl = taskAudioUrl.trim()
+        contentPayload.audio_url = taskAudioUrl.trim()
       }
 
       const finalUnit = Math.max(1, parseInt(String(taskUnit), 10) || 1)
@@ -1014,6 +1053,7 @@ export function AdminTaskStudioPage() {
       const taskContent = {
         ...contentPayload,
         audioUrl: !isCustomVoiceTask ? (taskAudioUrl.trim() || undefined) : undefined,
+        audio_url: !isCustomVoiceTask ? (taskAudioUrl.trim() || undefined) : undefined,
         unit: finalUnit,
         lesson: finalLesson,
       }
@@ -1311,7 +1351,8 @@ export function AdminTaskStudioPage() {
                     <option value="FORM_4_SPEAKING">FORM 4: Đọc thành tiếng / Speaking</option>
                     <option value="FORM_5_LISTEN_REPEAT">FORM 5: Nghe & Nhại lại câu (Listen & Repeat)</option>
                     <option value="FORM_6_1_PROFILE_QA">FORM 6.1: Nghe & Trả lời thông tin nhân vật (Profile Q&A)</option>
-                    <option value="FORM_6_2_INTERVIEW_PROFILE">FORM 6.2: Phỏng vấn điền thông tin nhân vật (Interview Profile)</option>
+                    <option value="FORM_6_2_INTERVIEW_PROFILE">FORM 6.2: Phỏng vấn giọng nói (Interview Dialogue)</option>
+                    <option value="FORM_7_TOPIC_SPEAKING">FORM 7: Chọn chủ đề & Nói (Topic Speaking)</option>
                   </select>
                 </div>
 
@@ -1439,8 +1480,12 @@ export function AdminTaskStudioPage() {
                 </div>
               </div>
 
-              {/* AUDIO TỔNG (Nếu là Form 1 hoặc Form 2) */}
-              {(authoringFormType === 'FORM_1_CHOICE' || authoringFormType === 'FORM_2_FILL') && (
+              {/* AUDIO TỔNG (Dành cho Form 1, Form 2, Form 3, Form 6.2, Form 7) */}
+              {(authoringFormType === 'FORM_1_CHOICE' ||
+                authoringFormType === 'FORM_2_FILL' ||
+                authoringFormType === 'FORM_3_WRITING' ||
+                authoringFormType === 'FORM_6_2_INTERVIEW_PROFILE' ||
+                authoringFormType === 'FORM_7_TOPIC_SPEAKING') && (
                 <div
                   style={{
                     background: '#f8fafc',
@@ -2833,19 +2878,46 @@ export function AdminTaskStudioPage() {
 
                           <div>
                             <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#64748b', marginBottom: '4px' }}>
-                              Đáp án chuẩn cần điền vào hồ sơ (Target Answer):
+                              🎧 Audio 1: Câu nói dẫn / Câu hỏi gợi ý của AI (Audio 1):
                             </label>
-                            <input
-                              type="text"
-                              className="auth-input"
-                              style={{ width: '100%', padding: '8px 10px', fontSize: '13px', fontWeight: 700, color: '#0f172a' }}
-                              value={item.target_answer}
-                              onChange={(e) => {
-                                const next = [...form62Items]
-                                next[index].target_answer = e.target.value
-                                setForm62Items(next)
-                              }}
-                            />
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                              <input
+                                type="text"
+                                className="auth-input"
+                                style={{ flex: 1, padding: '7px 10px', fontSize: '12px' }}
+                                placeholder="Dán link Audio 1 hoặc tải file..."
+                                value={item.prompt_audio_url || ''}
+                                onChange={(e) => {
+                                  const next = [...form62Items]
+                                  next[index].prompt_audio_url = e.target.value
+                                  setForm62Items(next)
+                                }}
+                              />
+                              <label
+                                style={{
+                                  padding: '7px 12px',
+                                  borderRadius: '6px',
+                                  border: '1px solid #bae6fd',
+                                  background: '#f0f9ff',
+                                  color: '#0369a1',
+                                  fontSize: '12px',
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                  whiteSpace: 'nowrap',
+                                }}
+                              >
+                                📁 Tải file
+                                <input
+                                  type="file"
+                                  accept="audio/*"
+                                  style={{ display: 'none' }}
+                                  onChange={(e) => handleForm62AudioUpload(index, 'prompt_audio_url', e)}
+                                />
+                              </label>
+                            </div>
+                            {item.prompt_audio_url && (
+                              <audio controls src={item.prompt_audio_url} style={{ height: '32px', width: '100%', marginTop: '6px' }} />
+                            )}
                           </div>
                         </div>
 
@@ -2869,14 +2941,14 @@ export function AdminTaskStudioPage() {
 
                           <div>
                             <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#64748b', marginBottom: '4px' }}>
-                              🎧 Audio câu trả lời của AI:
+                              🎧 Audio 2: Câu trả lời của AI khi học sinh hỏi đúng (Audio 2):
                             </label>
                             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                               <input
                                 type="text"
                                 className="auth-input"
                                 style={{ flex: 1, padding: '7px 10px', fontSize: '12px' }}
-                                placeholder="Dán link audio hoặc tải file..."
+                                placeholder="Dán link Audio 2 hoặc tải file..."
                                 value={item.answer_audio_url || ''}
                                 onChange={(e) => {
                                   const next = [...form62Items]
@@ -2902,7 +2974,7 @@ export function AdminTaskStudioPage() {
                                   type="file"
                                   accept="audio/*"
                                   style={{ display: 'none' }}
-                                  onChange={(e) => handleForm62AudioUpload(index, e)}
+                                  onChange={(e) => handleForm62AudioUpload(index, 'answer_audio_url', e)}
                                 />
                               </label>
                             </div>
@@ -2912,7 +2984,7 @@ export function AdminTaskStudioPage() {
                           </div>
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '12px' }}>
                           <div>
                             <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#64748b', marginBottom: '4px' }}>
                               Ngân hàng câu hỏi của học sinh (Mỗi câu hỏi chấp nhận 1 dòng):
@@ -2932,16 +3004,17 @@ export function AdminTaskStudioPage() {
 
                           <div>
                             <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#64748b', marginBottom: '4px' }}>
-                              Các giá trị điền được chấp nhận (Mỗi giá trị 1 dòng):
+                              Gợi ý cho học sinh (Hiển thị nếu học sinh hỏi sai):
                             </label>
                             <textarea
                               className="auth-input"
                               rows={4}
-                              style={{ width: '100%', padding: '8px 10px', fontSize: '12px', color: '#047857', fontWeight: 600 }}
-                              value={item.accepted_values}
+                              style={{ width: '100%', padding: '8px 10px', fontSize: '12px', color: '#0369a1' }}
+                              placeholder="Ví dụ: Hãy đặt câu hỏi về tên bạn ấy..."
+                              value={item.hints || ''}
                               onChange={(e) => {
                                 const next = [...form62Items]
-                                next[index].accepted_values = e.target.value
+                                next[index].hints = e.target.value
                                 setForm62Items(next)
                               }}
                             />
@@ -2949,6 +3022,137 @@ export function AdminTaskStudioPage() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                </div>
+              )}
+
+              {/* FORM 7 TOPIC SPEAKING BUILDER */}
+              {authoringFormType === 'FORM_7_TOPIC_SPEAKING' && (
+                <div>
+                  <div style={{ marginBottom: '18px' }}>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                      Đề bài / Lời dẫn (Prompt):
+                    </label>
+                    <input
+                      type="text"
+                      className="auth-input"
+                      style={{ width: '100%', padding: '10px 12px', fontSize: '14px', fontWeight: 600 }}
+                      placeholder="Ví dụ: Choose ONE good thing to do at school."
+                      value={form7Prompt}
+                      onChange={(e) => setForm7Prompt(e.target.value)}
+                    />
+                  </div>
+
+                  <div style={{ marginBottom: '20px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                      <label style={{ fontSize: '13px', fontWeight: 700, color: '#334155' }}>
+                        Danh sách các chủ đề / lựa chọn cho học sinh (Topic Options):
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setForm7Options((prev) => [
+                            ...prev,
+                            { id: String(Date.now()), text: '' },
+                          ])
+                        }}
+                        style={{
+                          padding: '5px 12px',
+                          borderRadius: '6px',
+                          border: '1px solid #bae6fd',
+                          background: '#f0f9ff',
+                          color: '#0284c7',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        + Thêm chủ đề
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {form7Options.map((opt, oIdx) => (
+                        <div key={opt.id || oIdx} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', width: '24px' }}>
+                            {oIdx + 1}.
+                          </span>
+                          <input
+                            type="text"
+                            className="auth-input"
+                            style={{ flex: 1, padding: '8px 12px', fontSize: '13px' }}
+                            placeholder="Nhập tên chủ đề (ví dụ: Help a classmate.)..."
+                            value={opt.text}
+                            onChange={(e) => {
+                              const next = [...form7Options]
+                              next[oIdx] = { ...next[oIdx], text: e.target.value }
+                              setForm7Options(next)
+                            }}
+                          />
+                          {form7Options.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setForm7Options((prev) => prev.filter((_, i) => i !== oIdx))
+                              }}
+                              style={{
+                                padding: '6px 10px',
+                                borderRadius: '6px',
+                                border: '1px solid #fecaca',
+                                background: '#fff',
+                                color: '#dc2626',
+                                fontSize: '12px',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <input
+                        type="checkbox"
+                        id="form7AllowOther"
+                        checked={form7AllowOther}
+                        onChange={(e) => setForm7AllowOther(e.target.checked)}
+                        style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                      />
+                      <label htmlFor="form7AllowOther" style={{ fontSize: '13px', color: '#334155', cursor: 'pointer', fontWeight: 600 }}>
+                        Cho phép học sinh tự viết ý kiến riêng (Option "Other idea: ________")
+                      </label>
+                    </div>
+                  </div>
+
+                  <div style={{ marginBottom: '18px' }}>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                      Tiêu chí chấm điểm của giáo viên (Scoring Criteria cho AI chấm sát bài):
+                    </label>
+                    <textarea
+                      className="auth-input"
+                      rows={4}
+                      style={{ width: '100%', padding: '10px 12px', fontSize: '13px', lineHeight: 1.5 }}
+                      placeholder="Mỗi tiêu chí 1 dòng (ví dụ: Nói rõ hành động đã chọn; Sử dụng thì hiện tại đơn; Nói ít nhất 2 câu...)"
+                      value={form7ScoringCriteria}
+                      onChange={(e) => setForm7ScoringCriteria(e.target.value)}
+                    />
+                  </div>
+
+                  <div style={{ marginBottom: '18px' }}>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                      Điểm chuẩn đạt (Pass Score: {form7PassScore}%):
+                    </label>
+                    <input
+                      type="range"
+                      min="50"
+                      max="100"
+                      step="5"
+                      style={{ width: '320px' }}
+                      value={form7PassScore}
+                      onChange={(e) => setForm7PassScore(Number(e.target.value))}
+                    />
                   </div>
                 </div>
               )}

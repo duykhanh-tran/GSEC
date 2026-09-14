@@ -131,53 +131,28 @@ describe('Form 6 Renderers', () => {
       ],
     }
 
-    it('renders blank profile inputs and mic button', () => {
+    it('renders overall audio if present, question tabs, and mic button', () => {
+      const configWithAudio: Form62InterviewConfig = {
+        ...sample62Config,
+        audio_url: 'https://example.com/overall.mp3',
+      }
       render(
         <InterviewFillProfileRenderer
-          config={sample62Config}
+          config={configWithAudio}
           taskCode="60146"
         />
       )
 
-      expect(screen.getByText(/Ask AI Tutor, fill in the profile, and hit Submit!/i)).toBeDefined()
+      expect(screen.getByText(/Audio tổng quan bài học/i)).toBeDefined()
       expect(document.getElementById('interviewMicBtn')).toBeDefined()
-      expect(document.getElementById('profile-field-name')).toBeDefined()
-      expect(document.getElementById('profile-field-class')).toBeDefined()
-      expect(document.getElementById('profile-field-subject')).toBeDefined()
-      expect(document.getElementById('profile-field-activity')).toBeDefined()
-      expect(document.getElementById('interviewSubmitProfileBtn')).toBeDefined()
+      expect(document.getElementById('interview-tab-name')).toBeDefined()
+      expect(document.getElementById('interview-tab-class')).toBeDefined()
+      expect(document.getElementById('interview-tab-subject')).toBeDefined()
+      expect(document.getElementById('interview-tab-activity')).toBeDefined()
+      expect(document.getElementById('playAudio1Btn-name')).toBeDefined()
     })
 
-    it('submits correctly when all 4 fields are filled', () => {
-      const onComplete = vi.fn()
-      render(
-        <InterviewFillProfileRenderer
-          config={sample62Config}
-          taskCode="60146"
-          onComplete={onComplete}
-        />
-      )
-
-      const nameInput = document.getElementById('profile-field-name') as HTMLInputElement
-      const classInput = document.getElementById('profile-field-class') as HTMLInputElement
-      const subjectInput = document.getElementById('profile-field-subject') as HTMLInputElement
-      const activityInput = document.getElementById('profile-field-activity') as HTMLInputElement
-      const submitBtn = document.getElementById('interviewSubmitProfileBtn')!
-
-      // Điền thông tin vào 4 trường
-      fireEvent.change(nameInput, { target: { value: 'Nam' } })
-      fireEvent.change(classInput, { target: { value: '6A' } })
-      fireEvent.change(subjectInput, { target: { value: 'English' } })
-      fireEvent.change(activityInput, { target: { value: 'play football' } })
-
-      fireEvent.click(submitBtn)
-
-      // Kiểm tra onComplete được gọi với điểm 100
-      expect(onComplete).toHaveBeenCalledWith(100, expect.any(Object))
-      expect(screen.getByText(/Task Complete • 100\/100 Điểm!/i)).toBeDefined()
-    })
-
-    it('has locked audio buttons initially and does not render the green text card', () => {
+    it('switches tabs and displays active question label', () => {
       render(
         <InterviewFillProfileRenderer
           config={sample62Config}
@@ -185,12 +160,13 @@ describe('Form 6 Renderers', () => {
         />
       )
 
-      // Kiểm tra nút loa ban đầu là "Chưa mở"
-      expect(screen.getAllByText(/Chưa mở/i).length).toBe(4)
+      expect(screen.getByText(/Hỏi về: Name/i)).toBeDefined()
 
-      // Kiểm tra không có thẻ xanh lá cây hay nhãn "AI Tutor"
-      expect(screen.queryByText(/AI Tutor:/i)).toBeNull()
-      expect(document.querySelector('.interview-message-bubble.ai-response')).toBeNull()
+      const classTab = document.getElementById('interview-tab-class')!
+      fireEvent.click(classTab)
+
+      expect(screen.getByText(/Hỏi về: Class/i)).toBeDefined()
+      expect(document.getElementById('playAudio1Btn-class')).toBeDefined()
     })
   })
 })

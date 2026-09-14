@@ -177,6 +177,35 @@ describe('Form 3 Writing & Guided Repair Flow', () => {
 
     // Case 5: no starter or ending
     expect(buildFullSentence('I love studying English.')).toBe('I love studying English.')
+
+    // Case 6: time expression with preposition starter deduplication
+    expect(buildFullSentence('at 5.30pm', 'I have breakfast at')).toBe('I have breakfast at 5.30pm')
+    expect(buildFullSentence('5.30pm', 'I have breakfast at')).toBe('I have breakfast at 5.30pm')
+  })
+
+  it('accepts time inputs without false gibberish or lexicon errors', async () => {
+    const { checkSentenceLexicon, isKnownWord } = await import('../../src/lib/englishLexicon')
+    const { detectGibberish } = await import('../../src/lib/aiGradingService')
+
+    // Time tokens with digits should be recognized as known words
+    expect(isKnownWord('5.30')).toBe(true)
+    expect(isKnownWord('5:30')).toBe(true)
+    expect(isKnownWord('5.30pm')).toBe(true)
+    expect(isKnownWord('pm')).toBe(true)
+    expect(isKnownWord('oclock')).toBe(true)
+
+    // Lexicon check should accept time sentences without errors
+    const lexCheck1 = checkSentenceLexicon('I have breakfast at 5.30pm.')
+    expect(lexCheck1.hasError).toBe(false)
+
+    const lexCheck2 = checkSentenceLexicon('I leave home at 6:45 a.m.')
+    expect(lexCheck2.hasError).toBe(false)
+
+    // Detect gibberish should not flag time expressions
+    expect(detectGibberish('5.30').isGibberish).toBe(false)
+    expect(detectGibberish('5:30pm').isGibberish).toBe(false)
+    expect(detectGibberish('I have breakfast at 5.30pm.').isGibberish).toBe(false)
   })
 })
+
 

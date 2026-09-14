@@ -1,0 +1,271 @@
+/* CSS cho Form 7: Luyện nói theo chủ đề lựa chọn (Topic Speaking) */
+
+.topic-speaking-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.topic-speaking-header {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 18px 22px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.03);
+}
+
+.topic-speaking-prompt-box {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 2px dashed #94a3b8;
+  border-radius: 16px;
+  padding: 20px 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+}
+
+.topic-speaking-options-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.topic-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  border: 2px solid #cbd5e1;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+
+.topic-card:hover {
+  border-color: #3b82f6;
+  background: #f8faff;
+  transform: translateY(-1px);
+}
+
+.topic-card.selected {
+  border-color: #2563eb;
+  background: #eff6ff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.topic-radio-indicator {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.topic-card.selected .topic-radio-indicator {
+  border-color: #2563eb;
+  background: #2563eb;
+}
+
+.topic-radio-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.topic-text {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.4;
+  flex: 1;
+}
+
+.topic-other-input {
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px 14px;
+  border: 1.5px solid #93c5fd;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.topic-other-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* Speaking Action Section */
+.topic-speaking-action-box {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.topic-mic-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 14px 36px;
+  border-radius: 50px;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  border: none;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+}
+
+.topic-mic-btn.idle {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.topic-mic-btn.idle:hover:not(:disabled) {
+  background: #1d4ed8;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.3);
+}
+
+.topic-mic-btn:disabled {
+  background: #cbd5e1;
+  color: #94a3b8;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.topic-mic-btn.recording {
+  background: #dc2626;
+  color: #ffffff;
+  animation: pulse-recording 1.5s infinite;
+}
+
+@keyframes pulse-recording {
+  0% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 14px rgba(220, 38, 38, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
+  }
+}
+
+.topic-mic-btn.processing {
+  background: #f59e0b;
+  color: #ffffff;
+  cursor: wait;
+}
+
+/* Audio wave animation when recording */
+.recording-wave-bar-container {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+}
+
+.recording-wave-bar {
+  width: 4px;
+  height: 100%;
+  background: #ef4444;
+  border-radius: 2px;
+  animation: wave-bar 1s ease-in-out infinite alternate;
+}
+
+.recording-wave-bar:nth-child(2) { animation-delay: 0.15s; }
+.recording-wave-bar:nth-child(3) { animation-delay: 0.3s; }
+.recording-wave-bar:nth-child(4) { animation-delay: 0.45s; }
+.recording-wave-bar:nth-child(5) { animation-delay: 0.6s; }
+
+@keyframes wave-bar {
+  0% { height: 6px; }
+  100% { height: 24px; }
+}
+
+/* Evaluation Results Card */
+.topic-evaluation-card {
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 22px 24px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.topic-evaluation-card.passed {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.topic-evaluation-card.failed {
+  border-color: #fca5a5;
+  background: #fef2f2;
+}
+
+.topic-score-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 20px;
+  font-weight: 800;
+  padding: 8px 18px;
+  border-radius: 30px;
+}
+
+.topic-score-badge.passed {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.topic-score-badge.failed {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.topic-criteria-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.topic-criterion-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+}
+
+.topic-criterion-item.pass {
+  border-left: 3px solid #22c55e;
+}
+
+.topic-criterion-item.fail {
+  border-left: 3px solid #ef4444;
+}

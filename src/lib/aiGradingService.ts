@@ -109,8 +109,8 @@ export function detectGibberish(text: string): { isGibberish: boolean; token?: s
     .filter(Boolean)
 
   for (const token of tokens) {
-    // Bỏ qua các số hoặc từ quá ngắn (1-3 ký tự)
-    if (token.length <= 3 || /^\d+$/.test(token)) continue
+    // Bỏ qua các số, giờ giấc, token chứa số hoặc từ quá ngắn (1-3 ký tự)
+    if (token.length <= 3 || /\d/.test(token)) continue
 
     // 1. Không chứa bất kỳ nguyên âm nào (a, e, i, o, u, y) trong từ >= 4 ký tự
     if (!/[aeiouy]/i.test(token)) {
@@ -214,8 +214,12 @@ Your evaluation MUST be rigorous and fair according to standard English:
 - Every word must be a real English word or an acceptable proper noun (such as Vietnamese names: "Tran Quoc", "Nguyen Du", "Ha Noi", "Toan", "Doan", "Nam", "Linh", "Minh", "Hoa", "Lan", "Mai", "Phong", "Khoa", "Dung", "Duc", "Bao", "Huy", etc., or textbook character names like "Peter", "Mary", "Linda", "Tom", "Tony").
 - CRITICAL FOR VIETNAMESE NAMES: In Vietnamese, personal names like "Toan" (Toàn) and "Doan" (Đoàn) are single, continuous words written without spaces. Do NOT confuse them with English phrases like "to an" or "do an". In sentences like "Toan is my friend." or "I play with Toan.", "Toan" is a valid proper name, NOT a run-on of "to an"!
 - REJECT words written together without spaces (run-on/concatenated words like "fourpen", "myschool", "inmy", "gotoschool", "playfootball"). Set is_correct = false, score = 40, error_type = "spelling", and explain in feedback_vi that words must be separated by spaces.
-- REJECT words with typos or extra letters (e.g. "fourlpen"). Set is_correct = false, score = 40, error_type = "spelling", and suggest the correct form (e.g. "four pens").
 - REJECT any gibberish, non-existent words, random keyboard typing (e.g. "sjnvldkfjvblkjdfb", "asdfghjk", "xxxyyy"). Set is_correct = false, score = 0, error_type = "gibberish", and point out the meaningless word in feedback_vi.
+- TIME & NUMBER EXPRESSIONS (CRITICAL - ACCEPT AS FULLY VALID & BE LENIENT):
+  * Students frequently write times and numbers (e.g. "5.30", "5:30", "5.30pm", "5:30 pm", "5.30 p.m.", "5:30 p.m.", "5 o'clock", "half past five", "quarter past seven", "quarter to eight", "at 5.30", "5 pm", "5:00", "5").
+  * These are standard, fully valid English expressions.
+  * NEVER mark them as gibberish, spelling errors, or invalid words.
+  * Grade them leniently: accept both 12-hour and 24-hour formats, "." or ":" as separators, with or without "am/pm", with or without space before "am/pm", and with or without final period.
 - The sentence must express a coherent, logical meaning.
 
 2. GRAMMAR & SYNTAX (CRITICAL):
@@ -252,12 +256,15 @@ export function evaluateSentenceHeuristically(
     .join(' ')
     .toLowerCase()
 
-  if (words.length < minWords) {
+  const hasTimePattern = /\b(\d{1,2}([.:]\d{2})?\s*(am|pm|o'clock)?|half past|quarter (past|to))\b/i.test(trimmed)
+  const effectiveMinWords = hasTimePattern ? 1 : minWords
+
+  if (words.length < effectiveMinWords) {
     return {
       is_correct: false,
       score: 40,
-      feedback_en: `Your sentence is too short. Please write a full sentence with at least ${minWords} words.`,
-      feedback_vi: `Câu của bạn quá ngắn. Hãy viết một câu đầy đủ có ít nhất ${minWords} từ nhé.`,
+      feedback_en: `Your sentence is too short. Please write a full sentence with at least ${effectiveMinWords} words.`,
+      feedback_vi: `Câu của bạn quá ngắn. Hãy viết một câu đầy đủ có ít nhất ${effectiveMinWords} từ nhé.`,
       error_type: 'meaning',
     }
   }
@@ -999,4 +1006,162 @@ Return JSON:
 
   return baselineResult
 }
+
+export interface TopicSpeakingEvaluationResult {
+  is_passed: boolean
+  score: number // 0 - 100
+  feedback_vi: string
+  feedback_en: string
+  topic_relevance: { passed: boolean; feedback: string }
+  grammar_score: number
+  vocabulary_score: number
+  criteria_evaluations: Array<{ name: string; passed: boolean; feedback: string }>
+  transcript: string
+  suggested_improvement?: string
+}
+
+export async function evaluateTopicSpeakingWithAI(
+  spokenText: string,
+  selectedTopic: string,
+  prompt: string,
+  scoringCriteria?: string,
+  passScore: number = 80,
+  customApiKey?: string,
+): Promise<TopicSpeakingEvaluationResult> {
+  const trimmed = (spokenText || '').trim()
+  const apiKey =
+    customApiKey ||
+    (typeof window !== 'undefined'
+      ? localStorage.getItem('gsec_gemini_api_key') || ''
+      : '') ||
+    import.meta.env.VITE_GEMINI_API_KEY ||
+    ''
+
+  const fallbackHeuristic = (): TopicSpeakingEvaluationResult => {
+    const words = trimmed.split(/\s+/).filter(Boolean)
+    const isShort = words.length < 5
+    const isPassed = !isShort && words.length >= 8
+    const baseScore = isShort ? 50 : isPassed ? 85 : 70
+
+    return {
+      is_passed: baseScore >= passScore,
+      score: baseScore,
+      feedback_vi: isPassed
+        ? 'Bài nói tốt, thể hiện đúng chủ đề đã chọn!'
+        : 'Bạn cần nói dài hơn (ít nhất 2-3 câu hoàn chỉnh) và nêu rõ lý do cho chủ đề đã chọn nhé.',
+      feedback_en: isPassed
+        ? 'Good speaking effort on the chosen topic!'
+        : 'Try to speak a bit longer and give clear reasons.',
+      topic_relevance: {
+        passed: !isShort,
+        feedback: !isShort ? 'Nội dung liên quan đến chủ đề đã chọn.' : 'Chưa đủ độ dài để thể hiện rõ chủ đề.',
+      },
+      grammar_score: isPassed ? 85 : 65,
+      vocabulary_score: isPassed ? 85 : 65,
+      criteria_evaluations: scoringCriteria
+        ? scoringCriteria
+            .split('\n')
+            .map((c) => c.trim())
+            .filter(Boolean)
+            .map((c) => ({
+              name: c.replace(/^[-*•]\s*/, ''),
+              passed: isPassed,
+              feedback: isPassed ? 'Đạt tiêu chí' : 'Cần phát triển thêm',
+            }))
+        : [],
+      transcript: trimmed,
+      suggested_improvement: isPassed
+        ? undefined
+        : `Ví dụ: "I choose to ${selectedTopic.toLowerCase().replace(/\.$/, '')} because it helps my school and friends."`,
+    }
+  }
+
+  if (!trimmed) {
+    return {
+      is_passed: false,
+      score: 0,
+      feedback_vi: 'Chưa ghi nhận được giọng nói. Bạn hãy bấm thu âm và nói lại rõ ràng nhé!',
+      feedback_en: 'No speech recorded. Please speak clearly into the microphone.',
+      topic_relevance: { passed: false, feedback: 'Chưa có nội dung.' },
+      grammar_score: 0,
+      vocabulary_score: 0,
+      criteria_evaluations: [],
+      transcript: '',
+    }
+  }
+
+  if (!apiKey || !apiKey.trim()) {
+    return fallbackHeuristic()
+  }
+
+  const userPrompt = `
+You are an expert English Language Assessor evaluating a student's speech (CEFR A1-B2 level).
+
+Task prompt given to student: "${prompt}"
+Topic chosen by the student: "${selectedTopic}"
+${scoringCriteria ? `TEACHER'S MANDATORY SCORING CRITERIA:\n"""\n${scoringCriteria.trim()}\n"""` : ''}
+Pass score required: ${passScore}/100.
+
+The student spoke (transcribed audio):
+"""
+${trimmed}
+"""
+
+Please evaluate the student's spoken answer:
+1. Topic Relevance: Did the student talk about their chosen topic ("${selectedTopic}")?
+2. Grammar and Syntax: Are the sentence structures grammatically correct?
+3. Vocabulary and Flow: Is the vocabulary appropriate for CEFR A1-B1?
+4. Teacher's criteria: Check each criterion if specified.
+
+Return strict JSON:
+{
+  "is_passed": boolean,
+  "score": number,
+  "feedback_vi": string,
+  "feedback_en": string,
+  "topic_relevance": {
+    "passed": boolean,
+    "feedback": string
+  },
+  "grammar_score": number,
+  "vocabulary_score": number,
+  "criteria_evaluations": [
+    { "name": string, "passed": boolean, "feedback": string }
+  ],
+  "suggested_improvement": string or null
+}
+`.trim()
+
+  try {
+    const rawText = await callGeminiAPI(apiKey, userPrompt, undefined, 1024)
+    if (!rawText) return fallbackHeuristic()
+
+    const cleanJson = rawText
+      .replace(/^```json\s*/i, '')
+      .replace(/^```\s*/i, '')
+      .replace(/```\s*$/i, '')
+      .trim()
+
+    const parsed = JSON.parse(cleanJson)
+    const score = typeof parsed.score === 'number' ? Math.max(0, Math.min(100, Math.round(parsed.score))) : (parsed.is_passed ? 85 : 60)
+    const isPassed = score >= passScore && Boolean(parsed.is_passed)
+
+    return {
+      is_passed: isPassed,
+      score,
+      feedback_vi: parsed.feedback_vi || (isPassed ? 'Bài nói rất tốt!' : 'Hãy chú ý hoàn thiện thêm bài nói nhé.'),
+      feedback_en: parsed.feedback_en || (isPassed ? 'Great speaking!' : 'Please check your speech and try again.'),
+      topic_relevance: parsed.topic_relevance || { passed: isPassed, feedback: isPassed ? 'Khớp chủ đề' : 'Cần nói rõ hơn về chủ đề' },
+      grammar_score: typeof parsed.grammar_score === 'number' ? parsed.grammar_score : score,
+      vocabulary_score: typeof parsed.vocabulary_score === 'number' ? parsed.vocabulary_score : score,
+      criteria_evaluations: Array.isArray(parsed.criteria_evaluations) ? parsed.criteria_evaluations : [],
+      transcript: trimmed,
+      suggested_improvement: parsed.suggested_improvement || undefined,
+    }
+  } catch (err) {
+    console.warn('evaluateTopicSpeakingWithAI error, falling back:', err)
+    return fallbackHeuristic()
+  }
+}
+
 

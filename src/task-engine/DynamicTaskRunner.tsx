@@ -21,6 +21,7 @@ import { SpeakingPronunciationRenderer } from './renderers/SpeakingPronunciation
 import { ListenRepeatRenderer } from './renderers/ListenRepeatRenderer'
 import { ProfileListenAnswerRenderer } from './renderers/ProfileListenAnswerRenderer'
 import { InterviewFillProfileRenderer } from './renderers/InterviewFillProfileRenderer'
+import { TopicSpeakingRenderer } from './renderers/TopicSpeakingRenderer'
 import {
   checkRequiredKeywords,
   evaluateSentenceWithAI,
@@ -42,6 +43,7 @@ import type {
   Form5ListenRepeatConfig,
   Form61ProfileConfig,
   Form62InterviewConfig,
+  Form7TopicSpeakingConfig,
   GradingResponse,
 } from './dynamic-schema'
 
@@ -74,7 +76,16 @@ export function buildFullSentence(
     if (rawInput.toLowerCase().startsWith(prefix.toLowerCase())) {
       full = rawInput
     } else {
-      full = `${prefix} ${rawInput}`
+      // Tránh lặp từ nối nếu học sinh gõ lại từ cuối cùng của starter (ví dụ: "at" trong "I finish school at" và "at 5.30pm")
+      const prefixWords = prefix.split(/\s+/)
+      const lastPrefixWord = prefixWords[prefixWords.length - 1]?.toLowerCase()
+      const rawWords = rawInput.split(/\s+/)
+      const firstRawWord = rawWords[0]?.toLowerCase().replace(/[^a-z]/g, '')
+      if (lastPrefixWord && firstRawWord && lastPrefixWord === firstRawWord) {
+        full = `${prefix} ${rawWords.slice(1).join(' ')}`
+      } else {
+        full = `${prefix} ${rawInput}`
+      }
     }
   }
   if (suffix) {
@@ -1449,8 +1460,12 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
     null
 
   const hasAudio = Boolean(audioUrl && audioUrl.trim())
-  const isAudioUnlocked = !hasAudio || listenCount >= 1
-  const isWorksheetVisible = !hasAudio || (isAudioUnlocked && hasStartedWorksheet)
+  const isDirectWorksheetForm =
+    taskData?.form_type === 'FORM_3_WRITING' ||
+    taskData?.form_type === 'FORM_6_2_INTERVIEW_PROFILE' ||
+    taskData?.form_type === 'FORM_7_TOPIC_SPEAKING'
+  const isAudioUnlocked = !hasAudio || listenCount >= 1 || isDirectWorksheetForm
+  const isWorksheetVisible = !hasAudio || (isAudioUnlocked && hasStartedWorksheet) || isDirectWorksheetForm
 
   const handleListenComplete = (newCount: number) => {
     setListenCount(newCount)
@@ -1470,14 +1485,17 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
       : taskData.form_type === 'FORM_6_1_PROFILE_QA'
       ? "Look at your new classmate's profile. Listen to the AI Coach and answer."
       : taskData.form_type === 'FORM_6_2_INTERVIEW_PROFILE'
-      ? 'Ask AI Tutor, fill in the profile, and hit Submit!'
+      ? 'Ask AI Tutor, listen to Audio 1, ask questions and listen to answers!'
+      : taskData.form_type === 'FORM_7_TOPIC_SPEAKING'
+      ? ((taskData.content as any)?.prompt || 'Choose ONE good thing to do at school and talk about it.')
       : 'Enter your answers below.')
 
   const isCustomInteractiveForm =
     taskData.form_type === 'FORM_4_SPEAKING' ||
     taskData.form_type === 'FORM_5_LISTEN_REPEAT' ||
     taskData.form_type === 'FORM_6_1_PROFILE_QA' ||
-    taskData.form_type === 'FORM_6_2_INTERVIEW_PROFILE'
+    taskData.form_type === 'FORM_6_2_INTERVIEW_PROFILE' ||
+    taskData.form_type === 'FORM_7_TOPIC_SPEAKING'
 
   return (
     <InteractiveTaskFrame
@@ -1503,7 +1521,9 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
               : taskData.form_type === 'FORM_6_1_PROFILE_QA'
               ? (isCompleted ? 'Profile Q&A complete ✓' : 'Listen & answer questions about classmate')
               : taskData.form_type === 'FORM_6_2_INTERVIEW_PROFILE'
-              ? (isCompleted ? 'Profile filled ✓' : 'Ask AI Tutor to fill in the profile')
+              ? (isCompleted ? 'Interview complete ✓' : 'Interview AI Tutor with spoken questions')
+              : taskData.form_type === 'FORM_7_TOPIC_SPEAKING'
+              ? (isCompleted ? 'Topic speaking complete ✓' : 'Choose a topic and practice speaking')
               : taskData.form_type === 'FORM_3_WRITING'
               ? `${(taskData.content as Form3WritingConfig)?.items?.length || 1} writing questions`
               : `${totalItemsCount} questions`
@@ -2279,8 +2299,36 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
           </section>
         )}
 
+        {/* FORM 7: TOPIC SPEAKING (CHỌN 1 CHỦ ĐỀ VÀ LUYỆN NÓI AI CHẤM ĐIỂM) */}
+        {taskData.form_type === 'FORM_7_TOPIC_SPEAKING' && (
+          <section className="task-panel" style={{ background: '#ffffff', padding: '20px', borderRadius: '16px', border: '1px solid var(--color-line, #e5e7eb)', boxShadow: '0 4px 16px rgba(0,0,0,0.04)' }}>
+            <TopicSpeakingRenderer
+              config={taskData.content as Form7TopicSpeakingConfig}
+              taskCode={task.code}
+              onComplete={(score, details) => {
+                setIsCompleted(true)
+                setShowCelebration(true)
+                saveTaskAttempt({
+                  taskCode: task.code,
+                  score,
+                  firstScore: score,
+                  status: 'completed',
+                  supportMode: 'INDEPENDENT',
+                  answersPayload: details,
+                })
+              }}
+              onRestart={() => {
+                setIsCompleted(false)
+                setShowCelebration(false)
+              }}
+              onNavigateHome={() => navigate('/?mode=code')}
+              disabled={isCompleted}
+            />
+          </section>
+        )}
+
         {/* CÁC DẠNG BÀI KHÁC (FORM 4 REPAIR, FORM 5 SEQUENCE) */}
-        {!isGuidedForm && taskData.form_type !== 'FORM_3_WRITING' && taskData.form_type !== 'FORM_4_SPEAKING' && taskData.form_type !== 'FORM_5_LISTEN_REPEAT' && taskData.form_type !== 'FORM_6_1_PROFILE_QA' && taskData.form_type !== 'FORM_6_2_INTERVIEW_PROFILE' && isWorksheetVisible && (
+        {!isGuidedForm && taskData.form_type !== 'FORM_3_WRITING' && taskData.form_type !== 'FORM_4_SPEAKING' && taskData.form_type !== 'FORM_5_LISTEN_REPEAT' && taskData.form_type !== 'FORM_6_1_PROFILE_QA' && taskData.form_type !== 'FORM_6_2_INTERVIEW_PROFILE' && taskData.form_type !== 'FORM_7_TOPIC_SPEAKING' && isWorksheetVisible && (
           <section className={`task-panel card ${isCompleted ? 'completion-actions-card' : ''}`} style={{ background: '#ffffff', padding: '20px', borderRadius: '12px', border: '1px solid var(--color-line, #e5e7eb)' }}>
             {taskData.form_type === 'FORM_4_SENTENCE_REPAIR' && (
               <SentenceRepairRenderer
