@@ -127,6 +127,10 @@ export const COMMON_ENGLISH_WORDS = new Set<string>([
   'meet', 'meets', 'met', 'meeting',
   'visit', 'visits', 'visited', 'visiting',
   'travel', 'travels', 'traveled', 'traveling',
+  'chat', 'chats', 'chatted', 'chatting',
+  'relax', 'relaxes', 'relaxed', 'relaxing',
+  'sit', 'sits', 'sat', 'sitting',
+  'stand', 'stands', 'stood', 'standing',
 
   // Trường học & Đồ dùng học tập (School & Stationery)
   'school', 'schools', 'class', 'classes', 'classroom', 'classrooms',
@@ -142,7 +146,8 @@ export const COMMON_ENGLISH_WORDS = new Set<string>([
   'lesson', 'lessons', 'homework', 'exercise', 'exercises', 'test', 'tests', 'exam', 'exams',
   'subject', 'subjects', 'grade', 'grades', 'mark', 'marks',
   'math', 'maths', 'science', 'english', 'art', 'music', 'history', 'geography', 'physics', 'chemistry', 'biology', 'pe',
-  'library', 'libraries', 'yard', 'playground', 'gym', 'canteen', 'lab', 'laboratory',
+  'library', 'libraries', 'yard', 'playground', 'gym', 'canteen', 'cafeteria', 'lab', 'laboratory',
+  'break', 'breaks', 'breaktime', 'lunchtime', 'recess', 'period', 'bell', 'semester', 'term', 'hall', 'corridor',
 
   // Thời gian & Lịch trình (Time & Calendar)
   'time', 'times', 'minute', 'minutes', 'hour', 'hours', 'second', 'seconds', 'day', 'days', 'week', 'weeks', 'month', 'months', 'year', 'years',
@@ -387,8 +392,23 @@ export function checkSentenceLexicon(sentence: string): LexiconCheckResult {
   for (let idx = 0; idx < tokens.length; idx++) {
     const rawToken = tokens[idx]
     const clean = rawToken.replace(/^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$/g, '')
-    // Bỏ qua rỗng, từ 1 chữ cái, hoặc token chứa chữ số (giờ giấc, số đếm: 5.30, 5:30, 5pm, 5.30pm, 1st, v.v.)
-    if (!clean || clean.length <= 1 || /\d/.test(clean)) continue
+    // Bỏ qua rỗng hoặc token chứa chữ số (giờ giấc, số đếm: 5.30, 5:30, 5pm, 5.30pm, 1st, v.v.)
+    if (!clean || /\d/.test(clean)) continue
+
+    // Ký tự đơn lẻ trong tiếng Anh chỉ chấp nhận 'a' hoặc 'i'. Các chữ khác đứng một mình như 's', 'x' là sai chính tả / gõ ẩu
+    if (clean.length === 1) {
+      const lowerSingle = clean.toLowerCase()
+      if (lowerSingle !== 'a' && lowerSingle !== 'i') {
+        return {
+          hasError: true,
+          errorType: 'spelling',
+          token: clean,
+          feedback_vi: `Ký tự đơn lẻ "${clean}" không phải là một từ tiếng Anh có nghĩa. Em hãy viết một từ vựng hoàn chỉnh nhé!`,
+          feedback_en: `Single letter "${clean}" is not a valid English word. Please write a complete word.`,
+        }
+      }
+      continue
+    }
 
     const check = checkConcatenatedToken(rawToken)
     if (check.hasError) {

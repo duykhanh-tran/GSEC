@@ -206,6 +206,36 @@ describe('Form 3 Writing & Guided Repair Flow', () => {
     expect(detectGibberish('5:30pm').isGibberish).toBe(false)
     expect(detectGibberish('I have breakfast at 5.30pm.').isGibberish).toBe(false)
   })
+
+  it('strictly rejects single letter inputs (like S) and sentence fragments without verbs', async () => {
+    const { evaluateSentenceHeuristically, detectGibberish } = await import('../../src/lib/aiGradingService')
+    const { checkSentenceLexicon } = await import('../../src/lib/englishLexicon')
+
+    // Single letter "S" or "x" must be rejected by detectGibberish & checkSentenceLexicon
+    expect(detectGibberish('S').isGibberish).toBe(true)
+    expect(detectGibberish('x').isGibberish).toBe(true)
+    expect(checkSentenceLexicon('Before school, I S').hasError).toBe(true)
+
+    // Sentence fragment with only 'S' must be evaluated as NOT correct
+    const res1 = evaluateSentenceHeuristically('Before school, I S', { id: 'q1', label: 'Q1' })
+    expect(res1.is_correct).toBe(false)
+
+    const res2 = evaluateSentenceHeuristically('In class, I S', { id: 'q2', label: 'Q2' })
+    expect(res2.is_correct).toBe(false)
+
+    const res3 = evaluateSentenceHeuristically('At break time, I S', { id: 'q3', label: 'Q3' })
+    expect(res3.is_correct).toBe(false)
+
+    const res4 = evaluateSentenceHeuristically('After school, I S', { id: 'q4', label: 'Q4' })
+    expect(res4.is_correct).toBe(false)
+
+    // Complete, grammatically correct sentences must pass
+    const valid1 = evaluateSentenceHeuristically('Before school, I always eat breakfast.', { id: 'q1', label: 'Q1' })
+    expect(valid1.is_correct).toBe(true)
+
+    const valid2 = evaluateSentenceHeuristically('At break time, I often chat with friends.', { id: 'q3', label: 'Q3' })
+    expect(valid2.is_correct).toBe(true)
+  })
 })
 
 

@@ -109,8 +109,18 @@ export function detectGibberish(text: string): { isGibberish: boolean; token?: s
     .filter(Boolean)
 
   for (const token of tokens) {
-    // Bỏ qua các số, giờ giấc, token chứa số hoặc từ quá ngắn (1-3 ký tự)
-    if (token.length <= 3 || /\d/.test(token)) continue
+    // Bỏ qua các số, giờ giấc, token chứa số
+    if (/\d/.test(token)) continue
+
+    // Ký tự đơn lẻ trong tiếng Anh chỉ có 'a' hoặc 'i' là từ có nghĩa
+    if (token.length === 1) {
+      if (token !== 'a' && token !== 'i') {
+        return { isGibberish: true, token, reason: `Ký tự đơn lẻ "${token}" không phải là một từ tiếng Anh có nghĩa` }
+      }
+      continue
+    }
+
+    if (token.length <= 3) continue
 
     // 1. Không chứa bất kỳ nguyên âm nào (a, e, i, o, u, y) trong từ >= 4 ký tự
     if (!/[aeiouy]/i.test(token)) {
@@ -141,11 +151,11 @@ export function detectGibberish(text: string): { isGibberish: boolean; token?: s
  * Danh sách các Model Gemini chính thức của Google (ưu tiên Flash 2.5 -> 2.0 -> 1.5)
  */
 export const GEMINI_MODELS = [
+  'gemini-flash-latest',
+  'gemini-3.6-flash',
+  'gemini-3.1-flash-lite',
+  'gemini-pro-latest',
   'gemini-2.5-flash',
-  'gemini-2.0-flash',
-  'gemini-1.5-flash',
-  'gemini-1.5-flash-8b',
-  'gemini-1.5-pro',
 ]
 
 /**
@@ -172,7 +182,7 @@ async function callGeminiAPI(
         },
       }
 
-      // thinkingConfig chỉ gửi với model 2.5 để tránh lỗi 400 Bad Request ở model 1.5/2.0
+      // thinkingConfig chỉ gửi với model 2.5 để tránh lỗi 400 Bad Request ở model khác
       if (model.includes('2.5')) {
         payload.generationConfig.thinkingConfig = {
           thinkingBudget: 0,
@@ -197,7 +207,9 @@ async function callGeminiAPI(
 
       if (response.ok) {
         const data = await response.json()
-        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
+        const parts = data?.candidates?.[0]?.content?.parts || []
+        const textPart = parts.find((p: any) => p.text && !p.thought) || parts[0]
+        const text = textPart?.text
         if (text) return text
       } else {
         console.warn(`Model ${model} returned status ${response.status}, trying next model...`)
@@ -217,6 +229,7 @@ Your evaluation MUST be rigorous and fair according to standard English:
 1. VOCABULARY & SPELLING (CRITICAL):
 - Every word must be a real English word or an acceptable proper noun (such as Vietnamese names: "Tran Quoc", "Nguyen Du", "Ha Noi", "Toan", "Doan", "Nam", "Linh", "Minh", "Hoa", "Lan", "Mai", "Phong", "Khoa", "Dung", "Duc", "Bao", "Huy", etc., or textbook character names like "Peter", "Mary", "Linda", "Tom", "Tony").
 - CRITICAL FOR VIETNAMESE NAMES: In Vietnamese, personal names like "Toan" (Toàn) and "Doan" (Đoàn) are single, continuous words written without spaces. Do NOT confuse them with English phrases like "to an" or "do an". In sentences like "Toan is my friend." or "I play with Toan.", "Toan" is a valid proper name, NOT a run-on of "to an"!
+- REJECT single-letter or non-word entries (e.g. "S", "X", "B", "A" standing alone without sentence context). A single letter standing alone is NOT an action or answer. Set is_correct = false, score = 0, error_type = "gibberish", and tell the student in feedback_vi to write a complete sentence.
 - REJECT words written together without spaces (run-on/concatenated words like "fourpen", "myschool", "inmy", "gotoschool", "playfootball"). Set is_correct = false, score = 40, error_type = "spelling", and explain in feedback_vi that words must be separated by spaces.
 - REJECT any gibberish, non-existent words, random keyboard typing (e.g. "sjnvldkfjvblkjdfb", "asdfghjk", "xxxyyy"). Set is_correct = false, score = 0, error_type = "gibberish", and point out the meaningless word in feedback_vi.
 - TIME & NUMBER EXPRESSIONS (CRITICAL - ACCEPT AS FULLY VALID & BE LENIENT):
@@ -227,10 +240,12 @@ Your evaluation MUST be rigorous and fair according to standard English:
 - The sentence must express a coherent, logical meaning.
 
 2. GRAMMAR & SYNTAX (CRITICAL):
+- SENTENCE FRAGMENTS & MISSING VERB (STRICT): Every complete English sentence MUST contain a subject and a verb (predicate). If a sentence lacks a verb (e.g. "Before school, I S" or "In class, I"), it is an incomplete sentence fragment. Set is_correct = false, score = 20, error_type = "grammar", and instruct the student to add an action verb.
 - Plural nouns after numbers > 1: After "two", "three", "four", etc. or "many", countable nouns MUST be plural (e.g., "four pens", NOT "four pen"). If singular noun is used after numbers > 1, set is_correct = false, score = 50, error_type = "grammar", and remind the student to use plural "-s".
 - Subject-verb agreement (e.g., "He plays", NOT "He play"; "I am", NOT "I is").
 - Correct verb forms and tenses (NO double verbs like "feel is", "have are", "is go").
 - Proper parts of speech: After linking verbs like "feel", use an adjective directly ("feel excited"), NOT "feel is a excited".
+- If teacher's scoring criteria specifies constraints (e.g. adverbs of frequency, or "tuyệt đối không điền 1 chữ là cho đúng"), STRICTLY ENFORCE THEM!
 - If grammatical errors exist, set is_correct = false, score = 30-65, error_type = "grammar", and clearly explain how to fix it in feedback_vi.
 
 3. PUNCTUATION & CAPITALIZATION (LENIENT & CONSTRUCTIVE):
@@ -368,6 +383,67 @@ export function evaluateSentenceHeuristically(
         feedback_en: err.en,
         feedback_vi: err.vi,
         error_type: 'grammar',
+      }
+    }
+  }
+
+  // 4. Kiểm tra ký tự đơn lẻ đứng một mình (ngoại trừ 'a' và 'i')
+  const cleanWordTokens = words
+    .map((w) => w.replace(/^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$/g, ''))
+    .filter(Boolean)
+  for (const tok of cleanWordTokens) {
+    if (tok.length === 1 && !/\d/.test(tok)) {
+      const lowTok = tok.toLowerCase()
+      if (lowTok !== 'a' && lowTok !== 'i') {
+        return {
+          is_correct: false,
+          score: 0,
+          feedback_en: `Single letter "${tok}" is not a valid English word. Please write a complete word.`,
+          feedback_vi: `Ký tự đơn lẻ "${tok}" không phải là một từ tiếng Anh có nghĩa. Em hãy viết một từ vựng hoàn chỉnh nhé!`,
+          error_type: 'gibberish',
+        }
+      }
+    }
+  }
+
+  // 5. Kiểm tra vị ngữ / động từ hành động (Sentence Fragment & Missing Verb Check)
+  // Trong tiếng Anh chuẩn, một câu có chủ ngữ bắt buộc phải có động từ vị ngữ (predicate)
+  const COMMON_VERB_REGEX = /\b(am|is|are|was|were|be|been|being|have|has|had|do|does|did|can|could|will|would|shall|should|may|might|must|play|plays|played|playing|go|goes|went|gone|going|come|comes|came|coming|see|sees|saw|seen|seeing|watch|watches|watched|watching|listen|listens|listened|listening|speak|speaks|spoke|spoken|speaking|talk|talks|talked|talking|say|says|said|saying|tell|tells|told|telling|ask|asks|asked|asking|answer|answers|answered|answering|read|reads|reading|write|writes|wrote|written|writing|draw|draws|drew|drawn|drawing|sing|sings|sang|sung|singing|dance|dances|danced|dancing|swim|swims|swam|swum|swimming|run|runs|ran|running|walk|walks|walked|walking|jump|jumps|jumped|jumping|ride|rides|rode|riding|study|studies|studied|studying|learn|learns|learned|learning|teach|teaches|taught|teaching|help|helps|helped|helping|make|makes|made|making|take|takes|took|taken|taking|give|gives|gave|given|giving|get|gets|got|getting|eat|eats|ate|eaten|eating|drink|drinks|drank|drunk|drinking|cook|cooks|cooked|cooking|sleep|sleeps|slept|sleeping|wake|wakes|woke|waking|live|lives|lived|living|stay|stays|stayed|staying|work|works|worked|working|open|opens|opened|opening|close|closes|closed|closing|start|starts|started|starting|finish|finishes|finished|finishing|clean|cleans|cleaned|cleaning|wash|washes|washed|washing|brush|brushes|brushed|brushing|leave|leaves|left|leaving|arrive|arrives|arrived|arriving|wear|wears|wore|worn|wearing|use|uses|used|using|think|thinks|thought|thinking|know|knows|knew|known|knowing|meet|meets|met|meeting|feel|feels|felt|feeling|look|looks|looked|looking|like|likes|liked|liking|love|loves|loved|loving|want|wants|wanted|wanting|need|needs|needed|needing|chat|chats|chatted|chatting|relax|relaxes|relaxed|relaxing|cycle|cycles|cycled|cycling|stand|sit|sits|sat|sitting)\b/i
+  
+  const hasSubject = /\b(i|he|she|they|we|you|it|students?|children|friends?|classmates?|people|my\s+[a-z]+)\b/i.test(lower)
+  const hasVerb = COMMON_VERB_REGEX.test(lower)
+
+  if (hasSubject && !hasVerb && !hasTimePattern) {
+    return {
+      is_correct: false,
+      score: 25,
+      feedback_en: 'Incomplete sentence. Your sentence is missing an action verb.',
+      feedback_vi: 'Câu của em chưa hoàn chỉnh vì thiếu động từ chỉ hành động. Em hãy bổ sung động từ (ví dụ: "play", "study", "eat breakfast") để hoàn thành câu nhé!',
+      error_type: 'grammar',
+    }
+  }
+
+  // 6. Kiểm tra tiêu chí giáo viên (ví dụ: trạng từ chỉ tần suất, không điền 1 chữ)
+  const requiresFrequency = combinedCriteria.includes('trạng từ chỉ tần suất') || combinedCriteria.includes('frequency')
+  const hasFrequencyWord = /\b(always|usually|often|sometimes|rarely|seldom|never)\b/i.test(lower)
+  if (requiresFrequency && !hasFrequencyWord) {
+    return {
+      is_correct: false,
+      score: 45,
+      feedback_en: 'Please include an adverb of frequency (always, usually, often, sometimes, never) as required by the lesson.',
+      feedback_vi: 'Theo yêu cầu của đề bài, em cần sử dụng trạng từ chỉ tần suất (always, usually, often, sometimes, never) trong câu nhé!',
+      error_type: 'grammar',
+    }
+  }
+
+  if (combinedCriteria.includes('tuyệt đối không điền 1 chữ') || combinedCriteria.includes('không điền 1 chữ')) {
+    if (words.length < 3) {
+      return {
+        is_correct: false,
+        score: 0,
+        feedback_en: 'A single letter or short word is not allowed. Please write a complete grammatical sentence.',
+        feedback_vi: 'Tuyệt đối không điền 1 chữ cái. Em hãy viết một câu hoàn chỉnh đúng ngữ pháp nhé!',
+        error_type: 'gibberish',
       }
     }
   }

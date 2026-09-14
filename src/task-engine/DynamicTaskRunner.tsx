@@ -1035,6 +1035,42 @@ export function DynamicTaskRunner({ task, initialData }: DynamicTaskRunnerProps)
         }
       > = {}
 
+      // BƯỚC 0: KIỂM TRA ĐỘ DÀI VÀ TÍNH HỢP LỆ (Chống điền 1 chữ cái đơn lẻ hoặc câu chưa hoàn chỉnh)
+      let anySingleLetterFailed = false
+      const singleLetterItems: string[] = []
+
+      for (let idx = 0; idx < items.length; idx++) {
+        const item = items[idx]
+        const id = String(item.id || idx + 1)
+        const rawSentence = (answers[id] || '').trim()
+
+        // Kiểm tra nếu học sinh chỉ nhập 1 ký tự chữ cái đơn lẻ (không phải số giờ giấc)
+        const cleanLetters = rawSentence.replace(/[^a-zA-Z]/g, '')
+        const isTimeNumber = /\d/.test(rawSentence)
+        if (!isTimeNumber && (cleanLetters.length <= 1 && cleanLetters.toLowerCase() !== 'a' && cleanLetters.toLowerCase() !== 'i')) {
+          anySingleLetterFailed = true
+          singleLetterItems.push(item.label || `Question ${idx + 1}`)
+          newResults[id] = {
+            correct: false,
+            score: 0,
+            hint: 'A single letter is not a valid sentence. Please write a full sentence with an action verb.',
+            feedback_vi: `Em mới chỉ nhập ký tự "${rawSentence}". Tuyệt đối không điền một chữ cái. Em hãy viết câu hoàn chỉnh có động từ chỉ hành động nhé!`,
+            feedback_en: `You only typed a single letter "${rawSentence}". Please write a complete verb phrase to complete the sentence.`,
+          }
+        }
+      }
+
+      if (anySingleLetterFailed) {
+        setWritingResults((prev) => ({ ...(prev || {}), ...newResults }))
+        addNotice(
+          <>
+            ⚠️ <strong>Chưa hoàn thành câu:</strong> {singleLetterItems.join(', ')} mới chỉ điền 1 chữ cái. Tuyệt đối phải viết câu hoàn chỉnh đúng ngữ pháp nhé!
+          </>
+        )
+        setIsCheckingWriting(false)
+        return
+      }
+
       // BƯỚC 1: KIỂM TRA TỪ KHÓA BẮT BUỘC (Keyword Matching cho Dạng 3.2 hoặc bài có required_words)
       let anyKeywordFailed = false
       const missingItemsList: string[] = []
