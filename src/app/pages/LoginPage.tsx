@@ -7,7 +7,8 @@ import '../../styles/auth.css'
 export function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/'
+  const rawFrom = (location.state as any)?.from
+  const from = (typeof rawFrom === 'string' ? rawFrom : rawFrom?.pathname) || '/student'
   const { signInWithGoogle, signInWithFacebook, signInWithPassword, user, profile } = useAuth()
 
   const [email, setEmail] = useState('')
@@ -18,14 +19,14 @@ export function LoginPage() {
   // Nếu đã đăng nhập, chuyển về trang phù hợp với vai trò
   useEffect(() => {
     if (user && profile) {
-      if (from && from !== '/') {
+      if (from && from !== '/' && from !== '/student') {
         navigate(from, { replace: true })
       } else if (profile.role === 'ADMIN') {
         navigate('/admin', { replace: true })
       } else if (profile.role === 'TEACHER') {
         navigate('/teacher', { replace: true })
       } else {
-        navigate('/', { replace: true })
+        navigate('/student', { replace: true })
       }
     }
   }, [user, profile, navigate, from])
@@ -50,14 +51,14 @@ export function LoginPage() {
         .eq('id', (await supabase.auth.getUser()).data.user?.id)
         .maybeSingle()
 
-      if (from && from !== '/') {
+      if (from && from !== '/' && from !== '/student') {
         navigate(from, { replace: true })
       } else if (prof?.role === 'ADMIN') {
         navigate('/admin', { replace: true })
       } else if (prof?.role === 'TEACHER') {
         navigate('/teacher', { replace: true })
       } else {
-        navigate('/', { replace: true })
+        navigate('/student', { replace: true })
       }
     }
   }

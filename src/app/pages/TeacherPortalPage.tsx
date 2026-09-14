@@ -366,7 +366,7 @@ export function TeacherPortalPage() {
           Tài khoản của bạn hiện mang vai trò <strong>{profile?.role === 'STUDENT' ? 'Học sinh' : 'Chưa phân quyền'}</strong>.
           Vui lòng liên hệ Quản trị viên để được cấp quyền Giáo viên.
         </p>
-        <Link to="/" className="btn-submit" style={{ display: 'inline-block', textDecoration: 'none' }}>
+        <Link to="/student" className="btn-submit" style={{ display: 'inline-block', textDecoration: 'none' }}>
           ← Quay lại trang bài tập
         </Link>
       </main>

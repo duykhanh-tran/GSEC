@@ -8,19 +8,38 @@ export function AuthCallbackPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
+    const redirectUser = async (userId: string) => {
+      try {
+        const { data: prof } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', userId)
+          .maybeSingle()
+
+        if (prof?.role === 'ADMIN') {
+          navigate('/admin', { replace: true })
+        } else if (prof?.role === 'TEACHER') {
+          navigate('/teacher', { replace: true })
+        } else {
+          navigate('/student', { replace: true })
+        }
+      } catch {
+        navigate('/student', { replace: true })
+      }
+    }
+
     // Supabase tự động xử lý hash token trong URL và thiết lập session
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
         setError(error.message)
-      } else if (session) {
-        // Đăng nhập thành công, điều hướng về trang chủ
-        navigate('/', { replace: true })
+      } else if (session?.user) {
+        redirectUser(session.user.id)
       } else {
         // Lắng nghe auth state change phòng khi token đang được xử lý ngầm
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-          if (session) {
+          if (session?.user) {
             subscription.unsubscribe()
-            navigate('/', { replace: true })
+            redirectUser(session.user.id)
           }
         })
 

@@ -6,8 +6,9 @@ import '../../styles/auth.css'
 export function RegisterPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/'
-  const { signInWithGoogle, signInWithFacebook, signUpWithEmail, user } = useAuth()
+  const rawFrom = (location.state as any)?.from
+  const from = (typeof rawFrom === 'string' ? rawFrom : rawFrom?.pathname) || '/student'
+  const { signInWithGoogle, signInWithFacebook, signUpWithEmail, user, profile } = useAuth()
 
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
@@ -20,9 +21,17 @@ export function RegisterPage() {
   // Nếu đã đăng nhập, chuyển về trang đích hoặc trang chủ
   useEffect(() => {
     if (user) {
-      navigate(from, { replace: true })
+      if (from && from !== '/' && from !== '/student') {
+        navigate(from, { replace: true })
+      } else if (profile?.role === 'ADMIN') {
+        navigate('/admin', { replace: true })
+      } else if (profile?.role === 'TEACHER') {
+        navigate('/teacher', { replace: true })
+      } else {
+        navigate('/student', { replace: true })
+      }
     }
-  }, [user, navigate, from])
+  }, [user, profile, navigate, from])
 
   const handleEmailRegister = async (e: FormEvent) => {
     e.preventDefault()
@@ -43,7 +52,15 @@ export function RegisterPage() {
     } else if (needsEmailConfirmation) {
       setSuccess('Đăng ký thành công! Vui lòng kiểm tra hộp thư email để kích hoạt tài khoản.')
     } else {
-      navigate(from, { replace: true })
+      if (from && from !== '/' && from !== '/student') {
+        navigate(from, { replace: true })
+      } else if (role === 'ADMIN') {
+        navigate('/admin', { replace: true })
+      } else if (role === 'TEACHER') {
+        navigate('/teacher', { replace: true })
+      } else {
+        navigate('/student', { replace: true })
+      }
     }
   }
 

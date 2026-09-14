@@ -14,10 +14,15 @@ import { ResetPasswordPage } from './pages/ResetPasswordPage'
 import { TeacherPortalPage } from './pages/TeacherPortalPage'
 import { AdminDashboardPage } from './pages/AdminDashboardPage'
 import { AdminTaskStudioPage } from './pages/AdminTaskStudioPage'
+import { LandingPage } from './pages/LandingPage'
 
 export const router = createBrowserRouter([
   {
     path: '/',
+    element: <LandingPage />,
+  },
+  {
+    path: '/student',
     element: (
       <ProtectedRoute>
         <IndexPage />

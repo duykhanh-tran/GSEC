@@ -208,7 +208,7 @@ export function AppHeader({ currentPortal = 'student', isTestingStudentMode, stu
               </Link>
 
               <Link
-                to="/?mode=student"
+                to="/student?mode=student"
                 className={`app-portal-tab ${currentPortal === 'student' ? 'is-active' : ''}`}
               >
                 <span className="tab-icon">🎒</span>
